@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Star, FileText, ExternalLink, Zap, Users, Award, Trophy, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,6 @@ interface CandidateCardProps {
   onDelete: () => void;
   onViewDetails?: () => void;
   isProcessing?: boolean;
-  // New prop to identify if this candidate is the top scorer for a specific requirement
   isTopScorer?: { [requirementId: string]: boolean };
   allCandidatesData?: Candidate[];
 }
@@ -31,10 +29,7 @@ const CandidateCard = ({
   isTopScorer = {},
   allCandidatesData = [],
 }: CandidateCardProps) => {
-  // Always expanded by default now
   const [expanded, setExpanded] = useState(true);
-
-  // Calculate top scorers for each requirement
   const [topScorers, setTopScorers] = useState<{ [requirementId: string]: boolean }>({});
 
   useEffect(() => {
@@ -42,7 +37,6 @@ const CandidateCard = ({
       const bestScores: { [requirementId: string]: number } = {};
       const scorerIds: { [requirementId: string]: string } = {};
       
-      // Find the highest score for each requirement across all candidates
       allCandidatesData.forEach(c => {
         if (c.scores.length > 0) {
           c.scores.forEach(score => {
@@ -54,7 +48,6 @@ const CandidateCard = ({
         }
       });
       
-      // Mark this candidate as top scorer for relevant requirements
       const newTopScorers: { [requirementId: string]: boolean } = {};
       if (candidate.scores.length > 0) {
         candidate.scores.forEach(score => {
@@ -213,7 +206,6 @@ const CandidateCard = ({
           </div>
         )}
         
-        {/* Personality Traits Section */}
         {isProcessed && candidate.personalityTraits && candidate.personalityTraits.length > 0 && (
           <div className="mb-4">
             <h4 className="text-sm font-medium mb-2 flex items-center">
@@ -230,7 +222,6 @@ const CandidateCard = ({
           </div>
         )}
         
-        {/* Work Style and Additional Metrics */}
         {isProcessed && (
           <div className="grid grid-cols-2 gap-4 mb-4 border-t border-gray-100 dark:border-gray-800 pt-3">
             <div>
@@ -293,7 +284,7 @@ const CandidateCard = ({
                           )}
                         </span>
                         {isTop && (
-                          <Trophy className="h-4 w-4 text-yellow-500 ml-1" title="Top score among candidates" />
+                          <Trophy className="h-4 w-4 text-yellow-500 ml-1" aria-label="Top score among candidates" />
                         )}
                       </div>
                       <span className="text-sm font-medium">{score.score}/10</span>
