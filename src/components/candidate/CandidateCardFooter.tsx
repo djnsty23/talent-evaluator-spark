@@ -36,16 +36,16 @@ const CandidateCardFooter = ({
         )}
         
         {jobId && isProcessed && (
-          <Button
-            variant="secondary"
-            size="sm"
-            as={Link}
-            to={`/jobs/${jobId}/analysis`}
-            className="text-xs h-8"
-          >
-            <Activity className="h-3 w-3 mr-1" />
-            Candidate Analysis
-          </Button>
+          <Link to={`/jobs/${jobId}/analysis`}>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="text-xs h-8"
+            >
+              <Activity className="h-3 w-3 mr-1" />
+              Candidate Analysis
+            </Button>
+          </Link>
         )}
       </div>
       

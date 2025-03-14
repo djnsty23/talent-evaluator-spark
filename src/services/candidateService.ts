@@ -130,49 +130,49 @@ export const processCandidate = (candidate: Candidate, requirements: JobRequirem
 export const getDefaultCustomerSuccessRequirements = (): Partial<JobRequirement>[] => {
   return [
     {
-      title: "Customer Success Experience",
+      id: uuidv4(),
       description: "Direct experience in customer success or a related role",
       weight: 5,
       category: "Experience",
       isRequired: true
     },
     {
-      title: "SaaS & A/B Testing Knowledge",
+      id: uuidv4(),
       description: "Experience working in SaaS and/or familiarity with A/B testing, experimentation, or CRO",
       weight: 4,
       category: "Technical", 
       isRequired: true
     },
     {
-      title: "Problem-Solving & Analytical Skills",
+      id: uuidv4(),
       description: "Ability to analyze customer pain points, interpret data, and provide solutions",
       weight: 5,
       category: "Skills",
       isRequired: true
     },
     {
-      title: "Communication & Relationship Management",
+      id: uuidv4(),
       description: "Strong written/verbal communication and ability to build relationships",
       weight: 5,
       category: "Skills",
       isRequired: true
     },
     {
-      title: "Proactiveness & Ownership",
+      id: uuidv4(),
       description: "Demonstrated taking initiative, driving product adoption, or improving processes",
       weight: 4,
       category: "Attitude",
       isRequired: false
     },
     {
-      title: "Technical Aptitude",
+      id: uuidv4(),
       description: "Comfort with tools like analytics platforms, CRMs, Hubspot, Google Analytics",
       weight: 3,
       category: "Technical",
       isRequired: false
     },
     {
-      title: "English Skills",
+      id: uuidv4(),
       description: "Professional level English communication skills",
       weight: 5,
       category: "Language",

@@ -28,25 +28,25 @@ const CandidateAnalysisActions = ({
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between mt-8 border-t pt-6 gap-4">
       <div className="flex flex-wrap gap-4 w-full sm:w-auto">
-        <Button
-          as={Link}
-          to={`/jobs/${jobId}/upload`}
-          variant="outline"
-          className="w-full sm:w-auto"
-        >
-          <Upload className="h-4 w-4 mr-2" />
-          Upload More Candidates
-        </Button>
+        <Link to={`/jobs/${jobId}/upload`} className="w-full sm:w-auto">
+          <Button
+            variant="outline"
+            className="w-full h-full"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Upload More Candidates
+          </Button>
+        </Link>
         
-        <Button
-          as={Link}
-          to={`/jobs/${jobId}`}
-          variant="outline" 
-          className="w-full sm:w-auto"
-        >
-          <Activity className="h-4 w-4 mr-2" />
-          View Job Dashboard
-        </Button>
+        <Link to={`/jobs/${jobId}`} className="w-full sm:w-auto">
+          <Button
+            variant="outline" 
+            className="w-full h-full"
+          >
+            <Activity className="h-4 w-4 mr-2" />
+            View Job Dashboard
+          </Button>
+        </Link>
       </div>
       
       <ProcessAllCandidatesButton
