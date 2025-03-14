@@ -15,6 +15,7 @@ import CandidateAnalysisActions from '@/components/CandidateAnalysisActions';
 import CandidateAnalysisLoading from '@/components/CandidateAnalysisLoading';
 import PostProcessingCTA from '@/components/candidate/PostProcessingCTA';
 import ReportGenerationButton from '@/components/candidate/ReportGenerationButton';
+import ProcessingStatus from '@/components/ProcessingStatus';
 import { useCandidateProcessing } from '@/hooks/useCandidateProcessing';
 import { useCandidateFiltering } from '@/hooks/useCandidateFiltering';
 
@@ -109,6 +110,17 @@ const CandidateAnalysis = () => {
         processedCountTracking={processedCountTracking}
         errorCount={errorCount}
       />
+      
+      {isProcessingAll && (
+        <ProcessingStatus
+          isProcessingAll={isProcessingAll}
+          processingProgress={processingProgress}
+          currentProcessing={currentProcessing}
+          totalToProcess={totalToProcess}
+          processedCount={processedCountTracking}
+          errorCount={errorCount}
+        />
+      )}
       
       <JobRequirementsSummary 
         jobId={jobId || ''} 

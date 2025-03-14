@@ -71,70 +71,49 @@ export function useCandidateProcessing(jobId: string | undefined, job: Job | nul
     setProcessingProgress(0);
     setShowPostProcessCTA(false);
     
+    // Process candidates sequentially to avoid race conditions
+    let processed = 0;
+    let errors = 0;
+    
     try {
-      const currentJob = jobs.find(j => j.id === jobId);
-      const candidatesToProcess = currentJob?.candidates.filter(c => c.scores.length === 0) || [];
-      const total = candidatesToProcess.length;
-      const initialProcessedCount = job.candidates.filter(c => c.scores.length > 0).length;
-      
-      const progressInterval = setInterval(() => {
-        setProcessingProgress(prev => {
-          if (prev < 95) {
-            return Math.min(prev + 5, 95);
-          }
-          return prev;
-        });
-      }, 1000);
-      
-      console.log(`Starting batch processing for ${total} candidates`);
-      
-      const jobElement = document.getElementById('job-candidates-container');
-      
-      if (jobElement) {
-        const observer = new MutationObserver(() => {
-          const updatedJob = jobs.find(j => j.id === jobId);
-          if (updatedJob) {
-            const processedCandidates = updatedJob.candidates.filter(c => c.scores.length > 0);
-            const newProcessedCount = processedCandidates.length - initialProcessedCount;
-            
-            setProcessedCountTracking(newProcessedCount);
-            
-            const percentComplete = Math.min(Math.floor((newProcessedCount / total) * 100), 95);
-            setProcessingProgress(prev => Math.max(prev, percentComplete));
-          }
-        });
-        
-        observer.observe(jobElement, { childList: true, subtree: true });
-      }
-      
-      await handleProcessAllCandidates(jobId);
-      
-      clearInterval(progressInterval);
-      
-      setProcessingProgress(100);
-      
-      const updatedJob = jobs.find(j => j.id === jobId);
-      if (updatedJob) {
-        const processedCandidates = updatedJob.candidates.filter(c => c.scores.length > 0);
-        const newProcessedCount = processedCandidates.length - initialProcessedCount;
-        setProcessedCountTracking(newProcessedCount);
-        
-        setErrorCount(total - newProcessedCount);
-        
-        // Show post-processing CTA if all candidates are processed
-        if (updatedJob.candidates.filter(c => c.scores.length === 0).length === 0) {
-          setShowPostProcessCTA(true);
+      for (const candidate of unprocessedCandidates) {
+        setCurrentProcessing(candidate.name);
+        try {
+          await processCandidate(jobId, candidate.id);
+          processed++;
+          setProcessedCountTracking(processed);
+          const progressPercent = Math.floor((processed / unprocessedCandidates.length) * 100);
+          setProcessingProgress(progressPercent);
+        } catch (error) {
+          console.error(`Error processing candidate ${candidate.name}:`, error);
+          errors++;
+          setErrorCount(errors);
         }
       }
       
-      setTimeout(() => {
-        setIsProcessingAll(false);
-        setCurrentProcessing('');
-      }, 2000);
+      setProcessingProgress(100);
       
+      // Show success message based on results
+      if (processed > 0 && errors === 0) {
+        toast.success(`Successfully processed ${processed} candidates`);
+      } else if (processed > 0 && errors > 0) {
+        toast.warning(`Processed ${processed} candidates with ${errors} errors`);
+      } else if (processed === 0 && errors > 0) {
+        toast.error('Failed to process any candidates');
+      }
+      
+      // Check if all candidates are now processed
+      const updatedJob = jobs.find(j => j.id === jobId);
+      if (updatedJob) {
+        const remainingUnprocessed = updatedJob.candidates.filter(c => c.scores.length === 0).length;
+        if (remainingUnprocessed === 0 && updatedJob.candidates.length > 0) {
+          setShowPostProcessCTA(true);
+        }
+      }
     } catch (error) {
       console.error('Batch process error:', error);
       toast.error('An error occurred during batch processing');
+    } finally {
       setIsProcessingAll(false);
       setCurrentProcessing('');
     }

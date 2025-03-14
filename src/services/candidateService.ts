@@ -1,3 +1,4 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import { Candidate, JobRequirement } from '@/types/job.types';
 import { extractCandidateName, generateComment, getRandomItems, generateRealisticName } from '@/utils/candidateUtils';
@@ -50,11 +51,26 @@ export const processCandidate = (candidate: Candidate, requirements: JobRequirem
   const processedCandidate = { ...candidate };
   
   // Generate scores for each requirement
-  const scores = requirements.map(req => ({
-    requirementId: req.id,
-    score: Math.floor(Math.random() * 10) + 1, // Random score 1-10
-    comment: generateComment(req.description),
-  }));
+  const scores = requirements.map(req => {
+    // More realistic scoring based on requirement category
+    let baseScore = Math.floor(Math.random() * 6) + 3; // Base score between 3-8
+    
+    // Modify score for key skills that might be in the requirements
+    if (req.description.toLowerCase().includes("customer success") || 
+        req.description.toLowerCase().includes("saas") || 
+        req.description.toLowerCase().includes("communication") ||
+        req.description.toLowerCase().includes("problem-solving") ||
+        req.description.toLowerCase().includes("english")) {
+      // Increase chance of higher scores for these important skills
+      baseScore = Math.min(baseScore + Math.floor(Math.random() * 3), 10);
+    }
+    
+    return {
+      requirementId: req.id,
+      score: baseScore,
+      comment: generateComment(req.description),
+    };
+  });
   
   // Calculate overall score (weighted average)
   const totalWeight = requirements.reduce((sum, req) => sum + req.weight, 0);
@@ -102,10 +118,65 @@ export const processCandidate = (candidate: Candidate, requirements: JobRequirem
   processedCandidate.education = educationLevels[Math.floor(Math.random() * educationLevels.length)];
   processedCandidate.yearsOfExperience = Math.floor(Math.random() * 15) + 1;
   processedCandidate.location = locations[Math.floor(Math.random() * locations.length)];
-  processedCandidate.skillKeywords = getRandomItems(['JavaScript', 'Python', 'SQL', 'Communication', 'Project Management', 'Marketing', 'Sales', 'Customer Service', 'Leadership'], Math.floor(Math.random() * 5) + 1);
+  processedCandidate.skillKeywords = getRandomItems(['Customer Success', 'SaaS', 'A/B Testing', 'Problem-Solving', 'Analytics', 'CRM', 'HubSpot', 'Communication', 'Project Management', 'Marketing', 'Sales'], Math.floor(Math.random() * 5) + 1);
   processedCandidate.availabilityDate = new Date(Date.now() + (Math.random() * 30 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0]; // Random date in the next 30 days
   processedCandidate.communicationStyle = communicationStyles[Math.floor(Math.random() * communicationStyles.length)];
   processedCandidate.preferredTools = getRandomItems(toolsAndPlatforms, Math.floor(Math.random() * 3) + 1);
   
   return processedCandidate;
+};
+
+// Default requirements focused on Customer Success
+export const getDefaultCustomerSuccessRequirements = (): Partial<JobRequirement>[] => {
+  return [
+    {
+      title: "Customer Success Experience",
+      description: "Direct experience in customer success or a related role",
+      weight: 5,
+      category: "Experience",
+      isRequired: true
+    },
+    {
+      title: "SaaS & A/B Testing Knowledge",
+      description: "Experience working in SaaS and/or familiarity with A/B testing, experimentation, or CRO",
+      weight: 4,
+      category: "Technical", 
+      isRequired: true
+    },
+    {
+      title: "Problem-Solving & Analytical Skills",
+      description: "Ability to analyze customer pain points, interpret data, and provide solutions",
+      weight: 5,
+      category: "Skills",
+      isRequired: true
+    },
+    {
+      title: "Communication & Relationship Management",
+      description: "Strong written/verbal communication and ability to build relationships",
+      weight: 5,
+      category: "Skills",
+      isRequired: true
+    },
+    {
+      title: "Proactiveness & Ownership",
+      description: "Demonstrated taking initiative, driving product adoption, or improving processes",
+      weight: 4,
+      category: "Attitude",
+      isRequired: false
+    },
+    {
+      title: "Technical Aptitude",
+      description: "Comfort with tools like analytics platforms, CRMs, Hubspot, Google Analytics",
+      weight: 3,
+      category: "Technical",
+      isRequired: false
+    },
+    {
+      title: "English Skills",
+      description: "Professional level English communication skills",
+      weight: 5,
+      category: "Language",
+      isRequired: true
+    }
+  ];
 };
