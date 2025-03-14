@@ -210,7 +210,7 @@ const CreateJob = () => {
                   
                   <FileUploader 
                     onFilesSelected={handleContextFilesSelected}
-                    accept=".pdf,.doc,.docx,.txt"
+                    accept=".pdf,.doc,.docx,.txt,.csv,.xlsx"
                     multiple={true}
                   />
                 </div>

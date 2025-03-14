@@ -26,6 +26,14 @@ const FileUploader = ({
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Format the accept string for display (remove dots, make uppercase)
+  const formatAcceptedTypes = () => {
+    return accept
+      .split(',')
+      .map(type => type.trim().toUpperCase().replace('.', ''))
+      .join(', ');
+  };
+
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -168,7 +176,7 @@ const FileUploader = ({
             <span className="font-semibold">Click to upload</span> or drag and drop
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {accept.split(',').join(', ')} (Max: {maxSizeMB}MB)
+            {formatAcceptedTypes()} (Max: {maxSizeMB}MB)
           </p>
           <Button
             variant="outline"
