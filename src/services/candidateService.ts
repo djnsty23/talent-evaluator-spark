@@ -1,11 +1,10 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { Candidate, JobRequirement } from '@/types/job.types';
-import { extractCandidateName, generateComment, getRandomItems } from '@/utils/candidateUtils';
+import { extractCandidateName, generateComment, getRandomItems, generateRealisticName } from '@/utils/candidateUtils';
 
 export const createCandidateFromFile = (file: File, jobId: string, index: number): Candidate => {
-  // Extract and format candidate name
-  const candidateName = extractCandidateName(file.name);
+  // Use the more realistic name generator instead of extracting from filename
+  const candidateName = generateRealisticName();
   
   // Generate a random domain for the email based on candidate's name
   const nameParts = candidateName.split(' ');
@@ -46,10 +45,7 @@ export const createCandidateFromFile = (file: File, jobId: string, index: number
   };
 };
 
-export const processCandidate = (
-  candidate: Candidate, 
-  requirements: JobRequirement[]
-): Candidate => {
+export const processCandidate = (candidate: Candidate, requirements: JobRequirement[]): Candidate => {
   // Get the candidate to process
   const processedCandidate = { ...candidate };
   

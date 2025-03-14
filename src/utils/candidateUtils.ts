@@ -1,21 +1,22 @@
 
 import { Candidate } from '@/types/job.types';
 
-// Improved function to extract candidate name from resume
+// Improved function to extract candidate name from resume filename
 export const extractCandidateName = (fileName: string): string => {
   // Remove file extension
   let candidateName = fileName.split('.').slice(0, -1).join('.');
+  
+  // Replace common prefixes
+  candidateName = candidateName
+    .replace(/^(cv|resume|résumé|curriculum\s*vitae)[\s_-]*/i, '')
+    .replace(/^(cv|resume)_/i, '')
+    .trim();
   
   // Replace underscores, hyphens, and numbers with spaces
   candidateName = candidateName
     .replace(/[_-]/g, ' ')
     .replace(/\d+/g, ' ')
     .replace(/\s+/g, ' ');
-  
-  // Remove common prefixes like "CV", "Resume", etc.
-  candidateName = candidateName
-    .replace(/^(cv|resume|résumé|curriculu?m\s*vitae)[\s_-]*/i, '')
-    .trim();
   
   // Process name to ensure proper capitalization
   candidateName = candidateName
@@ -67,6 +68,51 @@ export const generateComment = (requirementDescription: string): string => {
 export const getRandomItems = (arr: string[], count: number) => {
   const shuffled = [...arr].sort(() => 0.5 - Math.random());
   return shuffled.slice(0, count);
+};
+
+// Helper function to generate realistic names (instead of extracting from filenames)
+export const generateRealisticName = (): string => {
+  const firstNames = [
+    "James", "Mary", "John", "Patricia", "Robert", "Jennifer", "Michael", "Linda", 
+    "William", "Elizabeth", "David", "Susan", "Richard", "Jessica", "Joseph", "Sarah",
+    "Thomas", "Karen", "Charles", "Nancy", "Christopher", "Lisa", "Daniel", "Margaret",
+    "Matthew", "Betty", "Anthony", "Sandra", "Mark", "Ashley", "Donald", "Kimberly",
+    "Steven", "Emily", "Paul", "Donna", "Andrew", "Michelle", "Joshua", "Carol",
+    "Ana", "Carmen", "Ciprian", "Tudor", "Bogdan", "Gavrilă", "Alex", "Tomasa"
+  ];
+  
+  const lastNames = [
+    "Smith", "Johnson", "Williams", "Jones", "Brown", "Davis", "Miller", "Wilson",
+    "Moore", "Taylor", "Anderson", "Thomas", "Jackson", "White", "Harris", "Martin",
+    "Thompson", "Garcia", "Martinez", "Robinson", "Clark", "Rodriguez", "Lewis", "Lee",
+    "Walker", "Hall", "Allen", "Young", "Hernandez", "King", "Wright", "Lopez",
+    "Hill", "Scott", "Green", "Adams", "Baker", "Gonzalez", "Nelson", "Carter",
+    "Mitchell", "Perez", "Roberts", "Turner", "Phillips", "Campbell", "Parker", "Evans",
+    "Edwards", "Collins", "Stewart", "Sanchez", "Morris", "Rogers", "Reed", "Cook",
+    "Morgan", "Bell", "Murphy", "Bailey", "Rivera", "Cooper", "Richardson", "Cox",
+    "Howard", "Ward", "Torres", "Peterson", "Gray", "Ramirez", "James", "Watson",
+    "Brooks", "Kelly", "Sanders", "Price", "Bennett", "Wood", "Barnes", "Ross",
+    "Henderson", "Coleman", "Jenkins", "Perry", "Powell", "Long", "Patterson", "Hughes",
+    "Flores", "Washington", "Butler", "Simmons", "Foster", "Gonzales", "Bryant", "Alexander",
+    "Russell", "Griffin", "Diaz", "Hayes", "Myers", "Ford", "Hamilton", "Graham",
+    "Sullivan", "Wallace", "Woods", "Cole", "West", "Jordan", "Owens", "Reynolds",
+    "Fisher", "Ellis", "Harrison", "Gibson", "McDonald", "Cruz", "Marshall", "Ortiz",
+    "Gomez", "Murray", "Freeman", "Wells", "Webb", "Simpson", "Stevens", "Tucker",
+    "Porter", "Hunter", "Hicks", "Crawford", "Henry", "Boyd", "Mason", "Morales",
+    "Kennedy", "Warren", "Dixon", "Ramos", "Reyes", "Burns", "Gordon", "Shaw",
+    "Holmes", "Rice", "Robertson", "Hunt", "Black", "Daniels", "Palmer", "Mills",
+    "Nichols", "Grant", "Knight", "Ferguson", "Rose", "Stone", "Hawkins", "Dunn",
+    "Perkins", "Hudson", "Spencer", "Gardner", "Stephens", "Payne", "Pierce", "Berry",
+    "Matthews", "Arnold", "Wagner", "Willis", "Ray", "Watkins", "Olson", "Carroll",
+    "Duncan", "Snyder", "Hart", "Cunningham", "Bradley", "Lane", "Andrews", "Ruiz",
+    "Harper", "Fox", "Riley", "Armstrong", "Carpenter", "Weaver", "Greene", "Lawrence",
+    "Elliott", "Chavez", "Sims", "Austin", "Peters", "Kelley", "Franklin", "Lawson"
+  ];
+  
+  const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+  const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+  
+  return `${firstName} ${lastName}`;
 };
 
 // Helper function to generate mock report content
