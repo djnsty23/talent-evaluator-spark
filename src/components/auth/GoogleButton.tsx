@@ -15,6 +15,7 @@ const GoogleButton = ({ onClick, isDisabled }: GoogleButtonProps) => {
       await onClick();
     } catch (error) {
       console.error('Error during Google sign-in button click:', error);
+      // Error is handled at the hook level with toast messages
     }
   };
 
@@ -22,13 +23,13 @@ const GoogleButton = ({ onClick, isDisabled }: GoogleButtonProps) => {
     <Button
       type="button"
       variant="outline"
-      className="w-full"
+      className="w-full flex items-center justify-center gap-2"
       onClick={handleClick}
       disabled={isDisabled}
       aria-label="Sign in with Google"
     >
-      <FcGoogle className="mr-2 h-5 w-5" />
-      Google
+      <FcGoogle className="h-5 w-5" />
+      <span>Continue with Google</span>
     </Button>
   );
 };

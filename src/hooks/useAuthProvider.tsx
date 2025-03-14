@@ -69,16 +69,16 @@ export const useAuthProvider = () => {
   const signInWithGoogle = async () => {
     try {
       console.log('Starting Google sign-in');
-      // Don't set isLoading to true here as it will block the redirect
       
-      // Get the current origin for proper redirect
+      // Get the absolute URL for dashboard to use as redirect
       const origin = window.location.origin;
-      console.log('Current origin for redirect:', origin);
+      const redirectUrl = `${origin}/dashboard`;
+      console.log('Redirect URL:', redirectUrl);
       
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${origin}/dashboard`,
+          redirectTo: redirectUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -92,7 +92,7 @@ export const useAuthProvider = () => {
         throw error;
       }
       
-      console.log('Google sign-in initiated successfully');
+      console.log('Google sign-in response:', data);
       // The navigation happens automatically via redirectTo
     } catch (error: any) {
       console.error('Google sign in error:', error);
