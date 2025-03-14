@@ -26,6 +26,7 @@ const Login = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (currentUser) {
+      console.log('User already logged in, redirecting to dashboard');
       navigate('/dashboard');
     }
   }, [currentUser, navigate]);
@@ -62,14 +63,13 @@ const Login = () => {
 
   const handleGoogleSignIn = async () => {
     setError('');
-    setIsSubmitting(true);
     
     try {
+      console.log('Initiating Google sign-in from Login page');
       await signInWithGoogle();
       // Navigation is handled automatically via redirectTo option
     } catch (err: any) {
       setError(err.message || 'Failed to sign in with Google. Please try again.');
-      setIsSubmitting(false);
     }
   };
 

@@ -29,12 +29,18 @@ export const useAuthProvider = () => {
       const formattedUser = formatUser(session);
       setCurrentUser(formattedUser);
       setIsLoading(false);
+      
+      // If user signs in, redirect to dashboard
+      if (_event === 'SIGNED_IN' && formattedUser) {
+        console.log('User signed in, redirecting to dashboard');
+        navigate('/dashboard');
+      }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   // Email/password sign in
   const signInWithEmail = async (email: string, password: string) => {
@@ -61,18 +67,24 @@ export const useAuthProvider = () => {
 
   // Google sign in
   const signInWithGoogle = async () => {
-    setIsLoading(true);
     try {
       console.log('Starting Google sign-in');
+      // Don't set isLoading to true here as it will block the redirect
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         },
       });
       
       if (error) {
         console.error('Google sign in error:', error);
+        toast.error(error.message || 'Failed to sign in with Google.');
         throw error;
       }
       
@@ -82,8 +94,6 @@ export const useAuthProvider = () => {
       console.error('Google sign in error:', error);
       toast.error(error.message || 'Failed to sign in with Google.');
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 

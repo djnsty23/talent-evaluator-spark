@@ -1,10 +1,11 @@
 
 import React from 'react';
 import { FiUser, FiMail, FiLock } from 'react-icons/fi';
-import { FcGoogle } from 'react-icons/fc';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { CardContent, CardFooter } from '@/components/ui/card';
+import InputField from './InputField';
+import GoogleButton from './GoogleButton';
+import AuthDivider from './AuthDivider';
 
 interface SignUpFormProps {
   onSignUp: (e: React.FormEvent) => Promise<void>;
@@ -34,48 +35,33 @@ const SignUpForm = ({
   return (
     <form onSubmit={onSignUp}>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="relative">
-            <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              type="text"
-              placeholder="Full Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="pl-10"
-              required
-            />
-          </div>
-        </div>
+        <InputField
+          icon={<FiUser />}
+          type="text"
+          placeholder="Full Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
         
-        <div className="space-y-2">
-          <div className="relative">
-            <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="pl-10"
-              required
-            />
-          </div>
-        </div>
+        <InputField
+          icon={<FiMail />}
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
         
-        <div className="space-y-2">
-          <div className="relative">
-            <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10"
-              required
-              minLength={6}
-            />
-          </div>
-        </div>
+        <InputField
+          icon={<FiLock />}
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={6}
+        />
         
         {error && (
           <div className="text-sm text-destructive">{error}</div>
@@ -91,21 +77,12 @@ const SignUpForm = ({
           {isSubmitting ? 'Creating Account...' : 'Create Account'}
         </Button>
         
-        <div className="relative w-full flex items-center justify-center">
-          <span className="bg-card px-2 text-xs text-muted-foreground z-10">or continue with</span>
-          <div className="absolute w-full h-px bg-border/70 top-1/2 -translate-y-1/2"></div>
-        </div>
+        <AuthDivider />
         
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
+        <GoogleButton
           onClick={onGoogleSignIn}
-          disabled={isSubmitting}
-        >
-          <FcGoogle className="mr-2 h-5 w-5" />
-          Google
-        </Button>
+          isDisabled={isSubmitting}
+        />
       </CardFooter>
     </form>
   );
