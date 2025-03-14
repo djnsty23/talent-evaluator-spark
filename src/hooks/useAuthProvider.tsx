@@ -65,66 +65,37 @@ export const useAuthProvider = () => {
     }
   };
 
-  // Google sign in
+  // Google sign in - simplified approach
   const signInWithGoogle = async () => {
     try {
-      console.log('Starting Google sign-in');
+      console.log('Starting Google sign-in with simplified approach');
       
-      // Show a user-friendly message about potential issues
-      toast.info('Redirecting to Google for authentication. If you see errors, check browser settings for third-party cookies.');
+      // Show a user-friendly message
+      toast.info('Redirecting to Google for authentication...');
       
-      // Get base URL and print it for debugging
-      const origin = window.location.origin;
-      console.log('Current origin:', origin);
-      
-      // Setup redirect URL - must match what's configured in Google Console
-      const redirectUrl = `${origin}/dashboard`;
-      console.log('Using redirect URL:', redirectUrl);
-      
-      // Log the complete auth configuration attempt for debugging
-      console.log('Auth configuration:', {
-        provider: 'google',
-        redirectTo: redirectUrl,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        }
-      });
-      
-      // Handle potential browser issues
-      if (navigator.cookieEnabled === false) {
-        console.error('Cookies are disabled in this browser');
-        toast.error('Cookies must be enabled for Google Sign-In to work');
-        return;
-      }
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      // Use the simple approach without custom redirect
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
           }
-        },
+        }
       });
       
       if (error) {
-        console.error('Google sign in error from Supabase:', error);
-        toast.error(error.message || 'Failed to sign in with Google.');
         throw error;
       }
       
-      console.log('Google sign-in response:', data);
-      // The navigation happens automatically via redirectTo
+      // Navigation is handled automatically by Supabase
+      console.log('Google sign-in initiated successfully');
     } catch (error: any) {
       console.error('Google sign in error:', error);
       
-      // Provide more specific error messages based on common issues
+      // Clear error messages
       if (error.message?.includes('refused to connect')) {
-        toast.error('Connection to Google authentication servers failed. Please check your browser settings and ensure third-party cookies are enabled.');
-      } else if (error.message?.includes('redirect_uri_mismatch')) {
-        toast.error('OAuth configuration error: Redirect URI mismatch. Check your Google Cloud Console settings.');
+        toast.error('Connection to Google authentication failed. Please try again or check your browser cookies and extensions.');
       } else {
         toast.error(error.message || 'Failed to sign in with Google.');
       }
@@ -144,7 +115,6 @@ export const useAuthProvider = () => {
           data: {
             full_name: name,
           },
-          emailRedirectTo: `${window.location.origin}/dashboard`,
         },
       });
       
