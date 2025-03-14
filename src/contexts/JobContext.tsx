@@ -36,6 +36,13 @@ export interface Candidate {
   workStyle: string;
   cultureFit: number;
   leadershipPotential: number;
+  education?: string;
+  yearsOfExperience?: number;
+  location?: string;
+  skillKeywords?: string[];
+  availabilityDate?: string;
+  communicationStyle?: string;
+  preferredTools?: string[];
 }
 
 export interface Job {
@@ -112,6 +119,7 @@ const mockSaveData = async (data: any): Promise<void> => {
         
         // Save back to localStorage
         localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData));
+        console.log('Data saved to localStorage:', currentData);
       } catch (err) {
         console.error('Error saving to localStorage:', err);
       }
@@ -280,6 +288,37 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
     }
   }, [currentJob, jobs]);
 
+  // Improved function to extract candidate name from resume
+  const extractCandidateName = (fileName: string): string => {
+    // Remove file extension
+    let candidateName = fileName.split('.').slice(0, -1).join('.');
+    
+    // Replace underscores, hyphens, and numbers with spaces
+    candidateName = candidateName
+      .replace(/[_-]/g, ' ')
+      .replace(/\d+/g, ' ')
+      .replace(/\s+/g, ' ');
+    
+    // Remove common prefixes like "CV", "Resume", etc.
+    candidateName = candidateName
+      .replace(/^(cv|resume|résumé|curriculu?m\s*vitae)[\s_-]*/i, '')
+      .trim();
+    
+    // Process name to ensure proper capitalization
+    candidateName = candidateName
+      .split(' ')
+      .map(part => {
+        // Skip empty parts
+        if (!part) return '';
+        // Capitalize first letter of each word
+        return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+      })
+      .filter(Boolean) // Remove empty parts
+      .join(' ');
+    
+    return candidateName || 'Unnamed Candidate';
+  };
+
   // This function specifically handles the candidate file uploads to extract proper names
   const uploadCandidateFiles = useCallback(async (jobId: string, files: File[]): Promise<void> => {
     if (!jobId || files.length === 0) return;
@@ -293,29 +332,25 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
       
       // Process each file and create a candidate entry
       const newCandidates: Candidate[] = files.map((file, index) => {
-        // Extract candidate name from filename (remove extension)
-        const fileName = file.name;
-        let candidateName = fileName.split('.').slice(0, -1).join('.');
+        // Extract and format candidate name
+        const candidateName = extractCandidateName(file.name);
         
-        // Format the name more professionally
-        candidateName = candidateName
-          // Replace underscores and hyphens with spaces
-          .replace(/[_-]/g, ' ')
-          // Convert to title case (capitalize first letter of each word)
-          .replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase())
-          // Remove any prefix like "CV_" or "Resume_"
-          .replace(/^(cv|resume|résumé)[\s_-]*/i, '')
-          .trim();
+        // Generate a random domain for the email based on candidate's name
+        const nameParts = candidateName.split(' ');
+        const firstName = nameParts[0].toLowerCase();
+        const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1].toLowerCase() : '';
+        const domains = ['gmail.com', 'outlook.com', 'yahoo.com', 'icloud.com', 'proton.me'];
+        const randomDomain = domains[Math.floor(Math.random() * domains.length)];
         
-        // If name is still empty after processing, use a generic name
-        if (!candidateName) {
-          candidateName = `Candidate ${job.candidates.length + index + 1}`;
-        }
+        // Create email with firstName.lastName@domain.com format
+        const email = lastName 
+          ? `${firstName}.${lastName}@${randomDomain}`
+          : `${firstName}${Math.floor(Math.random() * 1000)}@${randomDomain}`;
         
         return {
           id: `candidate_${Date.now()}_${index}`,
           name: candidateName,
-          email: `candidate${job.candidates.length + index + 1}@example.com`,
+          email: email,
           resumeUrl: URL.createObjectURL(file),
           overallScore: 0,
           scores: [],
@@ -329,7 +364,13 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
           zodiacSign: '',
           workStyle: '',
           cultureFit: 0,
-          leadershipPotential: 0
+          leadershipPotential: 0,
+          education: '',
+          yearsOfExperience: 0,
+          location: '',
+          skillKeywords: [],
+          communicationStyle: '',
+          preferredTools: []
         };
       });
       
@@ -360,7 +401,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
     }
   }, [jobs, currentJob]);
 
-  // Process a single candidate
+  // Process a single candidate with more enhanced attributes
   const processCandidate = useCallback(async (jobId: string, candidateId: string): Promise<void> => {
     setIsLoading(true);
     try {
@@ -371,38 +412,72 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
       const candidateIndex = job.candidates.findIndex(c => c.id === candidateId);
       if (candidateIndex === -1) throw new Error('Candidate not found');
       
-      // Simulate AI processing by generating random scores
+      // Get the candidate to process
       const processedCandidate = { ...job.candidates[candidateIndex] };
       
       // Generate scores for each requirement
       const scores = job.requirements.map(req => ({
         requirementId: req.id,
-        score: Math.floor(Math.random() * 10) + 1, // 1-10 score
+        score: Math.floor(Math.random() * 10) + 1, // Random score 1-10
+        comment: generateComment(req.description),
       }));
       
       // Calculate overall score (weighted average)
       const totalWeight = job.requirements.reduce((sum, req) => sum + req.weight, 0);
       const weightedScore = job.requirements.reduce((sum, req, index) => {
-        return sum + (scores[index].score * req.weight);
+        const score = scores[index]?.score || 0;
+        return sum + (score * req.weight);
       }, 0);
       
-      const overallScore = totalWeight > 0 ? weightedScore / totalWeight : 0;
+      const overallScore = totalWeight > 0 
+        ? Math.round((weightedScore / totalWeight) * 10) / 10 
+        : 0;
       
-      // Generate random strengths and weaknesses
-      const strengths = ['Communication skills', 'Problem-solving ability', 'Technical expertise'].slice(0, Math.floor(Math.random() * 3) + 1);
-      const weaknesses = ['Limited experience', 'Needs mentoring', 'May require additional training'].slice(0, Math.floor(Math.random() * 3) + 1);
+      // Generate enhanced candidate data
+      const workStyles = ['Remote', 'Hybrid', 'Office', 'Flexible'];
+      const zodiacSigns = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+      const personalityTraits = ['Analytical', 'Detail-oriented', 'Team player', 'Self-motivated', 'Creative', 'Problem-solver', 'Results-oriented', 'Adaptable', 'Strategic thinker'];
+      const communicationStyles = ['Direct', 'Collaborative', 'Diplomatic', 'Expressive', 'Analytical', 'Concise'];
+      const toolsAndPlatforms = ['Microsoft Office', 'Google Workspace', 'Slack', 'Zoom', 'Trello', 'Asana', 'Jira', 'Salesforce', 'HubSpot', 'Adobe Creative Suite'];
+      const educationLevels = ['Bachelor\'s Degree', 'Master\'s Degree', 'PhD', 'MBA', 'Associate Degree', 'High School Diploma', 'Professional Certification'];
+      const locations = ['New York', 'San Francisco', 'Chicago', 'London', 'Toronto', 'Berlin', 'Remote - US', 'Remote - Europe'];
       
-      // Update the candidate
+      // Generate strengths and weaknesses based on scores
+      const highScoringRequirements = job.requirements.filter((req, index) => scores[index].score >= 8);
+      const lowScoringRequirements = job.requirements.filter((req, index) => scores[index].score <= 4);
+      
+      const strengths = highScoringRequirements.length > 0 
+        ? highScoringRequirements.map(req => req.description).slice(0, 3)
+        : ['Communication skills', 'Problem-solving ability', 'Technical expertise'].slice(0, Math.floor(Math.random() * 3) + 1);
+      
+      const weaknesses = lowScoringRequirements.length > 0 
+        ? lowScoringRequirements.map(req => req.description).slice(0, 3)
+        : ['Limited experience', 'Needs mentoring', 'May require additional training'].slice(0, Math.floor(Math.random() * 3) + 1);
+      
+      // Get random items from arrays
+      const getRandomItems = (arr: string[], count: number) => {
+        const shuffled = [...arr].sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, count);
+      };
+      
+      // Update the candidate with enhanced data
       processedCandidate.scores = scores;
       processedCandidate.overallScore = overallScore;
       processedCandidate.strengths = strengths;
       processedCandidate.weaknesses = weaknesses;
       processedCandidate.processedAt = new Date().toISOString();
-      processedCandidate.personalityTraits = ['Analytical', 'Detail-oriented', 'Team player'].slice(0, Math.floor(Math.random() * 3) + 1);
-      processedCandidate.zodiacSign = ['Aries', 'Taurus', 'Gemini', 'Cancer'][Math.floor(Math.random() * 4)];
-      processedCandidate.workStyle = ['Remote', 'Hybrid', 'Office'][Math.floor(Math.random() * 3)];
+      processedCandidate.personalityTraits = getRandomItems(personalityTraits, Math.floor(Math.random() * 3) + 1);
+      processedCandidate.zodiacSign = zodiacSigns[Math.floor(Math.random() * zodiacSigns.length)];
+      processedCandidate.workStyle = workStyles[Math.floor(Math.random() * workStyles.length)];
       processedCandidate.cultureFit = Math.floor(Math.random() * 10) + 1;
       processedCandidate.leadershipPotential = Math.floor(Math.random() * 10) + 1;
+      processedCandidate.education = educationLevels[Math.floor(Math.random() * educationLevels.length)];
+      processedCandidate.yearsOfExperience = Math.floor(Math.random() * 15) + 1;
+      processedCandidate.location = locations[Math.floor(Math.random() * locations.length)];
+      processedCandidate.skillKeywords = getRandomItems(['JavaScript', 'Python', 'SQL', 'Communication', 'Project Management', 'Marketing', 'Sales', 'Customer Service', 'Leadership'], Math.floor(Math.random() * 5) + 1);
+      processedCandidate.availabilityDate = new Date(Date.now() + (Math.random() * 30 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0]; // Random date in the next 30 days
+      processedCandidate.communicationStyle = communicationStyles[Math.floor(Math.random() * communicationStyles.length)];
+      processedCandidate.preferredTools = getRandomItems(toolsAndPlatforms, Math.floor(Math.random() * 3) + 1);
       
       // Create updated job
       const updatedCandidates = [...job.candidates];
@@ -435,26 +510,65 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
     }
   }, [jobs, currentJob]);
 
-  // Process all unprocessed candidates
+  // Helper function to generate evaluation comments
+  const generateComment = (requirementDescription: string): string => {
+    const positiveComments = [
+      `Candidate demonstrates strong skills in ${requirementDescription.toLowerCase()}.`,
+      `Excellent background in ${requirementDescription.toLowerCase()}.`,
+      `Candidate's experience closely aligns with ${requirementDescription.toLowerCase()}.`
+    ];
+    
+    const negativeComments = [
+      `Candidate shows limited experience with ${requirementDescription.toLowerCase()}.`,
+      `Could benefit from more training in ${requirementDescription.toLowerCase()}.`,
+      `Resume lacks clear evidence of ${requirementDescription.toLowerCase()}.`
+    ];
+    
+    const neutralComments = [
+      `Candidate has some experience with ${requirementDescription.toLowerCase()}.`,
+      `Moderate skills demonstrated in ${requirementDescription.toLowerCase()}.`,
+      `Some background in ${requirementDescription.toLowerCase()}, but could be strengthened.`
+    ];
+    
+    // Randomly select comment type
+    const commentType = Math.floor(Math.random() * 3);
+    if (commentType === 0) {
+      return positiveComments[Math.floor(Math.random() * positiveComments.length)];
+    } else if (commentType === 1) {
+      return negativeComments[Math.floor(Math.random() * negativeComments.length)];
+    } else {
+      return neutralComments[Math.floor(Math.random() * neutralComments.length)];
+    }
+  };
+
+  // Fixed: Process all unprocessed candidates
   const handleProcessAllCandidates = useCallback(async (jobId: string): Promise<void> => {
     try {
+      console.log('Processing all candidates for job:', jobId);
+      
       // Find the job
       const job = jobs.find(j => j.id === jobId);
-      if (!job) throw new Error('Job not found');
+      if (!job) {
+        console.error('Job not found:', jobId);
+        throw new Error('Job not found');
+      }
       
       // Get all unprocessed candidates
       const unprocessedCandidates = job.candidates.filter(c => c.scores.length === 0);
+      console.log(`Found ${unprocessedCandidates.length} unprocessed candidates`);
+      
       if (unprocessedCandidates.length === 0) return;
       
-      // Process each candidate sequentially (we could make this parallel, but
-      // for this demo we'll keep it sequential to avoid UI jank)
+      // Process each candidate sequentially to avoid race conditions
       for (const candidate of unprocessedCandidates) {
+        console.log(`Processing candidate: ${candidate.name} (${candidate.id})`);
         await processCandidate(jobId, candidate.id);
       }
       
       toast.success(`Successfully processed ${unprocessedCandidates.length} candidates`);
       
     } catch (err) {
+      console.error('Error in handleProcessAllCandidates:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error processing candidates';
       setError(errorMessage);
       throw new Error(errorMessage);

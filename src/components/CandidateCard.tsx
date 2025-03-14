@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Star, FileText, ExternalLink, Zap, Users, Award, Trophy, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';

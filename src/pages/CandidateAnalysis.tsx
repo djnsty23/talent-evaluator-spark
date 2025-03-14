@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
@@ -6,7 +7,8 @@ import {
   ArrowLeft, 
   FileText, 
   CheckCircle2, 
-  Loader2 
+  Loader2,
+  Upload
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Job, Candidate } from '@/contexts/JobContext';
@@ -190,16 +192,30 @@ const CandidateAnalysis = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Button 
-        variant="ghost" 
-        asChild 
-        className="mb-6"
-      >
-        <Link to={`/jobs/${jobId}`} className="flex items-center gap-2">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Job Details
-        </Link>
-      </Button>
+      {/* If viewing a single candidate, show a back button to return to all candidates */}
+      {candidateId ? (
+        <Button 
+          variant="ghost" 
+          asChild 
+          className="mb-6"
+        >
+          <Link to={`/jobs/${jobId}/analysis`} className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to All Candidates
+          </Link>
+        </Button>
+      ) : (
+        <Button 
+          variant="ghost" 
+          asChild 
+          className="mb-6"
+        >
+          <Link to={`/jobs/${jobId}`} className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Job Details
+          </Link>
+        </Button>
+      )}
       
       <div className="flex flex-col md:flex-row justify-between md:items-center mb-8">
         <div>
@@ -212,18 +228,6 @@ const CandidateAnalysis = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-2 mt-4 md:mt-0">
-          {unprocessedCount > 0 && !isProcessingAll && (
-            <Button 
-              onClick={handleProcessAllCandidatesClick}
-              disabled={isProcessingAll || processingCandidateIds.length > 0}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <CheckCircle2 className="h-4 w-4" />
-              Process All ({unprocessedCount})
-            </Button>
-          )}
-          
           <ProcessingStatus 
             isProcessingAll={isProcessingAll}
             processingProgress={processingProgress}
@@ -272,6 +276,31 @@ const CandidateAnalysis = () => {
             onProcess={handleProcessCandidate}
             onDelete={handleDeleteCandidate}
           />
+          
+          {/* Bottom actions section with Upload More and Process All buttons */}
+          {!candidateId && (
+            <div className="flex flex-col sm:flex-row items-center justify-between mt-8 border-t pt-6 gap-4">
+              <Button
+                onClick={() => navigate(`/jobs/${jobId}/upload`)}
+                variant="outline"
+                className="w-full sm:w-auto"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload More Candidates
+              </Button>
+              
+              {unprocessedCount > 0 && !isProcessingAll && (
+                <Button 
+                  onClick={handleProcessAllCandidatesClick}
+                  disabled={isProcessingAll || processingCandidateIds.length > 0}
+                  className="w-full sm:w-auto"
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Process All Unprocessed ({unprocessedCount})
+                </Button>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>
