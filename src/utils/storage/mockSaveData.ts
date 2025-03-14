@@ -37,6 +37,11 @@ export const mockSaveData = async (data: any): Promise<void> => {
  * Save job data to Supabase
  */
 const saveJobData = async (data: any): Promise<void> => {
+  // Check if userId exists and if it's in UUID format  
+  const userId = data.userId && data.userId !== 'user_1' 
+    ? data.userId 
+    : null; // Use null if userId is not a valid UUID
+
   const { error } = await supabase
     .from('jobs')
     .upsert({ 
@@ -46,7 +51,7 @@ const saveJobData = async (data: any): Promise<void> => {
       description: data.description,
       location: data.location,
       department: data.department,
-      user_id: data.userId || 'user_1' // Ensure we have a user_id
+      user_id: userId // Use null instead of 'user_1'
     });
   
   if (error) {

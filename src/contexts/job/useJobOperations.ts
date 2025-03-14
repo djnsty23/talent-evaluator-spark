@@ -28,7 +28,7 @@ export function useJobOperations() {
         requirements: jobData.requirements || [],
         candidates: [],
         contextFiles: jobData.contextFiles || [],
-        userId: 'user_1',
+        userId: 'user_1', // This will be replaced with the actual user ID if available
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

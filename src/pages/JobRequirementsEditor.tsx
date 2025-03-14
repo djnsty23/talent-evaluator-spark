@@ -90,6 +90,16 @@ const JobRequirementsEditor = () => {
     }
   };
   
+  const handleRemoveContextFile = (index: number) => {
+    const newFiles = [...contextFiles];
+    newFiles.splice(index, 1);
+    setContextFiles(newFiles);
+    
+    const newExtractedContexts = [...extractedContexts];
+    newExtractedContexts.splice(index, 1);
+    setExtractedContexts(newExtractedContexts);
+  };
+  
   const handleGenerateRequirements = async () => {
     if (!window.openAIKey) {
       toast.error('Please set your OpenAI API key first');
@@ -229,25 +239,14 @@ const JobRequirementsEditor = () => {
                 onFilesSelected={handleContextFilesSelected}
                 accept=".pdf,.doc,.docx,.txt,.csv,.xlsx"
                 multiple={true}
+                selectedFiles={contextFiles}
+                onFileRemove={handleRemoveContextFile}
               />
               
               {isExtractingContext && (
                 <div className="flex items-center justify-center p-4">
                   <Loader2 className="h-6 w-6 animate-spin mr-2" />
                   <span>Extracting content from files...</span>
-                </div>
-              )}
-              
-              {contextFiles.length > 0 && (
-                <div className="border rounded-md p-4">
-                  <h4 className="font-medium mb-2">Selected Files ({contextFiles.length})</h4>
-                  <ul className="space-y-1">
-                    {contextFiles.map((file, index) => (
-                      <li key={index} className="text-sm">
-                        {file.name}
-                      </li>
-                    ))}
-                  </ul>
                 </div>
               )}
             </div>

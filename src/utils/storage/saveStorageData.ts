@@ -30,6 +30,11 @@ export const saveStorageData = async (data: { jobs?: Job[], reports?: Report[] }
  */
 const saveJobs = async (jobs: Job[]): Promise<void> => {
   for (const job of jobs) {
+    // Check if userId exists and if it's in UUID format
+    const userId = job.userId && job.userId !== 'user_1' 
+      ? job.userId 
+      : null; // Use null if userId is not a valid UUID
+    
     const { error } = await supabase
       .from('jobs')
       .upsert({ 
@@ -40,7 +45,7 @@ const saveJobs = async (jobs: Job[]): Promise<void> => {
         location: job.location,
         department: job.department,
         salary: job.salary, // Supabase can handle string to jsonb conversion
-        user_id: job.userId // Map from our app's userId to the DB's user_id
+        user_id: userId // Use null if userId is not a valid UUID
       });
     
     if (error) {
