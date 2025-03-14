@@ -23,6 +23,7 @@ interface CandidateCardProps {
   isProcessing?: boolean;
   isTopScorer?: { [requirementId: string]: boolean };
   allCandidatesData?: Candidate[];
+  jobId?: string;
 }
 
 const CandidateCard = ({
@@ -35,6 +36,7 @@ const CandidateCard = ({
   isProcessing = false,
   isTopScorer = {},
   allCandidatesData = [],
+  jobId,
 }: CandidateCardProps) => {
   const [topScorers, setTopScorers] = useState<{ [requirementId: string]: boolean }>({});
   const isProcessed = candidate.scores.length > 0;
@@ -116,6 +118,7 @@ const CandidateCard = ({
         isProcessing={isProcessing}
         onProcess={onProcess}
         onViewDetails={onViewDetails}
+        jobId={jobId}
       />
     </Card>
   );
