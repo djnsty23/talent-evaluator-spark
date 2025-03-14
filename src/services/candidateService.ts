@@ -1,28 +1,16 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { Candidate, JobRequirement } from '@/types/job.types';
-import { extractCandidateName, generateComment, getRandomItems, generateRealisticName } from '@/utils/candidateUtils';
 
 export const createCandidateFromFile = (file: File, jobId: string, index: number): Candidate => {
-  // Use the more realistic name generator instead of extracting from filename
-  const candidateName = generateRealisticName();
-  
-  // Generate a random domain for the email based on candidate's name
-  const nameParts = candidateName.split(' ');
-  const firstName = nameParts[0].toLowerCase();
-  const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1].toLowerCase() : '';
-  const domains = ['gmail.com', 'outlook.com', 'yahoo.com', 'icloud.com', 'proton.me'];
-  const randomDomain = domains[Math.floor(Math.random() * domains.length)];
-  
-  // Create email with firstName.lastName@domain.com format
-  const email = lastName 
-    ? `${firstName}.${lastName}@${randomDomain}`
-    : `${firstName}${Math.floor(Math.random() * 1000)}@${randomDomain}`;
+  // Extract candidate name from filename, removing extension
+  const fileName = file.name;
+  const candidateName = fileName.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
   
   return {
     id: `candidate_${Date.now()}_${index}`,
     name: candidateName,
-    email: email,
+    email: `${candidateName.toLowerCase().replace(/\s/g, '.')}@example.com`,
     resumeUrl: URL.createObjectURL(file),
     overallScore: 0,
     scores: [],
@@ -32,6 +20,7 @@ export const createCandidateFromFile = (file: File, jobId: string, index: number
     status: 'pending',
     jobId: jobId,
     processedAt: new Date().toISOString(),
+    // Initialize with empty values, will be filled during real processing
     personalityTraits: [],
     zodiacSign: '',
     workStyle: '',
@@ -47,88 +36,32 @@ export const createCandidateFromFile = (file: File, jobId: string, index: number
 };
 
 export const processCandidate = (candidate: Candidate, requirements: JobRequirement[]): Candidate => {
-  // Get the candidate to process
+  // In a production environment, this would call an AI service to analyze the resume
+  // For now, we'll just ensure it returns a properly structured object
+  
   const processedCandidate = { ...candidate };
   
-  // Generate scores for each requirement
+  // Initialize with empty scores that will be filled by the AI service
   const scores = requirements.map(req => {
-    // More realistic scoring based on requirement category
-    let baseScore = Math.floor(Math.random() * 6) + 3; // Base score between 3-8
-    
-    // Modify score for key skills that might be in the requirements
-    if (req.description.toLowerCase().includes("customer success") || 
-        req.description.toLowerCase().includes("saas") || 
-        req.description.toLowerCase().includes("communication") ||
-        req.description.toLowerCase().includes("problem-solving") ||
-        req.description.toLowerCase().includes("english")) {
-      // Increase chance of higher scores for these important skills
-      baseScore = Math.min(baseScore + Math.floor(Math.random() * 3), 10);
-    }
-    
     return {
       requirementId: req.id,
-      score: baseScore,
-      comment: generateComment(req.description),
+      score: 0,
+      comment: '',
     };
   });
   
-  // Calculate overall score (weighted average)
-  const totalWeight = requirements.reduce((sum, req) => sum + req.weight, 0);
-  const weightedScore = requirements.reduce((sum, req, index) => {
-    const score = scores[index]?.score || 0;
-    return sum + (score * req.weight);
-  }, 0);
-  
-  const overallScore = totalWeight > 0 
-    ? Math.round((weightedScore / totalWeight) * 10) / 10 
-    : 0;
-  
-  // Generate enhanced candidate data
-  const workStyles = ['Remote', 'Hybrid', 'Office', 'Flexible'];
-  const zodiacSigns = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
-  const personalityTraits = ['Analytical', 'Detail-oriented', 'Team player', 'Self-motivated', 'Creative', 'Problem-solver', 'Results-oriented', 'Adaptable', 'Strategic thinker'];
-  const communicationStyles = ['Direct', 'Collaborative', 'Diplomatic', 'Expressive', 'Analytical', 'Concise'];
-  const toolsAndPlatforms = ['Microsoft Office', 'Google Workspace', 'Slack', 'Zoom', 'Trello', 'Asana', 'Jira', 'Salesforce', 'HubSpot', 'Adobe Creative Suite'];
-  const educationLevels = ['Bachelor\'s Degree', 'Master\'s Degree', 'PhD', 'MBA', 'Associate Degree', 'High School Diploma', 'Professional Certification'];
-  const locations = ['New York', 'San Francisco', 'Chicago', 'London', 'Toronto', 'Berlin', 'Remote - US', 'Remote - Europe'];
-  
-  // Generate strengths and weaknesses based on scores
-  const highScoringRequirements = requirements.filter((req, index) => scores[index].score >= 8);
-  const lowScoringRequirements = requirements.filter((req, index) => scores[index].score <= 4);
-  
-  const strengths = highScoringRequirements.length > 0 
-    ? highScoringRequirements.map(req => req.description).slice(0, 3)
-    : ['Communication skills', 'Problem-solving ability', 'Technical expertise'].slice(0, Math.floor(Math.random() * 3) + 1);
-  
-  const weaknesses = lowScoringRequirements.length > 0 
-    ? lowScoringRequirements.map(req => req.description).slice(0, 3)
-    : ['Limited experience', 'Needs mentoring', 'May require additional training'].slice(0, Math.floor(Math.random() * 3) + 1);
-  
-  // Update the candidate with enhanced data
   processedCandidate.scores = scores;
-  processedCandidate.overallScore = overallScore;
-  processedCandidate.strengths = strengths;
-  processedCandidate.weaknesses = weaknesses;
-  processedCandidate.status = 'processed'; // Ensure status is updated to processed
+  processedCandidate.overallScore = 0;
+  processedCandidate.strengths = [];
+  processedCandidate.weaknesses = [];
+  processedCandidate.status = 'processed';
   processedCandidate.processedAt = new Date().toISOString();
-  processedCandidate.personalityTraits = getRandomItems(personalityTraits, Math.floor(Math.random() * 3) + 1);
-  processedCandidate.zodiacSign = zodiacSigns[Math.floor(Math.random() * zodiacSigns.length)];
-  processedCandidate.workStyle = workStyles[Math.floor(Math.random() * workStyles.length)];
-  processedCandidate.cultureFit = Math.floor(Math.random() * 10) + 1;
-  processedCandidate.leadershipPotential = Math.floor(Math.random() * 10) + 1;
-  processedCandidate.education = educationLevels[Math.floor(Math.random() * educationLevels.length)];
-  processedCandidate.yearsOfExperience = Math.floor(Math.random() * 15) + 1;
-  processedCandidate.location = locations[Math.floor(Math.random() * locations.length)];
-  processedCandidate.skillKeywords = getRandomItems(['Customer Success', 'SaaS', 'A/B Testing', 'Problem-Solving', 'Analytics', 'CRM', 'HubSpot', 'Communication', 'Project Management', 'Marketing', 'Sales'], Math.floor(Math.random() * 5) + 1);
-  processedCandidate.availabilityDate = new Date(Date.now() + (Math.random() * 30 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0]; // Random date in the next 30 days
-  processedCandidate.communicationStyle = communicationStyles[Math.floor(Math.random() * communicationStyles.length)];
-  processedCandidate.preferredTools = getRandomItems(toolsAndPlatforms, Math.floor(Math.random() * 3) + 1);
   
   return processedCandidate;
 };
 
-// Default requirements focused on Customer Success
-export const getDefaultCustomerSuccessRequirements = (): Partial<JobRequirement>[] => {
+// Default requirements for a Customer Success role
+export const getDefaultCustomerSuccessRequirements = (): JobRequirement[] => {
   return [
     {
       id: uuidv4(),
