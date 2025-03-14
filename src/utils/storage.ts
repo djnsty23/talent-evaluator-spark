@@ -8,6 +8,9 @@ interface StorageData {
   reports: Report[];
 }
 
+/**
+ * Get data from localStorage with error handling to prevent app crashes
+ */
 export const getStorageData = (): StorageData => {
   try {
     const savedData = localStorage.getItem(STORAGE_KEY);
@@ -15,26 +18,41 @@ export const getStorageData = (): StorageData => {
       const parsedData = JSON.parse(savedData);
       console.log('Loading data from localStorage:', parsedData);
       return {
-        jobs: parsedData.jobs || [],
-        reports: parsedData.reports || []
+        jobs: Array.isArray(parsedData.jobs) ? parsedData.jobs : [],
+        reports: Array.isArray(parsedData.reports) ? parsedData.reports : []
       };
     }
   } catch (err) {
     console.error('Error loading data from localStorage:', err);
+    // Return empty data rather than crashing
   }
   
   return { jobs: [], reports: [] };
 };
 
+/**
+ * Save data to localStorage with error handling
+ */
 export const saveStorageData = (data: StorageData): void => {
   try {
-    console.log('Saving data to localStorage:', data);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    // Validate data before saving to prevent corruption
+    const safeData = {
+      jobs: Array.isArray(data.jobs) ? data.jobs : [],
+      reports: Array.isArray(data.reports) ? data.reports : []
+    };
+    
+    console.log('Saving data to localStorage:', safeData);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(safeData));
   } catch (err) {
     console.error('Error saving data to localStorage:', err);
+    // Alert user but don't crash the app
+    toast.error('Failed to save data. Your changes may not persist if you reload the page.');
   }
 };
 
+/**
+ * Mock function to simulate saving data to a backend with optimistic updates
+ */
 export const mockSaveData = async (data: any): Promise<void> => {
   return new Promise((resolve) => {
     setTimeout(() => {

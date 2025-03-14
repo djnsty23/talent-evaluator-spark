@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,51 +20,52 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Extract tab parameter from URL
+  // Extract tab parameter from URL once on initial render
   const searchParams = new URLSearchParams(location.search);
   const signupParam = searchParams.get('signup');
   const defaultTab = signupParam === 'true' ? 'signup' : 'signin';
 
-  // Handle hash fragments from OAuth redirects
-  useEffect(() => {
-    const handleHashFragment = async () => {
-      // Check if we have an access_token in the URL hash (OAuth redirect)
-      if (location.hash && location.hash.includes('access_token=')) {
-        console.log('Login page detected access_token in URL hash, processing OAuth response');
-        setIsSubmitting(true);
+  // Memoized function to handle OAuth redirects
+  const handleHashFragment = useCallback(async () => {
+    // Check if we have an access_token in the URL hash (OAuth redirect)
+    if (location.hash && location.hash.includes('access_token=')) {
+      console.log('Login page detected access_token in URL hash, processing OAuth response');
+      setIsSubmitting(true);
+      
+      try {
+        // Let Supabase process the hash fragment
+        const { data, error } = await supabase.auth.getSession();
         
-        try {
-          // Let Supabase process the hash fragment
-          const { data, error } = await supabase.auth.getSession();
-          
-          if (error) {
-            console.error('Error processing OAuth response:', error);
-            throw error;
-          }
-          
-          console.log('Successfully processed OAuth session:', data.session ? 'Valid session' : 'No session');
-          
-          // Clear the hash fragment from the URL
-          window.history.replaceState(null, document.title, window.location.pathname);
-          
-          if (data.session) {
-            toast.success('Successfully signed in!');
-            navigate('/dashboard');
-          }
-        } catch (err: any) {
-          console.error('OAuth callback processing error:', err);
-          setError(err.message || 'Failed to complete authentication');
-          toast.error('Authentication failed. Please try again.');
-        } finally {
-          setIsSubmitting(false);
+        if (error) {
+          console.error('Error processing OAuth response:', error);
+          throw error;
         }
+        
+        console.log('Successfully processed OAuth session:', data.session ? 'Valid session' : 'No session');
+        
+        // Clear the hash fragment from the URL without causing a page refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        if (data.session) {
+          toast.success('Successfully signed in!');
+          navigate('/dashboard');
+        }
+      } catch (err: any) {
+        console.error('OAuth callback processing error:', err);
+        setError(err.message || 'Failed to complete authentication');
+        toast.error('Authentication failed. Please try again.');
+      } finally {
+        setIsSubmitting(false);
       }
-    };
-    
-    handleHashFragment();
+    }
   }, [location.hash, navigate]);
 
-  // Redirect if already logged in
+  // Process hash fragment only when it changes
+  useEffect(() => {
+    handleHashFragment();
+  }, [handleHashFragment]);
+
+  // Redirect if already logged in - only run this check once on mount and when currentUser changes
   useEffect(() => {
     if (currentUser) {
       console.log('User already logged in, redirecting to dashboard');
@@ -72,7 +73,8 @@ const Login = () => {
     }
   }, [currentUser, navigate]);
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
+  // Memoized form submission handlers to prevent recreating on every render
+  const handleEmailSignIn = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
@@ -85,9 +87,9 @@ const Login = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [email, password, signInWithEmail]);
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleSignUp = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
@@ -100,9 +102,9 @@ const Login = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [email, password, name, signUp]);
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = useCallback(async () => {
     setError('');
     
     try {
@@ -114,7 +116,7 @@ const Login = () => {
       setError(err.message || 'Failed to sign in with Google. Please try again.');
       setIsSubmitting(false);
     }
-  };
+  }, [signInWithGoogle]);
 
   return (
     <LoginLayout>

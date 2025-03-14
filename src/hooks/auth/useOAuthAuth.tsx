@@ -1,13 +1,21 @@
 
+import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Hook to handle OAuth-based authentication (Google, etc.)
+ * Hook to handle OAuth-based authentication with improved stability
+ * to prevent random page refreshes
  */
 export const useOAuthAuth = () => {
-  // Google sign in with proper redirection handling
-  const signInWithGoogle = async () => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Memoized Google sign-in function
+  const signInWithGoogle = useCallback(async () => {
+    if (isLoading) return; // Prevent duplicate calls
+    
+    setIsLoading(true);
+    
     try {
       console.log('Starting Google sign-in process');
       
@@ -47,11 +55,14 @@ export const useOAuthAuth = () => {
         toast.error(error.message || 'Failed to sign in with Google.');
       }
       
+      setIsLoading(false);
       throw error;
     }
-  };
+    // We don't reset isLoading here because we're redirecting to Google
+  }, [isLoading]);
 
   return {
-    signInWithGoogle
+    signInWithGoogle,
+    isLoading
   };
 };
