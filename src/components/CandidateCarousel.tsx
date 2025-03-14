@@ -1,5 +1,5 @@
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Filter, ChevronLeft, ChevronRight, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -86,7 +86,7 @@ const CandidateCarousel = ({
         }}
         ref={carouselRef}
         onSelect={(api) => {
-          if (api) {
+          if (api && typeof api.selectedScrollSnap === 'function') {
             setActiveIndex(api.selectedScrollSnap());
           }
         }}
