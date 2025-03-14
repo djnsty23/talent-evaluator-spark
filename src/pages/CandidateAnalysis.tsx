@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
@@ -21,7 +20,7 @@ import CandidateCarousel from '@/components/CandidateCarousel';
 import EmptyCandidatesState from '@/components/EmptyCandidatesState';
 
 const CandidateAnalysis = () => {
-  const { jobId } = useParams<{ jobId: string }>();
+  const { jobId, candidateId } = useParams<{ jobId: string; candidateId?: string }>();
   const { jobs, isLoading, processCandidate, starCandidate, deleteCandidate } = useJob();
   const [job, setJob] = useState<Job | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,15 +38,26 @@ const CandidateAnalysis = () => {
       const foundJob = jobs.find(j => j.id === jobId);
       if (foundJob) {
         setJob(foundJob);
+        
+        // If we have a candidateId, filter to show only that candidate
+        if (candidateId) {
+          const candidate = foundJob.candidates.find(c => c.id === candidateId);
+          if (candidate) {
+            setFilteredCandidates([candidate]);
+          } else {
+            // Candidate not found, redirect to analysis page
+            navigate(`/jobs/${jobId}/analysis`);
+          }
+        }
       } else {
         // Job not found, redirect to dashboard
         navigate('/dashboard');
       }
     }
-  }, [jobId, jobs, navigate]);
+  }, [jobId, candidateId, jobs, navigate]);
 
   useEffect(() => {
-    if (job) {
+    if (job && !candidateId) {
       let candidates = [...job.candidates];
       
       // Apply filter
@@ -74,7 +84,7 @@ const CandidateAnalysis = () => {
       
       setFilteredCandidates(candidates);
     }
-  }, [job, searchQuery, filter]);
+  }, [job, searchQuery, filter, candidateId]);
 
   const handleProcessCandidate = async (candidateId: string) => {
     if (!jobId) return;
@@ -192,40 +202,44 @@ const CandidateAnalysis = () => {
       
       <div className="flex flex-col md:flex-row justify-between md:items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Candidate Analysis</h1>
+          <h1 className="text-3xl font-bold">
+            {candidateId ? 'Candidate Details' : 'Candidate Analysis'}
+          </h1>
           <p className="text-muted-foreground mt-1">
             {job.title} at {job.company}
           </p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-2 mt-4 md:mt-0">
-          {unprocessedCount > 0 && !isProcessingAll && (
+        {!candidateId && (
+          <div className="flex flex-col sm:flex-row gap-2 mt-4 md:mt-0">
+            {unprocessedCount > 0 && !isProcessingAll && (
+              <Button 
+                onClick={handleProcessAllCandidates}
+                disabled={isProcessingAll || processingCandidateIds.length > 0}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Process All ({unprocessedCount})
+              </Button>
+            )}
+            
+            <ProcessingStatus 
+              isProcessingAll={isProcessingAll}
+              processingProgress={processingProgress}
+              currentProcessing={currentProcessing}
+              totalToProcess={totalToProcess}
+            />
+            
             <Button 
-              onClick={handleProcessAllCandidates}
-              disabled={isProcessingAll || processingCandidateIds.length > 0}
-              variant="outline"
-              className="flex items-center gap-2"
+              onClick={() => navigate(`/jobs/${jobId}/report`)}
+              disabled={job.candidates.length === 0 || processedCount === 0}
             >
-              <CheckCircle2 className="h-4 w-4" />
-              Process All ({unprocessedCount})
+              <FileText className="h-4 w-4 mr-2" />
+              Generate Report
             </Button>
-          )}
-          
-          <ProcessingStatus 
-            isProcessingAll={isProcessingAll}
-            processingProgress={processingProgress}
-            currentProcessing={currentProcessing}
-            totalToProcess={totalToProcess}
-          />
-          
-          <Button 
-            onClick={() => navigate(`/jobs/${jobId}/report`)}
-            disabled={job.candidates.length === 0 || processedCount === 0}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Generate Report
-          </Button>
-        </div>
+          </div>
+        )}
       </div>
       
       {/* Requirements Summary */}
@@ -238,16 +252,18 @@ const CandidateAnalysis = () => {
         <EmptyCandidatesState jobId={jobId || ''} />
       ) : (
         <>
-          <CandidateFilter
-            totalCandidates={job.candidates.length}
-            processedCount={processedCount}
-            unprocessedCount={unprocessedCount}
-            starredCount={starredCount}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            filter={filter}
-            onFilterChange={setFilter}
-          />
+          {!candidateId && (
+            <CandidateFilter
+              totalCandidates={job.candidates.length}
+              processedCount={processedCount}
+              unprocessedCount={unprocessedCount}
+              starredCount={starredCount}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              filter={filter}
+              onFilterChange={setFilter}
+            />
+          )}
           
           <CandidateCarousel
             candidates={filteredCandidates}

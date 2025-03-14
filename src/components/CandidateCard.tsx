@@ -65,8 +65,8 @@ const CandidateCard = ({
   const isProcessed = candidate.scores.length > 0;
 
   return (
-    <Card className={`w-full overflow-hidden transition-all duration-300 ${expanded ? 'shadow-md' : 'shadow-sm'}`}>
-      <CardHeader className="p-4 pb-2">
+    <Card className={`w-full overflow-hidden transition-all duration-300 cursor-pointer hover:shadow-lg ${expanded ? 'shadow-md' : 'shadow-sm'}`}>
+      <CardHeader className="p-4 pb-2" onClick={toggleExpanded}>
         <div className="flex justify-between items-start">
           <div className="flex items-center space-x-2">
             <User className="h-5 w-5 text-gray-400" />
@@ -94,7 +94,10 @@ const CandidateCard = ({
                   ? 'text-yellow-500 hover:text-yellow-600 bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-950/30 dark:hover:bg-yellow-950/50' 
                   : 'text-gray-400 hover:text-yellow-500'
               }`}
-              onClick={handleStarClick}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStarClick();
+              }}
             >
               <Star className="h-5 w-5" fill={candidate.isStarred ? 'currentColor' : 'none'} />
             </Button>
@@ -102,7 +105,7 @@ const CandidateCard = ({
         </div>
       </CardHeader>
       
-      <CardContent className="p-4 pt-2">
+      <CardContent className="p-4 pt-2" onClick={toggleExpanded}>
         <div className="flex items-center text-sm text-muted-foreground mb-3">
           <FileText className="h-4 w-4 mr-1" />
           {isProcessed ? (
@@ -133,7 +136,7 @@ const CandidateCard = ({
                     <li className="text-gray-500 dark:text-gray-400">No notable strengths identified</li>
                   )}
                   {candidate.strengths.length > 2 && (
-                    <li className="text-xs text-blue-500 cursor-pointer" onClick={toggleExpanded}>
+                    <li className="text-xs text-blue-500 cursor-pointer">
                       +{candidate.strengths.length - 2} more...
                     </li>
                   )}
@@ -158,7 +161,7 @@ const CandidateCard = ({
                     <li className="text-gray-500 dark:text-gray-400">No notable weaknesses identified</li>
                   )}
                   {candidate.weaknesses.length > 2 && (
-                    <li className="text-xs text-blue-500 cursor-pointer" onClick={toggleExpanded}>
+                    <li className="text-xs text-blue-500 cursor-pointer">
                       +{candidate.weaknesses.length - 2} more...
                     </li>
                   )}
@@ -216,7 +219,10 @@ const CandidateCard = ({
               variant="outline" 
               size="sm" 
               className="w-full text-xs"
-              onClick={() => window.open(candidate.resumeUrl, '_blank')}
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(candidate.resumeUrl, '_blank');
+              }}
             >
               <FileText className="h-3 w-3 mr-1" />
               View Resume
@@ -230,7 +236,10 @@ const CandidateCard = ({
         <Button
           variant="ghost"
           size="sm"
-          onClick={toggleExpanded}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleExpanded();
+          }}
           className="text-xs"
         >
           {expanded ? (
@@ -250,7 +259,10 @@ const CandidateCard = ({
           <Button
             variant="destructive"
             size="sm"
-            onClick={onDelete}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
             className="text-xs h-8"
           >
             Delete
@@ -260,7 +272,10 @@ const CandidateCard = ({
             <Button
               variant="default"
               size="sm"
-              onClick={onProcess}
+              onClick={(e) => {
+                e.stopPropagation();
+                onProcess();
+              }}
               disabled={isProcessing}
               className="text-xs h-8"
             >

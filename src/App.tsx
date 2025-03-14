@@ -75,9 +75,16 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
-                <Route path="/jobs/:jobId/reports/:reportId" element={
+                <Route path="/jobs/:jobId/report/:reportId" element={
                   <ProtectedRoute>
                     <ViewReport />
+                  </ProtectedRoute>
+                } />
+
+                {/* New route for individual candidate view */}
+                <Route path="/jobs/:jobId/candidates/:candidateId" element={
+                  <ProtectedRoute>
+                    <CandidateAnalysis />
                   </ProtectedRoute>
                 } />
                 

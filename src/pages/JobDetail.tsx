@@ -41,7 +41,7 @@ const JobDetail = () => {
   };
   
   const handleGenerateReport = () => {
-    navigate(`/jobs/${jobId}/reports/new`);
+    navigate(`/jobs/${jobId}/report`);
   };
 
   const handleEditRequirements = () => {
