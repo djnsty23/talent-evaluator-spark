@@ -55,15 +55,35 @@ const FileUploader = ({
   };
 
   const validateAndAddFiles = (files: File[]) => {
+    // Additional validation for file types
+    const acceptedTypes = accept.split(',').map(type => type.trim().toLowerCase());
+    
+    // First filter by accepted file extensions
+    const filteredFiles = files.filter(file => {
+      const fileName = file.name.toLowerCase();
+      const fileExtension = '.' + fileName.split('.').pop();
+      
+      // Check if the file extension is in the accepted types
+      const isAcceptedType = acceptedTypes.some(type => {
+        return fileExtension === type;
+      });
+      
+      if (!isAcceptedType) {
+        toast.error(`File "${file.name}" has an unsupported format`);
+        return false;
+      }
+      return true;
+    });
+    
     // Check if adding these files would exceed max files count
-    if (multiple && (selectedFiles.length + files.length > maxFiles)) {
+    if (multiple && (selectedFiles.length + filteredFiles.length > maxFiles)) {
       toast.error(`You can only upload a maximum of ${maxFiles} files`);
       return;
     }
 
     // Filter out files that exceed the max size
     const maxSizeBytes = maxSizeMB * 1024 * 1024;
-    const validFiles = files.filter(file => {
+    const validFiles = filteredFiles.filter(file => {
       if (file.size > maxSizeBytes) {
         toast.error(`File "${file.name}" exceeds the ${maxSizeMB}MB size limit`);
         return false;
