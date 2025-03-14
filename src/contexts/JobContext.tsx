@@ -321,12 +321,24 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
       
       // Process each file
       const newCandidates: Candidate[] = [];
+      const duplicates: string[] = [];
       
       for (const file of files) {
         // In a real app, this would upload the file to storage and process it
-        // For demo, we'll create mock candidates
-        const candidateId = `candidate_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        // For demo, we'll create mock candidates and check for duplicates
         const candidateName = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+        
+        // Check if this CV may already be uploaded (by filename)
+        const possibleDuplicate = job.candidates.find(
+          c => c.name.toLowerCase() === candidateName.toLowerCase()
+        );
+        
+        if (possibleDuplicate) {
+          duplicates.push(candidateName);
+          continue;
+        }
+        
+        const candidateId = `candidate_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
         
         const newCandidate: Candidate = {
           id: candidateId,
@@ -344,6 +356,15 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
         newCandidates.push(newCandidate);
       }
       
+      // Show toast for duplicates if any
+      if (duplicates.length > 0) {
+        toast.warning(
+          duplicates.length === 1
+            ? `Skipped possible duplicate: ${duplicates[0]}`
+            : `Skipped ${duplicates.length} possible duplicates`
+        );
+      }
+      
       // Update the job with new candidates
       const updatedJob = {
         ...job,
@@ -357,7 +378,12 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
         setCurrentJob(updatedJob);
       }
       
-      toast.success(`${files.length} candidate file(s) uploaded successfully`);
+      const addedCount = newCandidates.length;
+      if (addedCount > 0) {
+        toast.success(`${addedCount} candidate file(s) uploaded successfully`);
+      } else if (duplicates.length === files.length) {
+        toast.error('All files appear to be duplicates');
+      }
     } catch (error) {
       console.error('Error uploading candidate files:', error);
       toast.error('Failed to upload candidate files');

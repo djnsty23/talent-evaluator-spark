@@ -3,21 +3,30 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Job, Candidate } from '@/contexts/JobContext';
-import { ArrowLeft, Search, Filter, FileText } from 'lucide-react';
+import { Job, Candidate, JobRequirement } from '@/contexts/JobContext';
+import { ArrowLeft, Search, Filter, FileText, Info, CheckCircle2, AlertTriangle } from 'lucide-react';
 import CandidateCard from '@/components/CandidateCard';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const CandidateAnalysis = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const { jobs, isLoading, processCandidate, starCandidate, deleteCandidate } = useJob();
   const [job, setJob] = useState<Job | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [processingCandidateId, setProcessingCandidateId] = useState<string | null>(null);
+  const [processingCandidateIds, setProcessingCandidateIds] = useState<string[]>([]);
   const [filteredCandidates, setFilteredCandidates] = useState<Candidate[]>([]);
   const [filter, setFilter] = useState<'all' | 'starred' | 'processed' | 'unprocessed'>('all');
+  const [showRequirements, setShowRequirements] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -55,6 +64,9 @@ const CandidateAnalysis = () => {
         );
       }
       
+      // Sort by score (highest first)
+      candidates.sort((a, b) => b.overallScore - a.overallScore);
+      
       setFilteredCandidates(candidates);
     }
   }, [job, searchQuery, filter]);
@@ -62,13 +74,33 @@ const CandidateAnalysis = () => {
   const handleProcessCandidate = async (candidateId: string) => {
     if (!jobId) return;
     
-    setProcessingCandidateId(candidateId);
+    setProcessingCandidateIds(prev => [...prev, candidateId]);
     try {
       await processCandidate(jobId, candidateId);
     } catch (error) {
       console.error('Process error:', error);
     } finally {
-      setProcessingCandidateId(null);
+      setProcessingCandidateIds(prev => prev.filter(id => id !== candidateId));
+    }
+  };
+
+  const handleProcessAllCandidates = async () => {
+    if (!jobId || !job) return;
+    
+    const unprocessedCandidates = job.candidates.filter(c => c.scores.length === 0);
+    if (unprocessedCandidates.length === 0) return;
+    
+    // Process each unprocessed candidate
+    setProcessingCandidateIds(unprocessedCandidates.map(c => c.id));
+    
+    try {
+      for (const candidate of unprocessedCandidates) {
+        await processCandidate(jobId, candidate.id);
+      }
+    } catch (error) {
+      console.error('Batch process error:', error);
+    } finally {
+      setProcessingCandidateIds([]);
     }
   };
 
@@ -96,6 +128,24 @@ const CandidateAnalysis = () => {
     setFilter(newFilter);
   };
 
+  // Format weight for display
+  const formatWeight = (weight: number) => {
+    if (weight >= 9) return "Critical";
+    if (weight >= 7) return "High";
+    if (weight >= 5) return "Medium";
+    if (weight >= 3) return "Low";
+    return "Optional";
+  };
+
+  // Get weight class for styling
+  const getWeightClass = (weight: number) => {
+    if (weight >= 9) return "text-red-500";
+    if (weight >= 7) return "text-orange-500";
+    if (weight >= 5) return "text-blue-500";
+    if (weight >= 3) return "text-green-500";
+    return "text-gray-500";
+  };
+
   if (isLoading || !job) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -112,6 +162,9 @@ const CandidateAnalysis = () => {
       </div>
     );
   }
+
+  // Count unprocessed candidates
+  const unprocessedCount = job.candidates.filter(c => c.scores.length === 0).length;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -134,14 +187,114 @@ const CandidateAnalysis = () => {
           </p>
         </div>
         
-        <Button 
-          onClick={() => navigate(`/jobs/${jobId}/report`)}
-          className="mt-4 md:mt-0"
-          disabled={job.candidates.length === 0}
-        >
-          <FileText className="h-4 w-4 mr-2" />
-          Generate Report
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2 mt-4 md:mt-0">
+          {unprocessedCount > 0 && (
+            <Button 
+              onClick={handleProcessAllCandidates}
+              disabled={processingCandidateIds.length > 0}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              {processingCandidateIds.length > 0 
+                ? `Processing ${processingCandidateIds.length} CVs...` 
+                : `Process All (${unprocessedCount})`}
+            </Button>
+          )}
+          
+          <Button 
+            onClick={() => navigate(`/jobs/${jobId}/report`)}
+            disabled={job.candidates.length === 0}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Generate Report
+          </Button>
+        </div>
+      </div>
+      
+      {/* Requirements Summary */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold flex items-center">
+            Job Requirements
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" className="ml-2 p-0 h-auto">
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Requirements and their importance for this job</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </h2>
+          
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setShowRequirements(!showRequirements)}
+            >
+              {showRequirements ? 'Hide Details' : 'Show Details'}
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate(`/jobs/${jobId}/requirements`)}
+            >
+              Edit Requirements
+            </Button>
+          </div>
+        </div>
+        
+        {showRequirements && (
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              {job.requirements.length === 0 ? (
+                <div className="text-center py-4 text-muted-foreground">
+                  <p>No requirements defined for this job yet.</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={() => navigate(`/jobs/${jobId}/requirements`)}
+                  >
+                    Add Requirements
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-12 font-medium text-sm pb-2 border-b">
+                    <div className="col-span-5">Requirement</div>
+                    <div className="col-span-3">Category</div>
+                    <div className="col-span-2">Importance</div>
+                    <div className="col-span-2 text-center">Required</div>
+                  </div>
+                  
+                  {job.requirements.map((req: JobRequirement) => (
+                    <div key={req.id} className="grid grid-cols-12 text-sm py-2 border-b border-gray-100 last:border-0">
+                      <div className="col-span-5">{req.description}</div>
+                      <div className="col-span-3">{req.category}</div>
+                      <div className={`col-span-2 ${getWeightClass(req.weight)}`}>
+                        {formatWeight(req.weight)} ({req.weight}/10)
+                      </div>
+                      <div className="col-span-2 text-center">
+                        {req.isRequired ? (
+                          <Badge variant="destructive" className="text-xs">Required</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">Optional</Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
       
       {job.candidates.length === 0 ? (
@@ -213,18 +366,32 @@ const CandidateAnalysis = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {filteredCandidates.map(candidate => (
-                <CandidateCard
-                  key={candidate.id}
-                  candidate={candidate}
-                  requirements={job.requirements}
-                  onStar={(isStarred) => handleStarCandidate(candidate.id, isStarred)}
-                  onProcess={() => handleProcessCandidate(candidate.id)}
-                  onDelete={() => handleDeleteCandidate(candidate.id)}
-                  isProcessing={processingCandidateId === candidate.id}
-                />
-              ))}
+            <div className="relative py-4">
+              <Carousel 
+                className="w-full"
+                opts={{
+                  align: "start",
+                }}
+              >
+                <CarouselContent>
+                  {filteredCandidates.map((candidate, index) => (
+                    <CarouselItem key={candidate.id} className="md:basis-1/2 lg:basis-1/2 xl:basis-1/3 pl-4 pr-4">
+                      <div className="p-1">
+                        <CandidateCard
+                          candidate={candidate}
+                          requirements={job.requirements}
+                          onStar={(isStarred) => handleStarCandidate(candidate.id, isStarred)}
+                          onProcess={() => handleProcessCandidate(candidate.id)}
+                          onDelete={() => handleDeleteCandidate(candidate.id)}
+                          isProcessing={processingCandidateIds.includes(candidate.id)}
+                        />
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="left-0" />
+                <CarouselNext className="right-0" />
+              </Carousel>
             </div>
           )}
         </>
