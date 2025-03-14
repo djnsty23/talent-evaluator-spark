@@ -13,9 +13,11 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Plus, Save, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Save, Trash2, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { JobRequirement } from '@/contexts/JobContext';
+import { AIService } from '@/services/api';
+import OpenAIKeyInput from '@/components/OpenAIKeyInput';
 
 const JobRequirementsEditor = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -28,6 +30,7 @@ const JobRequirementsEditor = () => {
     job?.requirements || []
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   
   if (!job) {
     navigate('/dashboard');
@@ -54,6 +57,45 @@ const JobRequirementsEditor = () => {
     setRequirements(requirements.map(req => 
       req.id === id ? { ...req, [field]: value } : req
     ));
+  };
+  
+  const handleGenerateRequirements = async () => {
+    if (!window.openAIKey) {
+      toast.error('Please set your OpenAI API key first');
+      return;
+    }
+    
+    setIsGenerating(true);
+    
+    try {
+      const result = await AIService.generateRequirements({
+        jobInfo: {
+          title: job.title,
+          company: job.company,
+          description: job.description,
+        },
+      });
+      
+      // If we already have requirements, confirm before replacing
+      if (requirements.length > 0) {
+        const confirmed = window.confirm(
+          'This will replace your existing requirements. Continue?'
+        );
+        
+        if (!confirmed) {
+          setIsGenerating(false);
+          return;
+        }
+      }
+      
+      setRequirements(result.requirements);
+      toast.success('Requirements generated successfully');
+    } catch (error) {
+      console.error('Error generating requirements:', error);
+      toast.error('Failed to generate requirements');
+    } finally {
+      setIsGenerating(false);
+    }
   };
   
   const handleSave = async () => {
@@ -93,17 +135,39 @@ const JobRequirementsEditor = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Requirements for {job.title}</CardTitle>
-          <Button onClick={handleAddRequirement}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Requirement
-          </Button>
+          <div className="flex items-center gap-2">
+            <OpenAIKeyInput />
+            <Button 
+              variant="outline"
+              onClick={handleGenerateRequirements}
+              disabled={isGenerating}
+              className="gap-2"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Generate with AI
+                </>
+              )}
+            </Button>
+            <Button onClick={handleAddRequirement}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Requirement
+            </Button>
+          </div>
         </CardHeader>
         
         <CardContent>
           <div className="space-y-6">
             {requirements.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No requirements yet. Click 'Add Requirement' to create one.
+                No requirements yet. Click 'Add Requirement' to create one manually 
+                or use 'Generate with AI' to create them automatically from the job description.
               </div>
             ) : (
               requirements.map((req, index) => (

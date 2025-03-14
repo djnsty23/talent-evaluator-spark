@@ -8,14 +8,18 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Job, JobRequirement } from '@/contexts/JobContext';
-import { ArrowLeft, Upload, ChevronRight, Star, User, BarChart, FileText, Building, PencilLine } from 'lucide-react';
+import { ArrowLeft, Upload, ChevronRight, Star, User, BarChart, FileText, Building, PencilLine, Sparkles, Loader2 } from 'lucide-react';
+import { AIService } from '@/services/api';
+import { toast } from 'sonner';
+import OpenAIKeyInput from '@/components/OpenAIKeyInput';
 
 const JobDetail = () => {
   const { jobId } = useParams<{ jobId: string }>();
-  const { jobs, setCurrentJob } = useJob();
+  const { jobs, setCurrentJob, updateJob } = useJob();
   const navigate = useNavigate();
   
   const [job, setJob] = useState<Job | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   
   useEffect(() => {
     if (jobId) {
@@ -43,6 +47,52 @@ const JobDetail = () => {
 
   const handleEditRequirements = () => {
     navigate(`/jobs/${jobId}/requirements/edit`);
+  };
+
+  const handleGenerateRequirements = async () => {
+    if (!window.openAIKey) {
+      toast.error('Please set your OpenAI API key first');
+      return;
+    }
+
+    if (!job) return;
+    
+    // If we already have requirements, confirm before replacing
+    if (job.requirements.length > 0) {
+      const confirmed = window.confirm(
+        'This will replace your existing requirements. Continue?'
+      );
+      
+      if (!confirmed) {
+        return;
+      }
+    }
+    
+    setIsGenerating(true);
+    
+    try {
+      const result = await AIService.generateRequirements({
+        jobInfo: {
+          title: job.title,
+          company: job.company,
+          description: job.description,
+        },
+      });
+      
+      const updatedJob = {
+        ...job,
+        requirements: result.requirements,
+      };
+      
+      await updateJob(updatedJob);
+      setJob(updatedJob);
+      toast.success('Requirements generated successfully');
+    } catch (error) {
+      console.error('Error generating requirements:', error);
+      toast.error('Failed to generate requirements');
+    } finally {
+      setIsGenerating(false);
+    }
   };
   
   if (!job) {
@@ -165,18 +215,42 @@ const JobDetail = () => {
                   ) : (
                     <div className="text-center py-4">
                       <p className="text-muted-foreground mb-4">No requirements defined yet</p>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="mt-4 w-full"
-                        onClick={() => {
-                          const element = document.querySelector('[data-value="requirements"]');
-                          if (element) (element as HTMLElement).click();
-                        }}
-                      >
-                        View Requirements
-                        <ChevronRight className="h-4 w-4 ml-1" />
-                      </Button>
+                      <div className="flex flex-col space-y-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleGenerateRequirements}
+                          disabled={isGenerating}
+                          className="w-full"
+                        >
+                          {isGenerating ? (
+                            <>
+                              <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-3 w-3 mr-2" />
+                              Generate with AI
+                            </>
+                          )}
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            const element = document.querySelector('[data-value="requirements"]');
+                            if (element) (element as HTMLElement).click();
+                          }}
+                          className="w-full"
+                        >
+                          View Requirements
+                          <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
+                      </div>
+                      <div className="mt-2">
+                        <OpenAIKeyInput />
+                      </div>
                     </div>
                   )}
                 </CardContent>
@@ -242,13 +316,34 @@ const JobDetail = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Job Requirements</CardTitle>
-                <Button
-                  variant="outline"
-                  onClick={handleEditRequirements}
-                >
-                  <PencilLine className="h-4 w-4 mr-2" />
-                  Edit Requirements
-                </Button>
+                <div className="flex gap-2">
+                  <OpenAIKeyInput />
+                  <Button
+                    variant="outline"
+                    onClick={handleGenerateRequirements}
+                    disabled={isGenerating}
+                    className="gap-1"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4" />
+                        Generate with AI
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleEditRequirements}
+                  >
+                    <PencilLine className="h-4 w-4 mr-2" />
+                    Edit Requirements
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {Object.keys(groupedRequirements).length > 0 ? (
@@ -288,10 +383,33 @@ const JobDetail = () => {
                     <p className="text-muted-foreground mb-6">
                       Define requirements to help evaluate candidates
                     </p>
-                    <Button onClick={handleEditRequirements}>
-                      <PencilLine className="h-4 w-4 mr-2" />
-                      Add Requirements
-                    </Button>
+                    <div className="flex flex-col gap-2 max-w-xs mx-auto">
+                      <Button 
+                        onClick={handleGenerateRequirements}
+                        disabled={isGenerating}
+                        className="w-full"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Generate with AI
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleEditRequirements}
+                        className="w-full"
+                      >
+                        <PencilLine className="h-4 w-4 mr-2" />
+                        Add Manually
+                      </Button>
+                    </div>
                   </div>
                 )}
               </CardContent>
