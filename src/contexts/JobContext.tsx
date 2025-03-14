@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
@@ -37,8 +36,8 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
 
   // Load data from localStorage on initial render
   useEffect(() => {
-    const loadSavedData = () => {
-      const data = getStorageData();
+    const loadSavedData = async () => {
+      const data = await getStorageData();
       setJobs(data.jobs);
       setReports(data.reports);
     };
@@ -450,4 +449,3 @@ export const useJob = (): JobContextType => {
   }
   return context;
 };
-

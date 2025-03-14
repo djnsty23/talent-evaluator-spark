@@ -28,12 +28,36 @@ export const getStorageData = async (): Promise<{ jobs: Job[]; reports: Report[]
       throw reportsError;
     }
     
-    console.log('Data loaded from Supabase:', { jobs: jobsData, reports: reportsData });
+    // Transform jobs data to match our application model
+    const jobs: Job[] = Array.isArray(jobsData) ? jobsData.map(job => ({
+      id: job.id,
+      title: job.title,
+      company: job.company || '',
+      description: job.description || '',
+      location: job.location || '',
+      department: job.department || '',
+      salary: job.salary,
+      requirements: [], // Will need to fetch these separately in a real implementation
+      candidates: [], // Will need to fetch these separately in a real implementation
+      userId: job.user_id,
+      createdAt: job.created_at,
+      updatedAt: job.updated_at
+    })) : [];
     
-    return { 
-      jobs: Array.isArray(jobsData) ? jobsData : [],
-      reports: Array.isArray(reportsData) ? reportsData : []
-    };
+    // Transform reports data to match our application model
+    const reports: Report[] = Array.isArray(reportsData) ? reportsData.map(report => ({
+      id: report.id,
+      title: report.title,
+      summary: 'Report summary', // Not stored in DB currently
+      content: report.content || '',
+      candidateIds: [], // Will need to fetch these separately in a real implementation
+      jobId: report.job_id,
+      createdAt: report.created_at
+    })) : [];
+    
+    console.log('Data loaded from Supabase:', { jobs, reports });
+    
+    return { jobs, reports };
   } catch (err) {
     console.error('Error loading data from Supabase:', err);
     toast.error('Failed to load data from the database');
@@ -60,7 +84,7 @@ export const saveStorageData = async (data: { jobs?: Job[], reports?: Report[] }
             description: job.description,
             location: job.location,
             department: job.department,
-            // Add other fields as needed
+            user_id: job.userId // Map from our app's userId to the DB's user_id
           });
         
         if (error) {
@@ -79,7 +103,7 @@ export const saveStorageData = async (data: { jobs?: Job[], reports?: Report[] }
             id: report.id,
             title: report.title,
             content: report.content,
-            job_id: report.jobId
+            job_id: report.jobId // Map from our app's jobId to the DB's job_id
           });
         
         if (error) {
@@ -110,7 +134,9 @@ export const mockSaveData = async (data: any): Promise<void> => {
           title: data.title,
           company: data.company,
           description: data.description,
-          // Add other fields as needed
+          location: data.location,
+          department: data.department,
+          user_id: data.userId || 'user_1' // Ensure we have a user_id
         });
       
       if (error) {

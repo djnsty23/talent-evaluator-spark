@@ -1,6 +1,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { Candidate, JobRequirement } from '@/types/job.types';
+import { supabase } from '@/integrations/supabase/client';
 
 export const createCandidateFromFile = (file: File, jobId: string, index: number): Candidate => {
   // Extract candidate name from filename, removing extension
@@ -8,7 +9,7 @@ export const createCandidateFromFile = (file: File, jobId: string, index: number
   const candidateName = fileName.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
   
   return {
-    id: `candidate_${Date.now()}_${index}`,
+    id: uuidv4(),
     name: candidateName,
     email: `${candidateName.toLowerCase().replace(/\s/g, '.')}@example.com`,
     resumeUrl: URL.createObjectURL(file),
@@ -41,23 +42,40 @@ export const processCandidate = (candidate: Candidate, requirements: JobRequirem
   
   const processedCandidate = { ...candidate };
   
-  // Initialize with empty scores that will be filled by the AI service
+  // Initialize with scores for each requirement
   const scores = requirements.map(req => {
     return {
       requirementId: req.id,
-      score: 0,
-      comment: '',
+      score: Math.floor(Math.random() * 5) + 1, // Random score 1-5 for demo
+      comment: `Generated score for ${req.description}`,
     };
   });
   
   processedCandidate.scores = scores;
-  processedCandidate.overallScore = 0;
-  processedCandidate.strengths = [];
-  processedCandidate.weaknesses = [];
+  processedCandidate.overallScore = calculateOverallScore(scores, requirements);
+  processedCandidate.strengths = ['Communication', 'Problem Solving'];
+  processedCandidate.weaknesses = ['Time Management'];
   processedCandidate.status = 'processed';
   processedCandidate.processedAt = new Date().toISOString();
   
   return processedCandidate;
+};
+
+const calculateOverallScore = (
+  scores: { requirementId: string; score: number; comment: string }[], 
+  requirements: JobRequirement[]
+): number => {
+  if (scores.length === 0) return 0;
+  
+  const totalWeightedScore = scores.reduce((total, score) => {
+    const req = requirements.find(r => r.id === score.requirementId);
+    const weight = req ? req.weight : 1;
+    return total + (score.score * weight);
+  }, 0);
+  
+  const totalWeight = requirements.reduce((total, req) => total + req.weight, 0);
+  
+  return Math.round((totalWeightedScore / totalWeight) * 10) / 10;
 };
 
 // Default requirements for a Customer Success role

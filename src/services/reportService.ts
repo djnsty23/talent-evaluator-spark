@@ -21,13 +21,12 @@ export const generateReport = async (
       createdAt: new Date().toISOString(),
     };
     
-    // In a production environment, this would save to a real database
-    // For now, save to localStorage for persistence
+    // Save to Supabase
     const { error } = await supabase.from('reports').insert({
       id: report.id,
       title: report.title,
       content: report.content,
-      job_id: report.jobId
+      job_id: report.jobId // Map from our app's jobId to the DB's job_id
     });
     
     if (error) {
