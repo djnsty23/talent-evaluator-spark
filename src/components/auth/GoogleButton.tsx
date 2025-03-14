@@ -9,12 +9,21 @@ interface GoogleButtonProps {
 }
 
 const GoogleButton = ({ onClick, isDisabled }: GoogleButtonProps) => {
+  const handleClick = async () => {
+    try {
+      console.log('Google button clicked, initiating sign-in');
+      await onClick();
+    } catch (error) {
+      console.error('Error during Google sign-in button click:', error);
+    }
+  };
+
   return (
     <Button
       type="button"
       variant="outline"
       className="w-full"
-      onClick={onClick}
+      onClick={handleClick}
       disabled={isDisabled}
     >
       <FcGoogle className="mr-2 h-5 w-5" />
