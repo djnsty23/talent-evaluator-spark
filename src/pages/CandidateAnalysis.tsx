@@ -117,10 +117,9 @@ const CandidateAnalysis = () => {
     setProcessingProgress(0);
     
     try {
-      // Show progress visually while we process candidates
+      // Start an interval to show progress animation
       const updateProgressInterval = setInterval(() => {
         setProcessingProgress(prev => {
-          // Increase progress by small increments
           if (prev < 95) {
             return prev + 5;
           }
@@ -128,7 +127,7 @@ const CandidateAnalysis = () => {
         });
       }, 1000);
       
-      // Use the JobContext function to process all candidates with rate limiting
+      // Process all candidates using the JobContext function
       await handleProcessAllCandidates(jobId);
       
       clearInterval(updateProgressInterval);
@@ -138,7 +137,7 @@ const CandidateAnalysis = () => {
       setTimeout(() => {
         setIsProcessingAll(false);
         setCurrentProcessing('');
-      }, 1000);
+      }, 1500);
       
     } catch (error) {
       console.error('Batch process error:', error);
@@ -213,36 +212,34 @@ const CandidateAnalysis = () => {
           </p>
         </div>
         
-        {!candidateId && (
-          <div className="flex flex-col sm:flex-row gap-2 mt-4 md:mt-0">
-            {unprocessedCount > 0 && !isProcessingAll && (
-              <Button 
-                onClick={handleProcessAllCandidatesClick}
-                disabled={isProcessingAll || processingCandidateIds.length > 0}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                Process All ({unprocessedCount})
-              </Button>
-            )}
-            
-            <ProcessingStatus 
-              isProcessingAll={isProcessingAll}
-              processingProgress={processingProgress}
-              currentProcessing={currentProcessing}
-              totalToProcess={totalToProcess}
-            />
-            
+        <div className="flex flex-col sm:flex-row gap-2 mt-4 md:mt-0">
+          {unprocessedCount > 0 && !isProcessingAll && (
             <Button 
-              onClick={() => navigate(`/jobs/${jobId}/report`)}
-              disabled={job.candidates.length === 0 || processedCount === 0}
+              onClick={handleProcessAllCandidatesClick}
+              disabled={isProcessingAll || processingCandidateIds.length > 0}
+              variant="outline"
+              className="flex items-center gap-2"
             >
-              <FileText className="h-4 w-4 mr-2" />
-              Generate Report
+              <CheckCircle2 className="h-4 w-4" />
+              Process All ({unprocessedCount})
             </Button>
-          </div>
-        )}
+          )}
+          
+          <ProcessingStatus 
+            isProcessingAll={isProcessingAll}
+            processingProgress={processingProgress}
+            currentProcessing={currentProcessing}
+            totalToProcess={totalToProcess}
+          />
+          
+          <Button 
+            onClick={() => navigate(`/jobs/${jobId}/report`)}
+            disabled={job.candidates.length === 0 || processedCount === 0}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Generate Report
+          </Button>
+        </div>
       </div>
       
       {/* Requirements Summary */}

@@ -1,5 +1,6 @@
+
 import { useState } from 'react';
-import { Star, ChevronDown, ChevronUp, User, FileText, ExternalLink } from 'lucide-react';
+import { Star, ChevronDown, ChevronUp, User, FileText, ExternalLink, Zap, Users, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -70,6 +71,11 @@ const CandidateCard = ({
             {candidate.isStarred && (
               <Badge variant="outline" className="text-yellow-500 border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950/30">
                 Starred
+              </Badge>
+            )}
+            {candidate.zodiacSign && isProcessed && (
+              <Badge variant="outline" className="text-purple-500 border-purple-200 bg-purple-50 dark:border-purple-900 dark:bg-purple-950/30">
+                {candidate.zodiacSign}
               </Badge>
             )}
           </div>
@@ -179,6 +185,53 @@ const CandidateCard = ({
                 </ul>
               </div>
             </div>
+            
+            {/* Personality Traits Section */}
+            {candidate.personalityTraits && candidate.personalityTraits.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-sm font-medium mb-2">Personality Traits</h4>
+                <div className="flex flex-wrap gap-2">
+                  {candidate.personalityTraits.map((trait, index) => (
+                    <Badge key={index} variant="secondary" className="text-xs">
+                      {trait}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Work Style and Additional Metrics */}
+            {candidate.workStyle && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <h4 className="text-sm font-medium mb-1">Work Style</h4>
+                  <div className="flex items-center">
+                    <Zap className="h-4 w-4 text-blue-500 mr-1" />
+                    <span className="text-sm">{candidate.workStyle}</span>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium mb-1">Additional Metrics</h4>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <Users className="h-3 w-3 text-indigo-500 mr-1" />
+                        <span className="text-xs">Culture Fit:</span>
+                      </div>
+                      <span className="text-xs font-medium">{candidate.cultureFit?.toFixed(1)}/10</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <Award className="h-3 w-3 text-amber-500 mr-1" />
+                        <span className="text-xs">Leadership:</span>
+                      </div>
+                      <span className="text-xs font-medium">{candidate.leadershipPotential?.toFixed(1)}/10</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
 
