@@ -71,6 +71,51 @@ const STORAGE_KEY = 'job_app_data';
 const mockSaveData = async (data: any): Promise<void> => {
   return new Promise((resolve) => {
     setTimeout(() => {
+      // Save to localStorage
+      try {
+        // Get current data from localStorage
+        const savedData = localStorage.getItem(STORAGE_KEY);
+        let currentData = savedData ? JSON.parse(savedData) : { jobs: [], reports: [] };
+        
+        // If we're saving a job
+        if (data.id && (data.title || data.candidates)) {
+          // Find if job already exists
+          const jobIndex = currentData.jobs.findIndex((j: Job) => j.id === data.id);
+          
+          if (jobIndex >= 0) {
+            // Update existing job
+            currentData.jobs[jobIndex] = data;
+          } else {
+            // Add new job
+            currentData.jobs.push(data);
+          }
+        }
+        
+        // If we're saving a report
+        if (data.id && data.candidateIds) {
+          // Find if report already exists
+          const reportIndex = currentData.reports.findIndex((r: Report) => r.id === data.id);
+          
+          if (reportIndex >= 0) {
+            // Update existing report
+            currentData.reports[reportIndex] = data;
+          } else {
+            // Add new report
+            currentData.reports.push(data);
+          }
+        }
+        
+        // If we're deleting a job
+        if (data.id && data.deleted) {
+          currentData.jobs = currentData.jobs.filter((j: Job) => j.id !== data.id);
+        }
+        
+        // Save back to localStorage
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData));
+      } catch (err) {
+        console.error('Error saving to localStorage:', err);
+      }
+      
       resolve();
     }, 500);
   });
@@ -91,7 +136,7 @@ interface JobContextType {
   starCandidate: (jobId: string, candidateId: string, isStarred: boolean) => Promise<void>;
   deleteCandidate: (jobId: string, candidateId: string) => Promise<void>;
   generateReport: (jobId: string, candidateIds: string[], additionalPrompt?: string) => Promise<Report>;
-  setCurrentJob: (job: Job | null) => void; // Added missing function
+  setCurrentJob: (job: Job | null) => void;
 }
 
 const JobContext = createContext<JobContextType | undefined>(undefined);
@@ -114,6 +159,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
         const savedData = localStorage.getItem(STORAGE_KEY);
         if (savedData) {
           const parsedData = JSON.parse(savedData);
+          console.log('Loading data from localStorage:', parsedData);
           setJobs(parsedData.jobs || []);
           setReports(parsedData.reports || []);
         }
@@ -128,6 +174,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
   // Save data to localStorage whenever it changes
   useEffect(() => {
     try {
+      console.log('Saving data to localStorage:', { jobs, reports });
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ jobs, reports }));
     } catch (err) {
       console.error('Error saving data to localStorage:', err);
@@ -159,6 +206,10 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
 
       // Update local state
       setJobs(prevJobs => [...prevJobs, newJob]);
+      
+      // Log the current jobs state after update
+      console.log('Jobs after create:', [...jobs, newJob]);
+      
       return newJob;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error creating job';
@@ -167,7 +218,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [jobs]);
 
   // Update an existing job
   const updateJob = useCallback(async (jobData: Job): Promise<Job> => {
@@ -189,6 +240,9 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
       if (currentJob && currentJob.id === jobData.id) {
         setCurrentJob(updatedJob);
       }
+      
+      // Log the current jobs state after update
+      console.log('Jobs after update:', jobs.map(j => j.id === jobData.id ? updatedJob : j));
 
       return updatedJob;
     } catch (err) {
@@ -198,7 +252,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentJob]);
+  }, [currentJob, jobs]);
 
   // Delete a job
   const deleteJob = useCallback(async (jobId: string): Promise<void> => {
@@ -213,6 +267,10 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
       if (currentJob && currentJob.id === jobId) {
         setCurrentJob(null);
       }
+      
+      // Log the current jobs state after delete
+      console.log('Jobs after delete:', jobs.filter(j => j.id !== jobId));
+      
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error deleting job';
       setError(errorMessage);
@@ -220,7 +278,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentJob]);
+  }, [currentJob, jobs]);
 
   // This function specifically handles the candidate file uploads to extract proper names
   const uploadCandidateFiles = useCallback(async (jobId: string, files: File[]): Promise<void> => {
@@ -589,7 +647,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
     starCandidate,
     deleteCandidate,
     generateReport,
-    setCurrentJob, // Added missing function to the context value
+    setCurrentJob,
   };
 
   return (
