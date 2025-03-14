@@ -15,7 +15,7 @@ interface FileUploaderProps {
 
 const FileUploader = ({
   onFilesSelected,
-  accept = '.pdf,.doc,.docx,.txt,.csv',
+  accept = '.pdf,.doc,.docx,.txt,.csv,.xlsx',
   multiple = true,
   maxFiles = 50,
   maxSizeMB = 10,

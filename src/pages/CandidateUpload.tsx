@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
@@ -115,9 +114,12 @@ const CandidateUpload = () => {
             <h3 className="text-lg font-medium">Upload candidate resumes and documents</h3>
             <FileUploader 
               onFilesSelected={handleFilesSelected}
-              accept=".pdf,.doc,.docx,.txt,.csv"
+              accept=".pdf,.doc,.docx,.txt,.csv,.xlsx"
               multiple={true}
             />
+            <p className="text-sm text-muted-foreground">
+              Supported formats: PDF, Word documents, text files, CSV and Excel spreadsheets
+            </p>
           </div>
           
           {files.length > 0 && uploadStatus === 'idle' && (
