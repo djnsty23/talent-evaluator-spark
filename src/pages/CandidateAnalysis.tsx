@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
@@ -201,7 +202,7 @@ const CandidateAnalysis = () => {
   }
 
   const unprocessedCount = job?.candidates.filter(c => c.scores.length === 0).length || 0;
-  const processedCount = job?.candidates.filter(c => c.scores.length > 0).length || 0;
+  const processedCandidatesCount = job?.candidates.filter(c => c.scores.length > 0).length || 0;
   const starredCount = job?.candidates.filter(c => c.isStarred).length || 0;
 
   return (
@@ -214,7 +215,7 @@ const CandidateAnalysis = () => {
         candidateId={candidateId}
         jobId={jobId || ''}
         candidatesCount={job.candidates.length}
-        processedCount={processedCount}
+        processedCount={processedCandidatesCount}
         isProcessingAll={isProcessingAll}
         processingProgress={processingProgress}
         currentProcessing={currentProcessing}
@@ -235,7 +236,7 @@ const CandidateAnalysis = () => {
           {!candidateId && (
             <CandidateFilter
               totalCandidates={job.candidates.length}
-              processedCount={processedCount}
+              processedCount={processedCandidatesCount}
               unprocessedCount={unprocessedCount}
               starredCount={starredCount}
               searchQuery={searchQuery}
