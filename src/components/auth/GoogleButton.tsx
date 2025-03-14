@@ -11,11 +11,11 @@ interface GoogleButtonProps {
 const GoogleButton = ({ onClick, isDisabled }: GoogleButtonProps) => {
   const handleClick = async () => {
     try {
-      console.log('Google button clicked, initiating sign-in');
+      console.log('Google button clicked, initiating OAuth flow');
       await onClick();
     } catch (error) {
       console.error('Error during Google sign-in button click:', error);
-      // Error is handled at the hook level with toast messages
+      // Error is already handled in the hook with toast messages
     }
   };
 

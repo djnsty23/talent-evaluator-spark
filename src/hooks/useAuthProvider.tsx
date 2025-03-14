@@ -70,10 +70,23 @@ export const useAuthProvider = () => {
     try {
       console.log('Starting Google sign-in');
       
-      // Get the absolute URL for dashboard to use as redirect
+      // Get base URL and print it for debugging
       const origin = window.location.origin;
+      console.log('Current origin:', origin);
+      
+      // Setup redirect URL - must match what's configured in Google Console
       const redirectUrl = `${origin}/dashboard`;
-      console.log('Redirect URL:', redirectUrl);
+      console.log('Using redirect URL:', redirectUrl);
+      
+      // Log the complete auth configuration attempt for debugging
+      console.log('Auth configuration:', {
+        provider: 'google',
+        redirectTo: redirectUrl,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
+      });
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -87,7 +100,7 @@ export const useAuthProvider = () => {
       });
       
       if (error) {
-        console.error('Google sign in error:', error);
+        console.error('Google sign in error from Supabase:', error);
         toast.error(error.message || 'Failed to sign in with Google.');
         throw error;
       }

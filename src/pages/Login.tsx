@@ -66,10 +66,12 @@ const Login = () => {
     
     try {
       console.log('Initiating Google sign-in from Login page');
+      setIsSubmitting(true);
       await signInWithGoogle();
       // Navigation is handled automatically via redirectTo option
     } catch (err: any) {
       setError(err.message || 'Failed to sign in with Google. Please try again.');
+      setIsSubmitting(false);
     }
   };
 
