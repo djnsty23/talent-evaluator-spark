@@ -231,10 +231,7 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
       // For demo purposes, we'll simulate the response with a delay
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Mock generated requirements based on job title
-      const mockCategories = ['Technical Skills', 'Soft Skills', 'Education', 'Experience', 'Certifications'];
-      
-      // Generate mock requirements
+      // Generate always exactly 10-12 requirements
       const requirements: JobRequirement[] = [];
       
       // Technical skills
@@ -297,6 +294,31 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
         weight: 9,
         isRequired: true,
       });
+
+      // Add more requirements to reach at least 10
+      requirements.push({
+        id: `req_${Date.now()}_8`,
+        category: 'Soft Skills',
+        description: 'Initiative and self-motivation',
+        weight: 7,
+        isRequired: false,
+      });
+
+      requirements.push({
+        id: `req_${Date.now()}_9`,
+        category: 'Technical Skills',
+        description: 'Data analysis and reporting capabilities',
+        weight: 7,
+        isRequired: true,
+      });
+
+      requirements.push({
+        id: `req_${Date.now()}_10`,
+        category: 'Soft Skills',
+        description: 'Adaptability and willingness to learn',
+        weight: 6,
+        isRequired: false,
+      });
       
       toast.success('Requirements generated successfully');
       return requirements;
@@ -328,7 +350,7 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
         // For demo, we'll create mock candidates and check for duplicates
         const candidateName = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
         
-        // Check if this CV may already be uploaded (by filename)
+        // Check if this CV may already be uploaded (by exact filename)
         const possibleDuplicate = job.candidates.find(
           c => c.name.toLowerCase() === candidateName.toLowerCase()
         );
@@ -354,6 +376,9 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
         };
         
         newCandidates.push(newCandidate);
+        
+        // Add a small delay between candidates to ensure unique IDs
+        await new Promise(resolve => setTimeout(resolve, 10));
       }
       
       // Show toast for duplicates if any
@@ -407,18 +432,31 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
       const candidateIndex = job.candidates.findIndex(c => c.id === candidateId);
       if (candidateIndex === -1) throw new Error('Candidate not found');
       
-      // In a real app, this would call an API to process the candidate with AI
-      // For demo, we'll simulate processing with random scores
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Check if candidate is already processed
+      if (job.candidates[candidateIndex].scores.length > 0) {
+        toast.info(`Candidate ${job.candidates[candidateIndex].name} is already processed`);
+        setIsLoading(false);
+        return;
+      }
+      
+      // In a real app, this would call an API to process the candidate with GPT-4o-mini
+      // For demo, we'll simulate processing with scores based on requirements
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       const updatedCandidate = { ...job.candidates[candidateIndex] };
       
-      // Generate mock scores for each requirement
-      updatedCandidate.scores = job.requirements.map(req => ({
-        requirementId: req.id,
-        score: Math.floor(Math.random() * 10) + 1, // Random score 1-10
-        notes: `AI analysis for ${req.description}`,
-      }));
+      // Generate scores for each requirement
+      updatedCandidate.scores = job.requirements.map(req => {
+        // Generate a score that reflects the candidates' fit to requirements
+        // In a real app, this would be done with AI
+        const score = Math.floor(Math.random() * 10) + 1; // Random score 1-10
+        
+        return {
+          requirementId: req.id,
+          score,
+          notes: `AI assessment for '${req.description}'`,
+        };
+      });
       
       // Calculate overall score based on weighted average
       const totalWeight = job.requirements.reduce((sum, req) => sum + req.weight, 0);
@@ -431,17 +469,18 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
         ? Math.round((weightedScore / totalWeight) * 10) / 10 
         : 0;
       
-      // Generate strengths and weaknesses
+      // Generate strengths (high scores) and weaknesses (low scores)
       const strengths = job.requirements
-        .filter((_, index) => updatedCandidate.scores[index].score >= 8)
+        .filter((req, index) => updatedCandidate.scores[index].score >= 8)
         .map(req => req.description);
       
       const weaknesses = job.requirements
-        .filter((_, index) => updatedCandidate.scores[index].score <= 4)
+        .filter((req, index) => updatedCandidate.scores[index].score <= 4)
         .map(req => req.description);
       
       updatedCandidate.strengths = strengths;
       updatedCandidate.weaknesses = weaknesses;
+      updatedCandidate.processedAt = new Date().toISOString();
       
       // Update the candidate in the job
       const updatedCandidates = [...job.candidates];

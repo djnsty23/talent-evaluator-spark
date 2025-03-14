@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
@@ -56,7 +57,7 @@ const CandidateUpload = () => {
       setFiles([]);
       
       setTimeout(() => {
-        navigate(`/jobs/${jobId}`);
+        navigate(`/jobs/${jobId}/analysis`);
       }, 2000);
     } catch (error) {
       clearInterval(progressInterval);

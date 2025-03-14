@@ -51,7 +51,7 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
-                <Route path="/jobs/:jobId/requirements/edit" element={
+                <Route path="/jobs/:jobId/requirements" element={
                   <ProtectedRoute>
                     <JobRequirementsEditor />
                   </ProtectedRoute>
@@ -63,13 +63,13 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
-                <Route path="/jobs/:jobId/candidates/:candidateId" element={
+                <Route path="/jobs/:jobId/analysis" element={
                   <ProtectedRoute>
                     <CandidateAnalysis />
                   </ProtectedRoute>
                 } />
                 
-                <Route path="/jobs/:jobId/reports/new" element={
+                <Route path="/jobs/:jobId/report" element={
                   <ProtectedRoute>
                     <ReportGeneration />
                   </ProtectedRoute>

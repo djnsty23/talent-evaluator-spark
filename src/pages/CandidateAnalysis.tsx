@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Job, Candidate, JobRequirement } from '@/contexts/JobContext';
-import { ArrowLeft, Search, Filter, FileText, Info, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Search, Filter, FileText, Info, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import CandidateCard from '@/components/CandidateCard';
 import {
   Carousel,
@@ -17,6 +17,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from 'sonner';
 
 const CandidateAnalysis = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -27,6 +28,7 @@ const CandidateAnalysis = () => {
   const [filteredCandidates, setFilteredCandidates] = useState<Candidate[]>([]);
   const [filter, setFilter] = useState<'all' | 'starred' | 'processed' | 'unprocessed'>('all');
   const [showRequirements, setShowRequirements] = useState(false);
+  const [isProcessingAll, setIsProcessingAll] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -88,18 +90,37 @@ const CandidateAnalysis = () => {
     if (!jobId || !job) return;
     
     const unprocessedCandidates = job.candidates.filter(c => c.scores.length === 0);
-    if (unprocessedCandidates.length === 0) return;
+    if (unprocessedCandidates.length === 0) {
+      toast.info("No unprocessed candidates found");
+      return;
+    }
     
-    // Process each unprocessed candidate
-    setProcessingCandidateIds(unprocessedCandidates.map(c => c.id));
+    // Set state to show we're processing all candidates
+    setIsProcessingAll(true);
     
     try {
+      // Process each unprocessed candidate sequentially
       for (const candidate of unprocessedCandidates) {
-        await processCandidate(jobId, candidate.id);
+        setProcessingCandidateIds(prev => [...prev, candidate.id]);
+        
+        try {
+          await processCandidate(jobId, candidate.id);
+        } catch (error) {
+          console.error(`Error processing candidate ${candidate.name}:`, error);
+        }
+        
+        setProcessingCandidateIds(prev => prev.filter(id => id !== candidate.id));
+        
+        // Small delay between processing candidates to avoid overwhelming
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
+      
+      toast.success(`Processed ${unprocessedCandidates.length} candidates successfully`);
     } catch (error) {
       console.error('Batch process error:', error);
+      toast.error('An error occurred during batch processing');
     } finally {
+      setIsProcessingAll(false);
       setProcessingCandidateIds([]);
     }
   };
@@ -165,6 +186,8 @@ const CandidateAnalysis = () => {
 
   // Count unprocessed candidates
   const unprocessedCount = job.candidates.filter(c => c.scores.length === 0).length;
+  const processedCount = job.candidates.filter(c => c.scores.length > 0).length;
+  const starredCount = job.candidates.filter(c => c.isStarred).length;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -191,20 +214,27 @@ const CandidateAnalysis = () => {
           {unprocessedCount > 0 && (
             <Button 
               onClick={handleProcessAllCandidates}
-              disabled={processingCandidateIds.length > 0}
+              disabled={isProcessingAll || processingCandidateIds.length > 0}
               variant="outline"
               className="flex items-center gap-2"
             >
-              <CheckCircle2 className="h-4 w-4" />
-              {processingCandidateIds.length > 0 
-                ? `Processing ${processingCandidateIds.length} CVs...` 
-                : `Process All (${unprocessedCount})`}
+              {isProcessingAll ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4" />
+                  Process All ({unprocessedCount})
+                </>
+              )}
             </Button>
           )}
           
           <Button 
             onClick={() => navigate(`/jobs/${jobId}/report`)}
-            disabled={job.candidates.length === 0}
+            disabled={job.candidates.length === 0 || processedCount === 0}
           >
             <FileText className="h-4 w-4 mr-2" />
             Generate Report
@@ -250,51 +280,69 @@ const CandidateAnalysis = () => {
           </div>
         </div>
         
-        {showRequirements && (
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              {job.requirements.length === 0 ? (
-                <div className="text-center py-4 text-muted-foreground">
-                  <p>No requirements defined for this job yet.</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-2"
-                    onClick={() => navigate(`/jobs/${jobId}/requirements`)}
-                  >
-                    Add Requirements
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="grid grid-cols-12 font-medium text-sm pb-2 border-b">
-                    <div className="col-span-5">Requirement</div>
-                    <div className="col-span-3">Category</div>
-                    <div className="col-span-2">Importance</div>
-                    <div className="col-span-2 text-center">Required</div>
+        <Card className="mb-6">
+          <CardContent className={showRequirements ? "pt-6" : "py-4"}>
+            {!showRequirements && (
+              <div className="text-sm text-muted-foreground">
+                {job.requirements.length === 0 ? (
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    <span>No requirements defined yet. Click 'Edit Requirements' to add job requirements.</span>
                   </div>
-                  
-                  {job.requirements.map((req: JobRequirement) => (
-                    <div key={req.id} className="grid grid-cols-12 text-sm py-2 border-b border-gray-100 last:border-0">
-                      <div className="col-span-5">{req.description}</div>
-                      <div className="col-span-3">{req.category}</div>
-                      <div className={`col-span-2 ${getWeightClass(req.weight)}`}>
-                        {formatWeight(req.weight)} ({req.weight}/10)
-                      </div>
-                      <div className="col-span-2 text-center">
-                        {req.isRequired ? (
-                          <Badge variant="destructive" className="text-xs">Required</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs">Optional</Badge>
-                        )}
-                      </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <span>This job has {job.requirements.length} defined requirements. Click 'Show Details' to view them.</span>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {showRequirements && (
+              <>
+                {job.requirements.length === 0 ? (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <p>No requirements defined for this job yet.</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2"
+                      onClick={() => navigate(`/jobs/${jobId}/requirements`)}
+                    >
+                      Add Requirements
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-12 font-medium text-sm pb-2 border-b">
+                      <div className="col-span-5">Requirement</div>
+                      <div className="col-span-3">Category</div>
+                      <div className="col-span-2">Importance</div>
+                      <div className="col-span-2 text-center">Required</div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+                    
+                    {job.requirements.map((req: JobRequirement) => (
+                      <div key={req.id} className="grid grid-cols-12 text-sm py-2 border-b border-gray-100 last:border-0">
+                        <div className="col-span-5">{req.description}</div>
+                        <div className="col-span-3">{req.category}</div>
+                        <div className={`col-span-2 ${getWeightClass(req.weight)}`}>
+                          {formatWeight(req.weight)} ({req.weight}/10)
+                        </div>
+                        <div className="col-span-2 text-center">
+                          {req.isRequired ? (
+                            <Badge variant="destructive" className="text-xs">Required</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">Optional</Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
       
       {job.candidates.length === 0 ? (
@@ -338,21 +386,21 @@ const CandidateAnalysis = () => {
                 className="cursor-pointer px-3 py-1 h-9"
                 onClick={() => handleFilterChange('starred')}
               >
-                Starred ({job.candidates.filter(c => c.isStarred).length})
+                Starred ({starredCount})
               </Badge>
               <Badge
                 variant={filter === 'processed' ? 'default' : 'outline'}
                 className="cursor-pointer px-3 py-1 h-9"
                 onClick={() => handleFilterChange('processed')}
               >
-                Processed ({job.candidates.filter(c => c.scores.length > 0).length})
+                Processed ({processedCount})
               </Badge>
               <Badge
                 variant={filter === 'unprocessed' ? 'default' : 'outline'}
                 className="cursor-pointer px-3 py-1 h-9"
                 onClick={() => handleFilterChange('unprocessed')}
               >
-                Unprocessed ({job.candidates.filter(c => c.scores.length === 0).length})
+                Unprocessed ({unprocessedCount})
               </Badge>
             </div>
           </div>
