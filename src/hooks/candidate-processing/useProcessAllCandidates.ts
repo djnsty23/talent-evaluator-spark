@@ -1,6 +1,7 @@
 
 import { toast } from 'sonner';
 import { useJob } from '@/contexts/JobContext';
+import { Job } from '@/contexts/JobContext';
 
 export function useProcessAllCandidates(
   jobId: string | undefined,
