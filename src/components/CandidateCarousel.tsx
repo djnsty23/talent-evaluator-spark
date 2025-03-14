@@ -31,8 +31,27 @@ const CandidateCarousel = ({
   onDelete
 }: CandidateCarouselProps) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [api, setApi] = useState<any>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  
+  // Update active index when the API changes slide
+  useEffect(() => {
+    if (!api) return;
+    
+    const onSelect = () => {
+      setActiveIndex(api.selectedScrollSnap());
+    };
+    
+    api.on('select', onSelect);
+    
+    // Initial position
+    setActiveIndex(api.selectedScrollSnap());
+    
+    return () => {
+      api.off('select', onSelect);
+    };
+  }, [api]);
   
   // Helper function to get the current job ID from URL
   const getCurrentJobId = () => {
@@ -85,11 +104,7 @@ const CandidateCarousel = ({
           align: "start",
         }}
         ref={carouselRef}
-        onSelect={(api) => {
-          if (api && typeof api.selectedScrollSnap === 'function') {
-            setActiveIndex(api.selectedScrollSnap());
-          }
-        }}
+        setApi={setApi}
       >
         <CarouselContent>
           {candidates.map((candidate, index) => (
