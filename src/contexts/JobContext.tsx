@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
@@ -62,10 +61,10 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
         description: jobData.description || '',
         location: jobData.location || '',
         department: jobData.department || '',
-        salary: jobData.salary || '',
+        salary: jobData.salary,
         requirements: jobData.requirements || [],
         candidates: [],
-        contextFiles: [],
+        contextFiles: jobData.contextFiles || [],
         userId: 'user_1',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

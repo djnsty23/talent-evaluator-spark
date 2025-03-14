@@ -1,6 +1,6 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { Job, Candidate, JobRequirement } from '@/types/job.types';
+import { Candidate, JobRequirement } from '@/types/job.types';
 import { extractCandidateName, generateComment, getRandomItems } from '@/utils/candidateUtils';
 
 export const createCandidateFromFile = (file: File, jobId: string, index: number): Candidate => {
