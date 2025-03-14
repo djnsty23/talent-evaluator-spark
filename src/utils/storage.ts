@@ -36,7 +36,7 @@ export const getStorageData = async (): Promise<{ jobs: Job[]; reports: Report[]
       description: job.description || '',
       location: job.location || '',
       department: job.department || '',
-      salary: job.salary,
+      salary: job.salary ? String(job.salary) : undefined, // Convert to string or undefined
       requirements: [], // Will need to fetch these separately in a real implementation
       candidates: [], // Will need to fetch these separately in a real implementation
       userId: job.user_id,
@@ -84,6 +84,7 @@ export const saveStorageData = async (data: { jobs?: Job[], reports?: Report[] }
             description: job.description,
             location: job.location,
             department: job.department,
+            salary: job.salary, // Supabase can handle string to jsonb conversion
             user_id: job.userId // Map from our app's userId to the DB's user_id
           });
         

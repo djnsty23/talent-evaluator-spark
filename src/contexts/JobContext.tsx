@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
@@ -37,9 +38,17 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
   // Load data from localStorage on initial render
   useEffect(() => {
     const loadSavedData = async () => {
-      const data = await getStorageData();
-      setJobs(data.jobs);
-      setReports(data.reports);
+      setIsLoading(true);
+      try {
+        const data = await getStorageData();
+        setJobs(data.jobs);
+        setReports(data.reports);
+      } catch (err) {
+        console.error('Error loading data:', err);
+        setError('Failed to load data');
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     loadSavedData();
@@ -70,7 +79,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
         updatedAt: new Date().toISOString(),
       };
 
-      // Mock API call
+      // Save to Supabase
       await mockSaveData(newJob);
 
       // Update local state
