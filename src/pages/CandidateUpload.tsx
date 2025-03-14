@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
@@ -8,7 +7,7 @@ import { Job } from '@/contexts/JobContext';
 import { ArrowLeft, Upload, FileText, AlertCircle, Check, X } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { FileUploader } from '@/components/FileUploader';
+import FileUploader from '@/components/FileUploader';
 
 const CandidateUpload = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -27,7 +26,6 @@ const CandidateUpload = () => {
       if (foundJob) {
         setJob(foundJob);
       } else {
-        // Job not found, redirect to dashboard
         navigate('/dashboard');
       }
     }
@@ -41,7 +39,6 @@ const CandidateUpload = () => {
     setUploadStatus('idle');
     setUploadMessage('');
     
-    // Mock upload progress
     const progressInterval = setInterval(() => {
       setUploadProgress(prev => {
         const nextProgress = prev + 10;
@@ -57,10 +54,8 @@ const CandidateUpload = () => {
       setUploadStatus('success');
       setUploadMessage(`Successfully uploaded ${files.length} candidate file(s)`);
       
-      // Clear files after successful upload
       setFiles([]);
       
-      // Wait 2 seconds before navigating
       setTimeout(() => {
         navigate(`/jobs/${jobId}`);
       }, 2000);

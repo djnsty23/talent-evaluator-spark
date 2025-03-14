@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
@@ -8,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Job, JobRequirement } from '@/contexts/JobContext';
-import { ArrowLeft, Upload, ChevronRight, Star, User, BarChart, FileText } from 'lucide-react';
+import { ArrowLeft, Upload, ChevronRight, Star, User, BarChart, FileText, Building } from 'lucide-react';
 
 const JobDetail = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -23,7 +22,6 @@ const JobDetail = () => {
         setJob(foundJob);
         setCurrentJob(foundJob);
       } else {
-        // Job not found, redirect to dashboard
         navigate('/dashboard');
       }
     }
@@ -180,7 +178,10 @@ const JobDetail = () => {
                     variant="ghost" 
                     size="sm" 
                     className="mt-4 w-full"
-                    onClick={() => document.querySelector('[data-value="requirements"]')?.click()}
+                    onClick={() => {
+                      const element = document.querySelector('[data-value="requirements"]');
+                      if (element) (element as HTMLElement).click();
+                    }}
                   >
                     View Requirements
                     <ChevronRight className="h-4 w-4 ml-1" />
@@ -204,7 +205,10 @@ const JobDetail = () => {
                     variant="ghost" 
                     size="sm" 
                     className="mt-4 w-full"
-                    onClick={() => document.querySelector('[data-value="candidates"]')?.click()}
+                    onClick={() => {
+                      const element = document.querySelector('[data-value="candidates"]');
+                      if (element) (element as HTMLElement).click();
+                    }}
                   >
                     View Candidates
                     <ChevronRight className="h-4 w-4 ml-1" />

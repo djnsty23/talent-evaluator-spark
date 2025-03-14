@@ -15,7 +15,7 @@ const CreateJob = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   
-  const { createJob, generateRequirements } = useJob();
+  const { createJob, generateRequirements, updateJob } = useJob(); // Added updateJob here
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
