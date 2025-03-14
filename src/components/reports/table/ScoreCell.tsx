@@ -13,9 +13,9 @@ const ScoreCell = ({ score, isHighest }: ScoreCellProps) => {
     >
       <div className="flex items-center gap-2">
         <div className="w-8 text-center">{score || '-'}</div>
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
           <div 
-            className={`h-2 rounded-full ${isHighest 
+            className={`h-2.5 rounded-full ${isHighest 
               ? 'bg-green-500 dark:bg-green-400' 
               : 'bg-blue-500 dark:bg-blue-400'}`}
             style={{ width: `${score * 10}%` }}

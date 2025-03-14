@@ -109,6 +109,7 @@ export const processCandidate = (candidate: Candidate, requirements: JobRequirem
   processedCandidate.overallScore = overallScore;
   processedCandidate.strengths = strengths;
   processedCandidate.weaknesses = weaknesses;
+  processedCandidate.status = 'processed'; // Ensure status is updated to processed
   processedCandidate.processedAt = new Date().toISOString();
   processedCandidate.personalityTraits = getRandomItems(personalityTraits, Math.floor(Math.random() * 3) + 1);
   processedCandidate.zodiacSign = zodiacSigns[Math.floor(Math.random() * zodiacSigns.length)];
