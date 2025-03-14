@@ -1,24 +1,19 @@
 
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
-import { Button } from '@/components/ui/button';
-import { 
-  ArrowLeft, 
-  FileText, 
-  CheckCircle2, 
-  Loader2,
-  Upload
-} from 'lucide-react';
 import { toast } from 'sonner';
 import { Job, Candidate } from '@/contexts/JobContext';
 
 // Import refactored components
 import JobRequirementsSummary from '@/components/JobRequirementsSummary';
 import CandidateFilter from '@/components/CandidateFilter';
-import ProcessingStatus from '@/components/ProcessingStatus';
 import CandidateCarousel from '@/components/CandidateCarousel';
 import EmptyCandidatesState from '@/components/EmptyCandidatesState';
+import CandidateAnalysisNavigation from '@/components/CandidateAnalysisNavigation';
+import CandidateAnalysisHeader from '@/components/CandidateAnalysisHeader';
+import CandidateAnalysisActions from '@/components/CandidateAnalysisActions';
+import CandidateAnalysisLoading from '@/components/CandidateAnalysisLoading';
 
 const CandidateAnalysis = () => {
   const { jobId, candidateId } = useParams<{ jobId: string; candidateId?: string }>();
@@ -169,81 +164,30 @@ const CandidateAnalysis = () => {
   };
 
   if (isLoading || !job) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse">
-          <div className="h-8 bg-muted rounded w-1/3 mb-6"></div>
-          <div className="h-12 bg-muted rounded w-2/3 mb-4"></div>
-          <div className="h-6 bg-muted rounded w-1/2 mb-8"></div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="h-64 bg-muted rounded"></div>
-            <div className="h-64 bg-muted rounded"></div>
-          </div>
-        </div>
-      </div>
-    );
+    return <CandidateAnalysisLoading />;
   }
 
-  // Count unprocessed candidates
+  // Count candidates by status
   const unprocessedCount = job?.candidates.filter(c => c.scores.length === 0).length || 0;
   const processedCount = job?.candidates.filter(c => c.scores.length > 0).length || 0;
   const starredCount = job?.candidates.filter(c => c.isStarred).length || 0;
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* If viewing a single candidate, show a back button to return to all candidates */}
-      {candidateId ? (
-        <Button 
-          variant="ghost" 
-          asChild 
-          className="mb-6"
-        >
-          <Link to={`/jobs/${jobId}/analysis`} className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to All Candidates
-          </Link>
-        </Button>
-      ) : (
-        <Button 
-          variant="ghost" 
-          asChild 
-          className="mb-6"
-        >
-          <Link to={`/jobs/${jobId}`} className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Job Details
-          </Link>
-        </Button>
-      )}
+      <CandidateAnalysisNavigation jobId={jobId || ''} candidateId={candidateId} />
       
-      <div className="flex flex-col md:flex-row justify-between md:items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">
-            {candidateId ? 'Candidate Details' : 'Candidate Analysis'}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {job.title} at {job.company}
-          </p>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row gap-2 mt-4 md:mt-0">
-          <ProcessingStatus 
-            isProcessingAll={isProcessingAll}
-            processingProgress={processingProgress}
-            currentProcessing={currentProcessing}
-            totalToProcess={totalToProcess}
-          />
-          
-          <Button 
-            onClick={() => navigate(`/jobs/${jobId}/report`)}
-            disabled={job.candidates.length === 0 || processedCount === 0}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Generate Report
-          </Button>
-        </div>
-      </div>
+      <CandidateAnalysisHeader
+        jobTitle={job.title}
+        jobCompany={job.company}
+        candidateId={candidateId}
+        jobId={jobId || ''}
+        candidatesCount={job.candidates.length}
+        processedCount={processedCount}
+        isProcessingAll={isProcessingAll}
+        processingProgress={processingProgress}
+        currentProcessing={currentProcessing}
+        totalToProcess={totalToProcess}
+      />
       
       {/* Requirements Summary */}
       <JobRequirementsSummary 
@@ -277,30 +221,14 @@ const CandidateAnalysis = () => {
             onDelete={handleDeleteCandidate}
           />
           
-          {/* Bottom actions section with Upload More and Process All buttons */}
-          {!candidateId && (
-            <div className="flex flex-col sm:flex-row items-center justify-between mt-8 border-t pt-6 gap-4">
-              <Button
-                onClick={() => navigate(`/jobs/${jobId}/upload`)}
-                variant="outline"
-                className="w-full sm:w-auto"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Upload More Candidates
-              </Button>
-              
-              {unprocessedCount > 0 && !isProcessingAll && (
-                <Button 
-                  onClick={handleProcessAllCandidatesClick}
-                  disabled={isProcessingAll || processingCandidateIds.length > 0}
-                  className="w-full sm:w-auto"
-                >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Process All Unprocessed ({unprocessedCount})
-                </Button>
-              )}
-            </div>
-          )}
+          <CandidateAnalysisActions
+            jobId={jobId || ''}
+            candidateId={candidateId}
+            unprocessedCount={unprocessedCount}
+            isProcessingAll={isProcessingAll}
+            processingCandidateIds={processingCandidateIds}
+            onProcessAll={handleProcessAllCandidatesClick}
+          />
         </>
       )}
     </div>
