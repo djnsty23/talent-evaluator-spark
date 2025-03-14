@@ -129,7 +129,7 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const newJob: Job = {
         id: `job_${Date.now()}`,
-        userId: currentUser.uid,
+        userId: currentUser.id, // Changed from uid to id to match the User interface
         title: jobData.title || '',
         company: jobData.company || '',
         description: jobData.description || '',
