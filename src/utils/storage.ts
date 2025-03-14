@@ -1,5 +1,6 @@
 
 import { Job, Report } from '@/types/job.types';
+import { toast } from 'sonner';
 
 const STORAGE_KEY = 'job_app_data';
 
