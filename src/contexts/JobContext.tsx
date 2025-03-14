@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
@@ -90,6 +91,7 @@ interface JobContextType {
   starCandidate: (jobId: string, candidateId: string, isStarred: boolean) => Promise<void>;
   deleteCandidate: (jobId: string, candidateId: string) => Promise<void>;
   generateReport: (jobId: string, candidateIds: string[], additionalPrompt?: string) => Promise<Report>;
+  setCurrentJob: (job: Job | null) => void; // Added missing function
 }
 
 const JobContext = createContext<JobContextType | undefined>(undefined);
@@ -587,6 +589,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
     starCandidate,
     deleteCandidate,
     generateReport,
+    setCurrentJob, // Added missing function to the context value
   };
 
   return (
