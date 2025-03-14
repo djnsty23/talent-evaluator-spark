@@ -136,6 +136,7 @@ const CandidateCarousel = ({
                   onDelete={() => onDelete(candidate.id)}
                   isProcessing={processingCandidateIds.includes(candidate.id)}
                   onViewDetails={() => handleViewDetails(candidate.id)}
+                  allCandidatesData={candidates}
                 />
               </div>
             </CarouselItem>
@@ -149,38 +150,13 @@ const CandidateCarousel = ({
         </div>
       </Carousel>
       
-      {/* Carousel navigation instructions with more obvious next steps */}
-      <div className="text-center mt-6 flex flex-col md:flex-row justify-center items-center gap-3">
+      {/* Carousel navigation instructions */}
+      <div className="text-center mt-4">
         {candidates.length > 1 && (
-          <p className="text-sm text-muted-foreground mb-2 md:mb-0">
-            Swipe or use arrows to view more candidates
+          <p className="text-sm text-muted-foreground mb-2">
+            Use the arrows to navigate between candidates
           </p>
         )}
-        
-        <div className="flex flex-wrap justify-center gap-3">
-          {/* View all button for individual candidate views */}
-          {candidates.length > 1 && getCurrentJobId() && (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navigate(`/jobs/${getCurrentJobId()}/analysis`)}
-              className="flex gap-2"
-            >
-              <User className="h-4 w-4" />
-              View All Candidates
-            </Button>
-          )}
-          
-          {/* Upload more candidates button */}
-          <Button 
-            size="sm"
-            onClick={() => navigate(`/jobs/${getCurrentJobId()}/upload`)}
-            className="flex gap-2"
-          >
-            <Upload className="h-4 w-4" />
-            Upload More Candidates
-          </Button>
-        </div>
       </div>
     </div>
   );
