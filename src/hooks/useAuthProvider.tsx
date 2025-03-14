@@ -17,13 +17,17 @@ export const useAuthProvider = () => {
     
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setCurrentUser(formatUser(session));
+      const formattedUser = formatUser(session);
+      console.log('Initial session check:', formattedUser);
+      setCurrentUser(formattedUser);
       setIsLoading(false);
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setCurrentUser(formatUser(session));
+      console.log('Auth state changed:', _event);
+      const formattedUser = formatUser(session);
+      setCurrentUser(formattedUser);
       setIsLoading(false);
     });
 
@@ -36,13 +40,14 @@ export const useAuthProvider = () => {
   const signInWithEmail = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
       if (error) throw error;
       
+      console.log('Signed in with email:', data);
       toast.success('Signed in successfully');
       navigate('/dashboard');
     } catch (error: any) {
@@ -58,16 +63,20 @@ export const useAuthProvider = () => {
   const signInWithGoogle = async () => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log('Starting Google sign-in');
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
         },
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Google sign in error:', error);
+        throw error;
+      }
       
-      // Note: The success toast will be shown after the redirect
+      console.log('Google sign-in initiated:', data);
       // The navigation happens automatically via redirectTo
     } catch (error: any) {
       console.error('Google sign in error:', error);
@@ -82,7 +91,7 @@ export const useAuthProvider = () => {
   const signUp = async (email: string, password: string, name: string) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -95,7 +104,8 @@ export const useAuthProvider = () => {
       
       if (error) throw error;
       
-      toast.success('Account created successfully. Please check your email to confirm your account.');
+      console.log('Signed up:', data);
+      toast.success('Account created successfully! You can now sign in.');
       navigate('/login');
     } catch (error: any) {
       console.error('Sign up error:', error);

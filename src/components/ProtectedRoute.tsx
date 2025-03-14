@@ -14,6 +14,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   // Effect to redirect if user is not authenticated after loading
   useEffect(() => {
     if (!isLoading && !currentUser) {
+      console.log('Not authenticated, redirecting to login');
       navigate('/login', { replace: true });
     }
   }, [currentUser, isLoading, navigate]);
@@ -30,9 +31,11 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   if (!currentUser) {
+    console.log('No current user, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
+  console.log('User authenticated, rendering protected content');
   return <>{children}</>;
 };
 
