@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { formatUser } from '@/utils/authUtils';
 import { AuthUser } from '@/contexts/AuthContext';
@@ -12,6 +12,7 @@ export const useAuthState = () => {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Setup Supabase auth listener
   useEffect(() => {
@@ -23,6 +24,11 @@ export const useAuthState = () => {
       console.log('Initial session check:', formattedUser);
       setCurrentUser(formattedUser);
       setIsLoading(false);
+      
+      // If user is already logged in and on login page, redirect to dashboard
+      if (formattedUser && location.pathname === '/login') {
+        navigate('/dashboard');
+      }
     });
 
     // Listen for auth changes
@@ -32,17 +38,24 @@ export const useAuthState = () => {
       setCurrentUser(formattedUser);
       setIsLoading(false);
       
-      // If user signs in, redirect to dashboard
+      // Handle various auth events
       if (_event === 'SIGNED_IN' && formattedUser) {
         console.log('User signed in, redirecting to dashboard');
         navigate('/dashboard');
+      } else if (_event === 'SIGNED_OUT') {
+        console.log('User signed out, redirecting to login');
+        navigate('/login');
+      } else if (_event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed');
+      } else if (_event === 'USER_UPDATED') {
+        console.log('User updated');
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   return {
     currentUser,
