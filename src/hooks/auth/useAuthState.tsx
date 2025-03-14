@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { formatUser } from '@/utils/authUtils';
 import { AuthUser } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 /**
  * Hook to manage authentication state (current user and loading state)
