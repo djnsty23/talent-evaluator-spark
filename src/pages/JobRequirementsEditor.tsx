@@ -1,10 +1,11 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Select, 
   SelectContent, 
@@ -13,11 +14,13 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Plus, Save, Trash2, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, Plus, Save, Trash2, Loader2, Sparkles, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { JobRequirement } from '@/contexts/JobContext';
 import { AIService } from '@/services/api';
 import OpenAIKeyInput from '@/components/OpenAIKeyInput';
+import FileUploader from '@/components/FileUploader';
+import { extractTextFromFile } from '@/services/api';
 
 const JobRequirementsEditor = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -31,7 +34,10 @@ const JobRequirementsEditor = () => {
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [contextFiles, setContextFiles] = useState<string[]>([]);
+  const [contextFiles, setContextFiles] = useState<File[]>([]);
+  const [extractedContexts, setExtractedContexts] = useState<string[]>([]);
+  const [isExtractingContext, setIsExtractingContext] = useState(false);
+  const [showContextUploader, setShowContextUploader] = useState(false);
   
   if (!job) {
     navigate('/dashboard');
@@ -60,6 +66,30 @@ const JobRequirementsEditor = () => {
     ));
   };
   
+  const handleContextFilesSelected = async (files: File[]) => {
+    setContextFiles(files);
+    
+    if (files.length > 0) {
+      setIsExtractingContext(true);
+      
+      try {
+        const extractedTexts = await Promise.all(
+          files.map(file => extractTextFromFile(file))
+        );
+        
+        setExtractedContexts(extractedTexts);
+        toast.success(`Successfully extracted content from ${files.length} file(s)`);
+      } catch (error) {
+        console.error('Error extracting text from files:', error);
+        toast.error('Failed to extract text from some files');
+      } finally {
+        setIsExtractingContext(false);
+      }
+    } else {
+      setExtractedContexts([]);
+    }
+  };
+  
   const handleGenerateRequirements = async () => {
     if (!window.openAIKey) {
       toast.error('Please set your OpenAI API key first');
@@ -75,7 +105,7 @@ const JobRequirementsEditor = () => {
           company: job.company,
           description: job.description,
         },
-        contextFiles: contextFiles
+        contextFiles: extractedContexts
       });
       
       // If we already have requirements, confirm before replacing
@@ -134,11 +164,21 @@ const JobRequirementsEditor = () => {
         <h1 className="text-2xl font-bold">Edit Job Requirements</h1>
       </div>
       
-      <Card>
+      <Card className="mb-6">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Requirements for {job.title}</CardTitle>
           <div className="flex items-center gap-2">
             <OpenAIKeyInput />
+            
+            <Button 
+              variant="outline"
+              onClick={() => setShowContextUploader(!showContextUploader)}
+              className="gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              {showContextUploader ? 'Hide Context Files' : 'Add Context Files'}
+            </Button>
+            
             <Button 
               variant="outline"
               onClick={handleGenerateRequirements}
@@ -157,12 +197,51 @@ const JobRequirementsEditor = () => {
                 </>
               )}
             </Button>
+            
             <Button onClick={handleAddRequirement}>
               <Plus className="h-4 w-4 mr-2" />
               Add Requirement
             </Button>
           </div>
         </CardHeader>
+        
+        {showContextUploader && (
+          <CardContent className="border-t pt-4">
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium mb-2">Upload Context Files</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Upload any company documents, job descriptions, or team information to help the AI better understand the role.
+                These files will be used as additional context (20% weight) for generating requirements.
+              </p>
+              
+              <FileUploader 
+                onFilesSelected={handleContextFilesSelected}
+                accept=".pdf,.doc,.docx,.txt,.csv,.xlsx"
+                multiple={true}
+              />
+              
+              {isExtractingContext && (
+                <div className="flex items-center justify-center p-4">
+                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                  <span>Extracting content from files...</span>
+                </div>
+              )}
+              
+              {contextFiles.length > 0 && (
+                <div className="border rounded-md p-4">
+                  <h4 className="font-medium mb-2">Selected Files ({contextFiles.length})</h4>
+                  <ul className="space-y-1">
+                    {contextFiles.map((file, index) => (
+                      <li key={index} className="text-sm">
+                        {file.name}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        )}
         
         <CardContent>
           <div className="space-y-6">
@@ -197,10 +276,11 @@ const JobRequirementsEditor = () => {
                   
                   <div className="col-span-5">
                     <label className="text-sm font-medium mb-1 block">Description</label>
-                    <Input
+                    <Textarea
                       value={req.description}
                       onChange={(e) => handleRequirementChange(req.id, 'description', e.target.value)}
                       placeholder="Requirement description"
+                      className="min-h-[60px]"
                     />
                   </div>
                   
