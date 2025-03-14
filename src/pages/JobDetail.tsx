@@ -11,6 +11,7 @@ import { ArrowLeft, Upload, ChevronRight, Star, User, BarChart, FileText, Buildi
 import { AIService } from '@/services/api';
 import { toast } from 'sonner';
 import OpenAIKeyInput from '@/components/OpenAIKeyInput';
+import JobRequirementsSummary from '@/components/JobRequirementsSummary';
 
 const JobDetail = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -202,14 +203,18 @@ const JobDetail = () => {
                   {job.requirements.length > 0 ? (
                     <ul className="space-y-2">
                       {job.requirements
-                        .filter(req => req.isRequired)
-                        .slice(0, 5)
+                        .slice(0, 10)
                         .map(requirement => (
                           <li key={requirement.id} className="flex items-start">
                             <div className="w-1 h-1 rounded-full bg-primary mt-2 mr-2"></div>
                             <span>{requirement.description}</span>
                           </li>
                         ))}
+                      {job.requirements.length > 10 && (
+                        <li className="text-sm text-muted-foreground">
+                          + {job.requirements.length - 10} more requirements
+                        </li>
+                      )}
                     </ul>
                   ) : (
                     <div className="text-center py-4">
@@ -312,107 +317,9 @@ const JobDetail = () => {
           </TabsContent>
           
           <TabsContent value="requirements">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Job Requirements</CardTitle>
-                <div className="flex gap-2">
-                  <OpenAIKeyInput />
-                  <Button
-                    variant="outline"
-                    onClick={handleGenerateRequirements}
-                    disabled={isGenerating}
-                    className="gap-1"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-4 w-4" />
-                        Generate with AI
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleEditRequirements}
-                  >
-                    <PencilLine className="h-4 w-4 mr-2" />
-                    Edit Requirements
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {Object.keys(groupedRequirements).length > 0 ? (
-                  <div className="space-y-6">
-                    {Object.entries(groupedRequirements).map(([category, requirements]) => (
-                      <div key={category}>
-                        <h3 className="text-lg font-medium mb-3">{category}</h3>
-                        <div className="space-y-2">
-                          {requirements.map(requirement => (
-                            <div 
-                              key={requirement.id} 
-                              className="p-3 border rounded-md flex items-center justify-between"
-                            >
-                              <div className="flex-1">
-                                <div className="flex items-center">
-                                  <span>{requirement.description}</span>
-                                  {requirement.isRequired && (
-                                    <Badge variant="outline" className="ml-2">Required</Badge>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="ml-4 text-right">
-                                <span className="text-sm font-medium">
-                                  Weight: {requirement.weight}/10
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No requirements defined yet</h3>
-                    <p className="text-muted-foreground mb-6">
-                      Define requirements to help evaluate candidates
-                    </p>
-                    <div className="flex flex-col gap-2 max-w-xs mx-auto">
-                      <Button 
-                        onClick={handleGenerateRequirements}
-                        disabled={isGenerating}
-                        className="w-full"
-                      >
-                        {isGenerating ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Generating...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="h-4 w-4 mr-2" />
-                            Generate with AI
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={handleEditRequirements}
-                        className="w-full"
-                      >
-                        <PencilLine className="h-4 w-4 mr-2" />
-                        Add Manually
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {job && job.id && (
+              <JobRequirementsSummary jobId={job.id} requirements={job.requirements} />
+            )}
           </TabsContent>
           
           <TabsContent value="candidates">
