@@ -1,10 +1,10 @@
-
 // Define all types related to jobs and candidates here
 export interface JobRequirement {
   id: string;
   description: string;
   weight: number;
   isRequired: boolean;
+  category: string;
 }
 
 export interface Candidate {
