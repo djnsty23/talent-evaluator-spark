@@ -7,7 +7,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Job, Candidate, JobRequirement } from '@/contexts/JobContext';
-import { ArrowLeft, Search, Filter, FileText, Info, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Search, 
+  Filter, 
+  FileText, 
+  Info, 
+  CheckCircle2, 
+  AlertTriangle, 
+  Loader2, 
+  ChevronLeft, 
+  ChevronRight 
+} from 'lucide-react';
 import CandidateCard from '@/components/CandidateCard';
 import {
   Carousel,
@@ -18,6 +29,7 @@ import {
 } from "@/components/ui/carousel";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from 'sonner';
+import { Progress } from '@/components/ui/progress';
 
 const CandidateAnalysis = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -29,6 +41,9 @@ const CandidateAnalysis = () => {
   const [filter, setFilter] = useState<'all' | 'starred' | 'processed' | 'unprocessed'>('all');
   const [showRequirements, setShowRequirements] = useState(false);
   const [isProcessingAll, setIsProcessingAll] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState(0);
+  const [totalToProcess, setTotalToProcess] = useState(0);
+  const [currentProcessing, setCurrentProcessing] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -79,8 +94,10 @@ const CandidateAnalysis = () => {
     setProcessingCandidateIds(prev => [...prev, candidateId]);
     try {
       await processCandidate(jobId, candidateId);
+      toast.success('Candidate processed successfully');
     } catch (error) {
       console.error('Process error:', error);
+      toast.error('Failed to process candidate');
     } finally {
       setProcessingCandidateIds(prev => prev.filter(id => id !== candidateId));
     }
@@ -97,22 +114,26 @@ const CandidateAnalysis = () => {
     
     // Set state to show we're processing all candidates
     setIsProcessingAll(true);
+    setTotalToProcess(unprocessedCandidates.length);
+    setProcessingProgress(0);
     
     try {
       // Process each unprocessed candidate sequentially
-      for (const candidate of unprocessedCandidates) {
+      for (let i = 0; i < unprocessedCandidates.length; i++) {
+        const candidate = unprocessedCandidates[i];
+        setCurrentProcessing(candidate.name);
         setProcessingCandidateIds(prev => [...prev, candidate.id]);
         
         try {
           await processCandidate(jobId, candidate.id);
+          // Update progress after each successful processing
+          setProcessingProgress(Math.round(((i + 1) / unprocessedCandidates.length) * 100));
         } catch (error) {
           console.error(`Error processing candidate ${candidate.name}:`, error);
+          toast.error(`Failed to process ${candidate.name}`);
         }
         
         setProcessingCandidateIds(prev => prev.filter(id => id !== candidate.id));
-        
-        // Small delay between processing candidates to avoid overwhelming
-        await new Promise(resolve => setTimeout(resolve, 300));
       }
       
       toast.success(`Processed ${unprocessedCandidates.length} candidates successfully`);
@@ -122,6 +143,7 @@ const CandidateAnalysis = () => {
     } finally {
       setIsProcessingAll(false);
       setProcessingCandidateIds([]);
+      setCurrentProcessing('');
     }
   };
 
@@ -211,25 +233,29 @@ const CandidateAnalysis = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-2 mt-4 md:mt-0">
-          {unprocessedCount > 0 && (
+          {unprocessedCount > 0 && !isProcessingAll && (
             <Button 
               onClick={handleProcessAllCandidates}
               disabled={isProcessingAll || processingCandidateIds.length > 0}
               variant="outline"
               className="flex items-center gap-2"
             >
-              {isProcessingAll ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-4 w-4" />
-                  Process All ({unprocessedCount})
-                </>
-              )}
+              <CheckCircle2 className="h-4 w-4" />
+              Process All ({unprocessedCount})
             </Button>
+          )}
+          
+          {isProcessingAll && (
+            <div className="flex flex-col gap-2 p-2 border rounded-md bg-background w-full sm:w-64">
+              <div className="flex justify-between text-sm">
+                <span>Processing: {currentProcessing}</span>
+                <span>{Math.round(processingProgress)}%</span>
+              </div>
+              <Progress value={processingProgress} className="h-2" />
+              <div className="text-xs text-muted-foreground">
+                {Math.round(processingProgress / 100 * totalToProcess)} of {totalToProcess} candidates
+              </div>
+            </div>
           )}
           
           <Button 
@@ -242,11 +268,14 @@ const CandidateAnalysis = () => {
         </div>
       </div>
       
-      {/* Requirements Summary */}
+      {/* Requirements Summary - Always visible */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold flex items-center">
             Job Requirements
+            <Badge variant="outline" className="ml-2">
+              {job.requirements.length} requirements
+            </Badge>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -437,9 +466,30 @@ const CandidateAnalysis = () => {
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious className="left-0" />
-                <CarouselNext className="right-0" />
+                
+                {/* Custom, more visible carousel navigation */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 rounded-full shadow-md hover:bg-primary hover:text-primary-foreground"
+                  aria-label="Previous slide"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 rounded-full shadow-md hover:bg-primary hover:text-primary-foreground"
+                  aria-label="Next slide"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
               </Carousel>
+              
+              {/* Carousel navigation instruction */}
+              <div className="text-center mt-4 text-sm text-muted-foreground">
+                <p>Swipe or use arrows to view more candidates</p>
+              </div>
             </div>
           )}
         </>
