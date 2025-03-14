@@ -9,13 +9,14 @@ const mockApiDelay = async (ms: number = 1000) => {
 };
 
 interface AIAnalysisRequest {
-  content: string;
+  content?: string;
   jobInfo?: {
     title: string;
     company: string;
     description: string;
   };
   additionalContext?: string;
+  contextFiles?: string[];
 }
 
 interface AIRequirementsResponse {
@@ -56,12 +57,19 @@ export class AIService {
       const description = jobInfo.jobInfo?.description || '';
       const title = jobInfo.jobInfo?.title || '';
       const company = jobInfo.jobInfo?.company || '';
+      const contextFiles = jobInfo.contextFiles || [];
       
       // For demo purposes, we'll check if we should use the real API or mock data
       const useRealAPI = true; // Toggle this to switch between real API and mock data
       
       if (useRealAPI && description) {
         try {
+          // Build context from additional files if provided
+          let additionalContext = '';
+          if (contextFiles.length > 0) {
+            additionalContext = `\n\nAdditional context from company documents:\n${contextFiles.join('\n\n')}`;
+          }
+          
           const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -88,6 +96,7 @@ export class AIService {
                   Position: ${title}
                   Company: ${company}
                   Description: ${description}
+                  ${additionalContext}
                   
                   Please format your response as a JSON array of requirements, with each requirement having:
                   - category: string (Technical Skills, Soft Skills, Education, Experience, Certifications, or Language)
@@ -95,7 +104,9 @@ export class AIService {
                   - weight: number (1-10, with 10 being most important)
                   - isRequired: boolean (true if mandatory, false if preferred)
                   
-                  Just return the JSON array, no other text.`
+                  Just return the JSON array, no other text.
+                  
+                  Note: The job description should be considered the most important source of information, prioritize that over any context files.`
                 }
               ],
               temperature: 0.7,

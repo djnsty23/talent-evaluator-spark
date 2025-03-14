@@ -31,6 +31,7 @@ const JobRequirementsEditor = () => {
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [contextFiles, setContextFiles] = useState<string[]>([]);
   
   if (!job) {
     navigate('/dashboard');
@@ -74,6 +75,7 @@ const JobRequirementsEditor = () => {
           company: job.company,
           description: job.description,
         },
+        contextFiles: contextFiles
       });
       
       // If we already have requirements, confirm before replacing

@@ -8,9 +8,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Plus, Upload, Check } from 'lucide-react';
+import { ArrowLeft, Plus, Upload, Check, Loader2 } from 'lucide-react';
 import FileUploader from '@/components/FileUploader';
+import { extractTextFromFile, AIService } from '@/services/api';
 import { toast } from 'sonner';
+import OpenAIKeyInput from '@/components/OpenAIKeyInput';
 
 const CreateJob = () => {
   const navigate = useNavigate();
@@ -18,6 +20,8 @@ const CreateJob = () => {
   const [activeTab, setActiveTab] = useState('details');
   const [loading, setLoading] = useState(false);
   const [contextFiles, setContextFiles] = useState<File[]>([]);
+  const [extractedContexts, setExtractedContexts] = useState<string[]>([]);
+  const [isExtractingContext, setIsExtractingContext] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -33,16 +37,35 @@ const CreateJob = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
   
-  const handleContextFilesSelected = (files: File[]) => {
+  const handleContextFilesSelected = async (files: File[]) => {
     setContextFiles(files);
+    
+    if (files.length > 0) {
+      setIsExtractingContext(true);
+      
+      try {
+        const extractedTexts = await Promise.all(
+          files.map(file => extractTextFromFile(file))
+        );
+        
+        setExtractedContexts(extractedTexts);
+        toast.success(`Successfully extracted content from ${files.length} file(s)`);
+      } catch (error) {
+        console.error('Error extracting text from files:', error);
+        toast.error('Failed to extract text from some files');
+      } finally {
+        setIsExtractingContext(false);
+      }
+    } else {
+      setExtractedContexts([]);
+    }
   };
   
   const handleCreateJob = async () => {
     setLoading(true);
     
     try {
-      // Create a new job with initial data - don't include requirements 
-      // as it's already excluded in the type definition
+      // Create a new job with initial data
       const newJob = await createJob({
         ...formData,
       });
@@ -192,6 +215,13 @@ const CreateJob = () => {
                   />
                 </div>
                 
+                {isExtractingContext && (
+                  <div className="flex items-center justify-center p-4">
+                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                    <span>Extracting content from files...</span>
+                  </div>
+                )}
+                
                 {contextFiles.length > 0 && (
                   <div className="border rounded-md p-4">
                     <h4 className="font-medium mb-2">Selected Files ({contextFiles.length})</h4>
@@ -235,10 +265,15 @@ const CreateJob = () => {
                   </p>
                   
                   {/* Placeholder for AI-generated requirements */}
-                  <div className="border rounded-md p-4 bg-muted/20">
-                    <p className="text-sm text-muted-foreground italic">
-                      Requirements will be generated after creating the job. You can edit them later.
-                    </p>
+                  <div className="border rounded-md p-6 bg-muted/20">
+                    <div className="flex justify-between items-center mb-4">
+                      <p className="text-sm text-muted-foreground italic">
+                        Requirements will be generated after creating the job. You can edit them later.
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <OpenAIKeyInput />
+                      </div>
+                    </div>
                   </div>
                 </div>
                 

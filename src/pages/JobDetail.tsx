@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
@@ -76,7 +75,7 @@ const JobDetail = () => {
           title: job.title,
           company: job.company,
           description: job.description,
-        },
+        }
       });
       
       const updatedJob = {
