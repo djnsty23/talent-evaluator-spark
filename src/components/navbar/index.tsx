@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Logo from './Logo';
 import DesktopNav from './DesktopNav';
@@ -11,7 +11,6 @@ const Navbar = () => {
   const { currentUser, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
 
   // Navigation items
   const navItems = [

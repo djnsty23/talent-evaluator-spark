@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, LogOut, Settings } from 'lucide-react';
 import { AuthUser } from '@/contexts/AuthContext';
-import { getInitials } from './utils';
+import { getInitials, isPathActive } from './utils';
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -36,7 +36,7 @@ const MobileNav = ({
               key={item.path}
               to={item.path}
               className={`block px-3 py-2 rounded-md text-base font-medium ${
-                currentPath === item.path
+                isPathActive(currentPath, item.path)
                   ? 'text-primary'
                   : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
               }`}

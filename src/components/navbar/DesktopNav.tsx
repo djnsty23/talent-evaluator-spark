@@ -1,5 +1,5 @@
 
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import UserDropdown from './UserDropdown';
 import { AuthUser } from '@/contexts/AuthContext';
@@ -8,7 +8,7 @@ import { isPathActive } from './utils';
 interface DesktopNavProps {
   navItems: { name: string; path: string; protected: boolean }[];
   currentUser: AuthUser | null;
-  location: ReturnType<typeof useLocation>;
+  location: { pathname: string };
 }
 
 const DesktopNav = ({ navItems, currentUser, location }: DesktopNavProps) => {
