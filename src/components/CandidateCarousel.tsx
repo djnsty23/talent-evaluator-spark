@@ -86,8 +86,9 @@ const CandidateCarousel = ({
         }}
         ref={carouselRef}
         onSelect={(api) => {
-          const index = api.selectedScrollSnap();
-          setActiveIndex(index);
+          if (api) {
+            setActiveIndex(api.selectedScrollSnap());
+          }
         }}
       >
         <CarouselContent>
