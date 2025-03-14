@@ -117,7 +117,7 @@ const CandidateAnalysis = () => {
     setProcessingProgress(0);
     
     try {
-      // Start an interval to show progress animation
+      // Start progress animation
       const updateProgressInterval = setInterval(() => {
         setProcessingProgress(prev => {
           if (prev < 95) {
@@ -127,9 +127,10 @@ const CandidateAnalysis = () => {
         });
       }, 1000);
       
-      // Process all candidates using the JobContext function
+      // Use the JobContext function to process all candidates
       await handleProcessAllCandidates(jobId);
       
+      // Clean up and show completion
       clearInterval(updateProgressInterval);
       setProcessingProgress(100);
       
@@ -185,9 +186,9 @@ const CandidateAnalysis = () => {
   }
 
   // Count unprocessed candidates
-  const unprocessedCount = job.candidates.filter(c => c.scores.length === 0).length;
-  const processedCount = job.candidates.filter(c => c.scores.length > 0).length;
-  const starredCount = job.candidates.filter(c => c.isStarred).length;
+  const unprocessedCount = job?.candidates.filter(c => c.scores.length === 0).length || 0;
+  const processedCount = job?.candidates.filter(c => c.scores.length > 0).length || 0;
+  const starredCount = job?.candidates.filter(c => c.isStarred).length || 0;
 
   return (
     <div className="container mx-auto px-4 py-8">

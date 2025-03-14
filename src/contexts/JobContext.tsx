@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
@@ -50,7 +49,6 @@ export interface Candidate {
   notes?: string;
   jobId: string;
   processedAt?: string;
-  // New fields for enhanced evaluation
   personalityTraits?: string[];
   zodiacSign?: string;
   workStyle?: string;
@@ -129,7 +127,7 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const newJob: Job = {
         id: `job_${Date.now()}`,
-        userId: currentUser.id, // Changed from uid to id to match the User interface
+        userId: currentUser.id,
         title: jobData.title || '',
         company: jobData.company || '',
         description: jobData.description || '',
@@ -407,9 +405,102 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
       
-      // Process each candidate one by one
+      // Create a copy of the job to update all candidates at once
+      const updatedJob = { ...job };
+      const updatedCandidates = [...job.candidates];
+      
+      // Process each candidate one by one (but update the state only once at the end)
       for (const candidate of unprocessedCandidates) {
-        await processCandidate(jobId, candidate.id);
+        const candidateIndex = updatedCandidates.findIndex(c => c.id === candidate.id);
+        if (candidateIndex === -1) continue;
+        
+        // Mock processing: Generate scores based on requirements
+        const scores = job.requirements.map(req => ({
+          requirementId: req.id,
+          score: Math.floor(Math.random() * 10) + 1, // Random score 1-10
+          notes: `Auto-generated score for ${req.description}`
+        }));
+        
+        // Calculate overall score (weighted average)
+        const totalWeight = job.requirements.reduce((sum, req) => sum + req.weight, 0);
+        const weightedScoreSum = scores.reduce((sum, score, index) => {
+          const requirement = job.requirements[index];
+          return sum + (score.score * requirement.weight);
+        }, 0);
+        
+        const overallScore = totalWeight > 0 
+          ? Math.round((weightedScoreSum / totalWeight) * 10) / 10
+          : 0;
+        
+        // Generate strengths and weaknesses
+        const strengths = scores
+          .filter(score => score.score >= 7)
+          .map(score => {
+            const req = job.requirements.find(r => r.id === score.requirementId);
+            return req ? req.description : '';
+          })
+          .filter(Boolean);
+        
+        const weaknesses = scores
+          .filter(score => score.score <= 4)
+          .map(score => {
+            const req = job.requirements.find(r => r.id === score.requirementId);
+            return req ? req.description : '';
+          })
+          .filter(Boolean);
+
+        // Generate personality traits (mock data)
+        const personalityTraits = ['Analytical', 'Detail-oriented', 'Team player', 'Self-motivated', 'Creative'];
+        const randomTraits = [];
+        for (let i = 0; i < 3; i++) {
+          const randomIndex = Math.floor(Math.random() * personalityTraits.length);
+          randomTraits.push(personalityTraits[randomIndex]);
+          personalityTraits.splice(randomIndex, 1);
+        }
+        
+        // Generate zodiac sign (mock data)
+        const zodiacSigns = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+        const randomZodiac = zodiacSigns[Math.floor(Math.random() * zodiacSigns.length)];
+        
+        // Generate work style (mock data)
+        const workStyles = ['Remote', 'Hybrid', 'In-office', 'Flexible'];
+        const randomWorkStyle = workStyles[Math.floor(Math.random() * workStyles.length)];
+        
+        // Generate culture fit and leadership potential scores
+        const cultureFit = Math.floor(Math.random() * 10) + 1;
+        const leadershipPotential = Math.floor(Math.random() * 10) + 1;
+        
+        // Update the candidate
+        updatedCandidates[candidateIndex] = {
+          ...candidate,
+          scores,
+          overallScore,
+          strengths,
+          weaknesses,
+          status: 'reviewed',
+          processedAt: new Date().toISOString(),
+          personalityTraits: randomTraits,
+          zodiacSign: randomZodiac,
+          workStyle: randomWorkStyle,
+          cultureFit,
+          leadershipPotential
+        };
+      }
+      
+      // Update the job with all processed candidates
+      updatedJob.candidates = updatedCandidates;
+      updatedJob.updatedAt = new Date().toISOString();
+      
+      // Update backend (mocked)
+      await mockSaveData(updatedJob);
+      
+      // Update local state
+      setJobs(prevJobs => 
+        prevJobs.map(j => j.id === jobId ? updatedJob : j)
+      );
+      
+      if (currentJob && currentJob.id === jobId) {
+        setCurrentJob(updatedJob);
       }
       
       toast.success(`Successfully processed ${unprocessedCandidates.length} candidates`);
@@ -417,9 +508,10 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error processing all candidates';
       setError(errorMessage);
+      toast.error(errorMessage);
       throw new Error(errorMessage);
     }
-  }, [jobs, processCandidate]);
+  }, [jobs, currentJob]);
 
   // Star/unstar a candidate
   const starCandidate = useCallback(async (jobId: string, candidateId: string, isStarred: boolean): Promise<void> => {
