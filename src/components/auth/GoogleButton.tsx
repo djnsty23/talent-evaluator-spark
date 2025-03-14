@@ -23,13 +23,18 @@ const GoogleButton = ({ onClick, isDisabled }: GoogleButtonProps) => {
     <Button
       type="button"
       variant="outline"
-      className="w-full flex items-center justify-center gap-2"
+      className="w-full flex items-center justify-center gap-2 relative"
       onClick={handleClick}
       disabled={isDisabled}
       aria-label="Sign in with Google"
     >
       <FcGoogle className="h-5 w-5" />
       <span>Continue with Google</span>
+      
+      {/* Tooltip/hint for users */}
+      <div className="hidden group-hover:block absolute -top-14 left-0 right-0 mx-auto w-64 text-xs bg-background border border-border rounded p-2 shadow-md">
+        If you encounter issues, ensure third-party cookies are enabled in your browser.
+      </div>
     </Button>
   );
 };
