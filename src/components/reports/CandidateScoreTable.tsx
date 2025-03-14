@@ -1,9 +1,10 @@
 
 import { useState } from 'react';
-import { Candidate, JobRequirement } from '@/contexts/JobContext';
+import { Candidate, JobRequirement } from '@/types/job.types';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronUp, Star } from 'lucide-react';
+import SortableTableHeader from './table/SortableTableHeader';
+import CandidateRow from './table/CandidateRow';
+import { calculateMaxScores } from './utils/scoreUtils';
 
 interface CandidateScoreTableProps {
   candidates: Candidate[];
@@ -18,6 +19,16 @@ const CandidateScoreTable = ({ candidates, requirements }: CandidateScoreTablePr
     key: 'overallScore',
     direction: 'descending',
   });
+
+  const requestSort = (key: string) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    
+    setSortConfig({ key, direction });
+  };
 
   const sortedCandidates = [...candidates].sort((a, b) => {
     if (!sortConfig) return 0;
@@ -44,117 +55,52 @@ const CandidateScoreTable = ({ candidates, requirements }: CandidateScoreTablePr
       : scoreB - scoreA;
   });
 
-  const requestSort = (key: string) => {
-    let direction: 'ascending' | 'descending' = 'ascending';
-    
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    
-    setSortConfig({ key, direction });
-  };
-
-  const getSortIcon = (key: string) => {
-    if (!sortConfig || sortConfig.key !== key) {
-      return null;
-    }
-    
-    return sortConfig.direction === 'ascending' 
-      ? <ChevronUp className="h-4 w-4 inline-block ml-1" /> 
-      : <ChevronDown className="h-4 w-4 inline-block ml-1" />;
-  };
-
   // Find max score for each requirement
-  const maxScores: { [reqId: string]: number } = {};
-  requirements.forEach(req => {
-    maxScores[req.id] = Math.max(...candidates.map(c => {
-      const score = c.scores.find(s => s.requirementId === req.id);
-      return score ? score.score : 0;
-    }));
-  });
+  const maxScores = calculateMaxScores(candidates, requirements);
 
   return (
     <div className="border rounded-md">
       <Table>
         <TableHeader className="bg-muted/50">
           <TableRow>
-            <TableHead 
-              className="w-[180px] cursor-pointer"
-              onClick={() => requestSort('name')}
-            >
-              Candidate {getSortIcon('name')}
-            </TableHead>
+            <SortableTableHeader
+              title="Candidate"
+              sortKey="name"
+              currentSort={sortConfig}
+              onSort={requestSort}
+              className="w-[180px]"
+            />
             
             {requirements.map(req => (
-              <TableHead 
+              <SortableTableHeader
                 key={req.id}
-                className="min-w-[140px] cursor-pointer"
-                onClick={() => requestSort(req.id)}
-              >
-                <div className="flex flex-col">
-                  <span>
-                    {req.description.length > 30
-                      ? req.description.substring(0, 30) + '...'
-                      : req.description
-                    }
-                    {getSortIcon(req.id)}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {req.category} (weight: {req.weight})
-                  </span>
-                </div>
-              </TableHead>
+                title={req.description}
+                subtitle={`${req.category} (weight: ${req.weight})`}
+                sortKey={req.id}
+                currentSort={sortConfig}
+                onSort={requestSort}
+                className="min-w-[140px]"
+                truncateAt={30}
+              />
             ))}
             
-            <TableHead 
-              className="text-right cursor-pointer"
-              onClick={() => requestSort('overallScore')}
-            >
-              Overall Score {getSortIcon('overallScore')}
-            </TableHead>
+            <SortableTableHeader
+              title="Overall Score"
+              sortKey="overallScore"
+              currentSort={sortConfig}
+              onSort={requestSort}
+              className="text-right"
+            />
           </TableRow>
         </TableHeader>
         <TableBody>
           {sortedCandidates.map(candidate => (
-            <TableRow key={candidate.id}>
-              <TableCell className="font-medium">
-                <div className="flex items-center gap-1">
-                  {candidate.name}
-                  {candidate.isStarred && (
-                    <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
-                  )}
-                </div>
-              </TableCell>
-              
-              {requirements.map(req => {
-                const score = candidate.scores.find(s => s.requirementId === req.id);
-                const scoreValue = score ? score.score : 0;
-                const isHighest = scoreValue > 0 && scoreValue === maxScores[req.id];
-                
-                return (
-                  <TableCell 
-                    key={req.id}
-                    className={isHighest ? "font-semibold bg-green-50 dark:bg-green-900/20" : ""}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 text-center">{scoreValue || '-'}</div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full ${isHighest 
-                            ? 'bg-green-500 dark:bg-green-400' 
-                            : 'bg-blue-500 dark:bg-blue-400'}`}
-                          style={{ width: `${scoreValue * 10}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </TableCell>
-                );
-              })}
-              
-              <TableCell className="text-right font-semibold">
-                {candidate.overallScore.toFixed(1)}
-              </TableCell>
-            </TableRow>
+            <CandidateRow
+              key={candidate.id}
+              candidate={candidate}
+              requirements={requirements}
+              maxScores={maxScores}
+            />
           ))}
         </TableBody>
       </Table>
