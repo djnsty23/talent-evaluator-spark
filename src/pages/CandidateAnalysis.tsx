@@ -11,7 +11,7 @@ import {
   Loader2 
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Job } from '@/contexts/JobContext';
+import { Job, Candidate } from '@/contexts/JobContext';
 
 // Import refactored components
 import JobRequirementsSummary from '@/components/JobRequirementsSummary';
