@@ -3,33 +3,22 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Job, Candidate, JobRequirement } from '@/contexts/JobContext';
+import { Card } from '@/components/ui/card';
 import { 
   ArrowLeft, 
-  Search, 
-  Filter, 
   FileText, 
-  Info, 
   CheckCircle2, 
-  AlertTriangle, 
-  Loader2, 
-  ChevronLeft, 
-  ChevronRight 
+  Loader2 
 } from 'lucide-react';
-import CandidateCard from '@/components/CandidateCard';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from 'sonner';
-import { Progress } from '@/components/ui/progress';
+import { Job } from '@/contexts/JobContext';
+
+// Import refactored components
+import JobRequirementsSummary from '@/components/JobRequirementsSummary';
+import CandidateFilter from '@/components/CandidateFilter';
+import ProcessingStatus from '@/components/ProcessingStatus';
+import CandidateCarousel from '@/components/CandidateCarousel';
+import EmptyCandidatesState from '@/components/EmptyCandidatesState';
 
 const CandidateAnalysis = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -39,7 +28,6 @@ const CandidateAnalysis = () => {
   const [processingCandidateIds, setProcessingCandidateIds] = useState<string[]>([]);
   const [filteredCandidates, setFilteredCandidates] = useState<Candidate[]>([]);
   const [filter, setFilter] = useState<'all' | 'starred' | 'processed' | 'unprocessed'>('all');
-  const [showRequirements, setShowRequirements] = useState(false);
   const [isProcessingAll, setIsProcessingAll] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
   const [totalToProcess, setTotalToProcess] = useState(0);
@@ -167,28 +155,6 @@ const CandidateAnalysis = () => {
     }
   };
 
-  const handleFilterChange = (newFilter: 'all' | 'starred' | 'processed' | 'unprocessed') => {
-    setFilter(newFilter);
-  };
-
-  // Format weight for display
-  const formatWeight = (weight: number) => {
-    if (weight >= 9) return "Critical";
-    if (weight >= 7) return "High";
-    if (weight >= 5) return "Medium";
-    if (weight >= 3) return "Low";
-    return "Optional";
-  };
-
-  // Get weight class for styling
-  const getWeightClass = (weight: number) => {
-    if (weight >= 9) return "text-red-500";
-    if (weight >= 7) return "text-orange-500";
-    if (weight >= 5) return "text-blue-500";
-    if (weight >= 3) return "text-green-500";
-    return "text-gray-500";
-  };
-
   if (isLoading || !job) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -245,18 +211,12 @@ const CandidateAnalysis = () => {
             </Button>
           )}
           
-          {isProcessingAll && (
-            <div className="flex flex-col gap-2 p-2 border rounded-md bg-background w-full sm:w-64">
-              <div className="flex justify-between text-sm">
-                <span>Processing: {currentProcessing}</span>
-                <span>{Math.round(processingProgress)}%</span>
-              </div>
-              <Progress value={processingProgress} className="h-2" />
-              <div className="text-xs text-muted-foreground">
-                {Math.round(processingProgress / 100 * totalToProcess)} of {totalToProcess} candidates
-              </div>
-            </div>
-          )}
+          <ProcessingStatus 
+            isProcessingAll={isProcessingAll}
+            processingProgress={processingProgress}
+            currentProcessing={currentProcessing}
+            totalToProcess={totalToProcess}
+          />
           
           <Button 
             onClick={() => navigate(`/jobs/${jobId}/report`)}
@@ -268,230 +228,35 @@ const CandidateAnalysis = () => {
         </div>
       </div>
       
-      {/* Requirements Summary - Always visible */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold flex items-center">
-            Job Requirements
-            <Badge variant="outline" className="ml-2">
-              {job.requirements.length} requirements
-            </Badge>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" className="ml-2 p-0 h-auto">
-                    <Info className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Requirements and their importance for this job</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </h2>
-          
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setShowRequirements(!showRequirements)}
-            >
-              {showRequirements ? 'Hide Details' : 'Show Details'}
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navigate(`/jobs/${jobId}/requirements`)}
-            >
-              Edit Requirements
-            </Button>
-          </div>
-        </div>
-        
-        <Card className="mb-6">
-          <CardContent className={showRequirements ? "pt-6" : "py-4"}>
-            {!showRequirements && (
-              <div className="text-sm text-muted-foreground">
-                {job.requirements.length === 0 ? (
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-500" />
-                    <span>No requirements defined yet. Click 'Edit Requirements' to add job requirements.</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    <span>This job has {job.requirements.length} defined requirements. Click 'Show Details' to view them.</span>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {showRequirements && (
-              <>
-                {job.requirements.length === 0 ? (
-                  <div className="text-center py-4 text-muted-foreground">
-                    <p>No requirements defined for this job yet.</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-2"
-                      onClick={() => navigate(`/jobs/${jobId}/requirements`)}
-                    >
-                      Add Requirements
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-12 font-medium text-sm pb-2 border-b">
-                      <div className="col-span-5">Requirement</div>
-                      <div className="col-span-3">Category</div>
-                      <div className="col-span-2">Importance</div>
-                      <div className="col-span-2 text-center">Required</div>
-                    </div>
-                    
-                    {job.requirements.map((req: JobRequirement) => (
-                      <div key={req.id} className="grid grid-cols-12 text-sm py-2 border-b border-gray-100 last:border-0">
-                        <div className="col-span-5">{req.description}</div>
-                        <div className="col-span-3">{req.category}</div>
-                        <div className={`col-span-2 ${getWeightClass(req.weight)}`}>
-                          {formatWeight(req.weight)} ({req.weight}/10)
-                        </div>
-                        <div className="col-span-2 text-center">
-                          {req.isRequired ? (
-                            <Badge variant="destructive" className="text-xs">Required</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">Optional</Badge>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      {/* Requirements Summary */}
+      <JobRequirementsSummary 
+        jobId={jobId || ''} 
+        requirements={job.requirements} 
+      />
       
       {job.candidates.length === 0 ? (
-        <Card className="flex flex-col items-center justify-center p-12">
-          <div className="text-muted-foreground mb-4">
-            <FileText className="h-16 w-16" />
-          </div>
-          <h2 className="text-xl font-medium mb-2">No candidates found</h2>
-          <p className="text-muted-foreground text-center mb-6 max-w-md">
-            You haven't uploaded any candidates for this job yet. Upload candidate resumes to see the analysis.
-          </p>
-          <Button 
-            onClick={() => navigate(`/jobs/${jobId}/upload`)}
-          >
-            Upload Candidates
-          </Button>
-        </Card>
+        <EmptyCandidatesState jobId={jobId || ''} />
       ) : (
         <>
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search candidates..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <div className="flex overflow-x-auto gap-2 pb-1">
-              <Badge
-                variant={filter === 'all' ? 'default' : 'outline'}
-                className="cursor-pointer px-3 py-1 h-9"
-                onClick={() => handleFilterChange('all')}
-              >
-                All ({job.candidates.length})
-              </Badge>
-              <Badge
-                variant={filter === 'starred' ? 'default' : 'outline'}
-                className="cursor-pointer px-3 py-1 h-9"
-                onClick={() => handleFilterChange('starred')}
-              >
-                Starred ({starredCount})
-              </Badge>
-              <Badge
-                variant={filter === 'processed' ? 'default' : 'outline'}
-                className="cursor-pointer px-3 py-1 h-9"
-                onClick={() => handleFilterChange('processed')}
-              >
-                Processed ({processedCount})
-              </Badge>
-              <Badge
-                variant={filter === 'unprocessed' ? 'default' : 'outline'}
-                className="cursor-pointer px-3 py-1 h-9"
-                onClick={() => handleFilterChange('unprocessed')}
-              >
-                Unprocessed ({unprocessedCount})
-              </Badge>
-            </div>
-          </div>
+          <CandidateFilter
+            totalCandidates={job.candidates.length}
+            processedCount={processedCount}
+            unprocessedCount={unprocessedCount}
+            starredCount={starredCount}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            filter={filter}
+            onFilterChange={setFilter}
+          />
           
-          {filteredCandidates.length === 0 ? (
-            <div className="text-center py-12">
-              <Filter className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No candidates match your filter</h3>
-              <p className="text-muted-foreground">
-                Try changing your search query or filter criteria
-              </p>
-            </div>
-          ) : (
-            <div className="relative py-4">
-              <Carousel 
-                className="w-full"
-                opts={{
-                  align: "start",
-                }}
-              >
-                <CarouselContent>
-                  {filteredCandidates.map((candidate, index) => (
-                    <CarouselItem key={candidate.id} className="md:basis-1/2 lg:basis-1/2 xl:basis-1/3 pl-4 pr-4">
-                      <div className="p-1">
-                        <CandidateCard
-                          candidate={candidate}
-                          requirements={job.requirements}
-                          onStar={(isStarred) => handleStarCandidate(candidate.id, isStarred)}
-                          onProcess={() => handleProcessCandidate(candidate.id)}
-                          onDelete={() => handleDeleteCandidate(candidate.id)}
-                          isProcessing={processingCandidateIds.includes(candidate.id)}
-                        />
-                      </div>
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                
-                {/* Custom, more visible carousel navigation */}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 rounded-full shadow-md hover:bg-primary hover:text-primary-foreground"
-                  aria-label="Previous slide"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 rounded-full shadow-md hover:bg-primary hover:text-primary-foreground"
-                  aria-label="Next slide"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </Button>
-              </Carousel>
-              
-              {/* Carousel navigation instruction */}
-              <div className="text-center mt-4 text-sm text-muted-foreground">
-                <p>Swipe or use arrows to view more candidates</p>
-              </div>
-            </div>
-          )}
+          <CandidateCarousel
+            candidates={filteredCandidates}
+            requirements={job.requirements}
+            processingCandidateIds={processingCandidateIds}
+            onStar={handleStarCandidate}
+            onProcess={handleProcessCandidate}
+            onDelete={handleDeleteCandidate}
+          />
         </>
       )}
     </div>
