@@ -1,313 +1,274 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Briefcase, Building, FileText, Loader2, PlusCircle, Upload } from 'lucide-react';
-import FileUploader from '@/components/FileUploader';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Plus, Upload, Check } from 'lucide-react';
+import FileUploader from '@/components/FileUploader';
 import { toast } from 'sonner';
 
 const CreateJob = () => {
-  const [title, setTitle] = useState('');
-  const [company, setCompany] = useState('');
-  const [description, setDescription] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const [contextFiles, setContextFiles] = useState<File[]>([]);
-  const [activeTab, setActiveTab] = useState('details');
-  const [newJob, setNewJob] = useState<any>(null);
-  
-  const { createJob, generateRequirements, updateJob } = useJob();
   const navigate = useNavigate();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!title || !company) {
-      setError('Please provide both a job title and company name.');
-      return;
-    }
-    
-    setError('');
-    setIsSubmitting(true);
-    
-    try {
-      // First create the job
-      const newJob = await createJob({
-        title,
-        company,
-        description,
-        contextFiles: contextFiles.map(file => ({
-          name: file.name,
-          type: file.type,
-          size: file.size,
-        })),
-      });
-
-      setNewJob(newJob);
-      toast.success('Job created successfully');
-      setActiveTab('context');
-      
-    } catch (err) {
-      console.error('Error creating job:', err);
-      setError('Failed to create job. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const { createJob, updateJob } = useJob();
+  const [activeTab, setActiveTab] = useState('details');
+  const [loading, setLoading] = useState(false);
+  const [contextFiles, setContextFiles] = useState<File[]>([]);
+  
+  const [formData, setFormData] = useState({
+    title: '',
+    company: '',
+    description: '',
+    location: '',
+    department: '',
+    salary: '',
+  });
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
-
-  const handleContextFilesUpload = async (files: File[]) => {
+  
+  const handleContextFilesSelected = (files: File[]) => {
     setContextFiles(files);
-    toast.success(`${files.length} context file(s) uploaded`);
   };
-
-  const handleGenerateRequirements = async () => {
-    if (!newJob) {
-      setError('Please create a job first.');
-      return;
-    }
-
-    setIsSubmitting(true);
+  
+  const handleCreateJob = async () => {
+    setLoading(true);
+    
     try {
-      // Process context files and generate requirements
-      const requirements = await generateRequirements({
-        title,
-        company,
-        description,
-        contextFiles: contextFiles.map(file => ({
-          name: file.name,
-          type: file.type,
-          size: file.size,
-        })),
+      // Create a new job with initial data
+      const newJob = await createJob({
+        ...formData,
+        requirements: [],
       });
       
-      // Update the job with the generated requirements
-      await updateJob({
-        ...newJob,
-        requirements,
-      });
-      
-      // Navigate to the job detail page
+      toast.success('Job created successfully!');
       navigate(`/jobs/${newJob.id}`);
-    } catch (err) {
-      console.error('Error generating requirements:', err);
-      setError('Failed to generate requirements. Please try again.');
+    } catch (error) {
+      console.error('Error creating job:', error);
+      toast.error('Failed to create job. Please try again.');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
-
-  const handleCancel = () => {
-    navigate('/dashboard');
+  
+  const isFormValid = () => {
+    return formData.title && formData.company && formData.description;
   };
-
+  
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-8">
-      <Button 
-        variant="ghost" 
-        onClick={handleCancel} 
-        className="mb-6 flex items-center gap-2"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Dashboard
-      </Button>
+    <div className="container mx-auto max-w-4xl px-4 py-8">
+      <div className="flex items-center gap-4 mb-6">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/dashboard')}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Dashboard
+        </Button>
+      </div>
       
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Create New Job</CardTitle>
           <CardDescription>
-            Fill in job details, add context files, and generate requirements
+            Fill in the details below to create a new job posting
           </CardDescription>
         </CardHeader>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="details">Job Details</TabsTrigger>
-            <TabsTrigger value="context" disabled={!newJob}>Context Files</TabsTrigger>
-            <TabsTrigger value="requirements" disabled={!newJob}>Requirements</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="details">
-            <form onSubmit={handleSubmit}>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <label htmlFor="title" className="block text-sm font-medium">
-                    Job Title <span className="text-destructive">*</span>
-                  </label>
-                  <div className="relative">
-                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="details">Job Details</TabsTrigger>
+              <TabsTrigger value="context">Context Files</TabsTrigger>
+              <TabsTrigger value="requirements">Requirements</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="details" className="space-y-4 pt-4">
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Job Title</Label>
                     <Input
                       id="title"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g. Software Engineer, Marketing Manager"
-                      className="pl-10"
-                      required
+                      name="title"
+                      placeholder="e.g., Senior React Developer"
+                      value={formData.title}
+                      onChange={handleInputChange}
                     />
                   </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="company" className="block text-sm font-medium">
-                    Company Name <span className="text-destructive">*</span>
-                  </label>
-                  <div className="relative">
-                    <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="company">Company</Label>
                     <Input
                       id="company"
-                      value={company}
-                      onChange={(e) => setCompany(e.target.value)}
-                      placeholder="e.g. Acme Inc."
-                      className="pl-10"
-                      required
+                      name="company"
+                      placeholder="e.g., Tech Solutions Inc."
+                      value={formData.company}
+                      onChange={handleInputChange}
                     />
                   </div>
                 </div>
                 
                 <div className="space-y-2">
-                  <label htmlFor="description" className="block text-sm font-medium">
-                    Job Description
-                  </label>
-                  <div className="relative">
-                    <FileText className="absolute left-3 top-3 text-muted-foreground h-4 w-4" />
-                    <Textarea
-                      id="description"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Enter a detailed job description to help our AI generate better requirements..."
-                      className="pl-10 min-h-[120px]"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    A detailed description helps our AI generate more accurate job requirements.
-                  </p>
+                  <Label htmlFor="description">Job Description</Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    placeholder="Describe the job role, responsibilities, and ideal candidate..."
+                    rows={5}
+                    value={formData.description}
+                    onChange={handleInputChange}
+                  />
                 </div>
                 
-                {error && (
-                  <div className="text-sm text-destructive">{error}</div>
-                )}
-              </CardContent>
-              
-              <CardFooter className="flex justify-between">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={handleCancel}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Location</Label>
+                    <Input
+                      id="location"
+                      name="location"
+                      placeholder="e.g., Remote, New York, etc."
+                      value={formData.location}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="department">Department</Label>
+                    <Input
+                      id="department"
+                      name="department"
+                      placeholder="e.g., Engineering, Marketing, etc."
+                      value={formData.department}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="salary">Salary Range</Label>
+                    <Input
+                      id="salary"
+                      name="salary"
+                      placeholder="e.g., $80,000 - $120,000"
+                      value={formData.salary}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
                 
-                <Button 
-                  type="submit" 
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    'Create Job & Continue'
-                  )}
-                </Button>
-              </CardFooter>
-            </form>
-          </TabsContent>
-          
-          <TabsContent value="context">
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <h3 className="text-lg font-medium">Upload Context Files</h3>
-                <p className="text-sm text-muted-foreground">
-                  Upload files that provide context about the job requirements, such as previous job postings,
-                  hiring criteria, or industry standards.
-                </p>
-                
-                <FileUploader 
-                  onFilesSelected={handleContextFilesUpload}
-                  accept=".pdf,.doc,.docx,.txt,.csv"
-                  multiple={true}
-                />
+                <div className="pt-4">
+                  <Button 
+                    onClick={() => setActiveTab('context')}
+                    disabled={!isFormValid()}
+                    className="w-full"
+                  >
+                    Continue to Context Files
+                    <ArrowLeft className="h-4 w-4 ml-2 rotate-180" />
+                  </Button>
+                </div>
               </div>
-              
-              {error && (
-                <div className="text-sm text-destructive">{error}</div>
-              )}
-            </CardContent>
+            </TabsContent>
             
-            <CardFooter className="flex justify-between">
-              <Button 
-                variant="outline" 
-                onClick={() => setActiveTab('details')}
-              >
-                Back
-              </Button>
-              
-              <Button 
-                onClick={() => setActiveTab('requirements')}
-                disabled={isSubmitting}
-              >
-                Continue
-              </Button>
-            </CardFooter>
-          </TabsContent>
-          
-          <TabsContent value="requirements">
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <h3 className="text-lg font-medium">Generate Requirements</h3>
-                <p className="text-sm text-muted-foreground">
-                  Our AI will analyze your job details and context files to generate a set of
-                  requirements for this position.
-                </p>
+            <TabsContent value="context" className="space-y-4 pt-4">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Upload Context Files</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Upload any relevant documents that describe the job role, company culture, 
+                    team structure, or other useful information. Our AI will use these to 
+                    generate more accurate job requirements.
+                  </p>
+                  
+                  <FileUploader 
+                    onFilesSelected={handleContextFilesSelected}
+                    accept=".pdf,.doc,.docx,.txt"
+                    multiple={true}
+                  />
+                </div>
                 
-                <div className="bg-secondary/50 p-4 rounded-md flex items-center gap-3">
-                  <PlusCircle className="h-6 w-6 text-primary" />
-                  <div>
-                    <h4 className="font-medium text-sm">Ready to generate requirements</h4>
-                    <p className="text-xs text-muted-foreground">
-                      Click the button below to generate requirements based on your job details
-                      {contextFiles.length > 0 ? ' and context files' : ''}.
+                {contextFiles.length > 0 && (
+                  <div className="border rounded-md p-4">
+                    <h4 className="font-medium mb-2">Selected Files ({contextFiles.length})</h4>
+                    <ul className="space-y-1">
+                      {contextFiles.map((file, index) => (
+                        <li key={index} className="text-sm">
+                          {file.name}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                <div className="flex justify-between pt-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setActiveTab('details')}
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Details
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => setActiveTab('requirements')}
+                    className=""
+                  >
+                    Continue to Requirements
+                    <ArrowLeft className="h-4 w-4 ml-2 rotate-180" />
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="requirements" className="space-y-4 pt-4">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Job Requirements</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Review the AI-generated job requirements below. You can edit these 
+                    after creating the job.
+                  </p>
+                  
+                  {/* Placeholder for AI-generated requirements */}
+                  <div className="border rounded-md p-4 bg-muted/20">
+                    <p className="text-sm text-muted-foreground italic">
+                      Requirements will be generated after creating the job. You can edit them later.
                     </p>
                   </div>
                 </div>
+                
+                <div className="flex justify-between pt-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setActiveTab('context')}
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Context Files
+                  </Button>
+                  
+                  <Button 
+                    onClick={handleCreateJob}
+                    disabled={!isFormValid() || loading}
+                  >
+                    {loading ? (
+                      <>Creating Job...</>
+                    ) : (
+                      <>
+                        Create Job
+                        <Check className="h-4 w-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
-              
-              {error && (
-                <div className="text-sm text-destructive">{error}</div>
-              )}
-            </CardContent>
-            
-            <CardFooter className="flex justify-between">
-              <Button 
-                variant="outline" 
-                onClick={() => setActiveTab('context')}
-                disabled={isSubmitting}
-              >
-                Back
-              </Button>
-              
-              <Button 
-                onClick={handleGenerateRequirements}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  'Generate Requirements'
-                )}
-              </Button>
-            </CardFooter>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
       </Card>
     </div>
   );
