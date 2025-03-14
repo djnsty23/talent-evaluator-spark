@@ -14,6 +14,30 @@ export const useAuthState = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Handle URL hash fragments for OAuth redirects
+  useEffect(() => {
+    const handleHashFragment = async () => {
+      // Check if we have an access_token in the URL hash (OAuth redirect)
+      if (location.hash && location.hash.includes('access_token=')) {
+        console.log('Detected access_token in URL hash, processing OAuth response');
+        
+        // Let Supabase handle the OAuth response
+        const { error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error processing OAuth response:', error);
+          toast.error('Failed to complete sign in. Please try again.');
+        } else {
+          console.log('Successfully processed OAuth response');
+          // Clear the hash fragment from the URL
+          window.history.replaceState(null, document.title, window.location.pathname);
+        }
+      }
+    };
+    
+    handleHashFragment();
+  }, [location.hash]);
+
   // Setup Supabase auth listener
   useEffect(() => {
     setIsLoading(true);

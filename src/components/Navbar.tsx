@@ -63,7 +63,7 @@ const Navbar = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center">
             <span className="text-xl font-medium bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-300 hover:from-blue-600 hover:to-indigo-700">
-              Talent Evaluator
+              TalentMatch
             </span>
           </Link>
 
@@ -89,14 +89,14 @@ const Navbar = () => {
               <div className="flex space-x-2">
                 <Button 
                   variant="outline" 
-                  onClick={() => navigate('/signin')}
+                  onClick={() => navigate('/login')}
                   className="text-sm"
                 >
                   Sign In
                 </Button>
                 <Button 
                   variant="default" 
-                  onClick={() => navigate('/signin?signup=true')}
+                  onClick={() => navigate('/login?signup=true')}
                   className="text-sm"
                 >
                   Sign Up

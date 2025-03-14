@@ -7,6 +7,8 @@ import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/ca
 import LoginLayout from '@/components/auth/LoginLayout';
 import SignInForm from '@/components/auth/SignInForm';
 import SignUpForm from '@/components/auth/SignUpForm';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -22,6 +24,40 @@ const Login = () => {
   const searchParams = new URLSearchParams(location.search);
   const signupParam = searchParams.get('signup');
   const defaultTab = signupParam === 'true' ? 'signup' : 'signin';
+
+  // Handle hash fragments from OAuth redirects
+  useEffect(() => {
+    const handleHashFragment = async () => {
+      if (location.hash && location.hash.includes('access_token=')) {
+        console.log('Login page detected access_token in URL, handling OAuth callback');
+        setIsSubmitting(true);
+        
+        try {
+          // Let Supabase process the hash
+          const { error } = await supabase.auth.getSession();
+          
+          if (error) {
+            console.error('Error processing OAuth redirect:', error);
+            throw error;
+          }
+          
+          // Clear the URL hash
+          window.history.replaceState(null, document.title, location.pathname);
+          toast.success('Successfully signed in!');
+          
+          // Navigation to dashboard happens in useAuthState
+        } catch (err: any) {
+          console.error('OAuth callback processing error:', err);
+          setError(err.message || 'Failed to complete authentication');
+          toast.error('Authentication failed. Please try again.');
+        } finally {
+          setIsSubmitting(false);
+        }
+      }
+    };
+    
+    handleHashFragment();
+  }, [location.hash, navigate]);
 
   // Redirect if already logged in
   useEffect(() => {

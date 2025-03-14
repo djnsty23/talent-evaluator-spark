@@ -15,7 +15,7 @@ export const useOAuthAuth = () => {
       toast.info('Redirecting to Google for authentication...');
       
       // Get the current URL's origin to use as base for redirection
-      const redirectTo = window.location.origin;
+      const redirectTo = window.location.origin + '/login';
       console.log('Setting redirect URL to:', redirectTo);
       
       // Use the redirectTo parameter to ensure proper return to application
