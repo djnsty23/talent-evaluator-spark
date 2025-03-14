@@ -1,6 +1,6 @@
 
 import { toast } from 'sonner';
-import { useJob } from '@/contexts/JobContext';
+import { useJob } from '@/contexts/job/JobContext';
 import { Job } from '@/types/job.types';
 
 export function useProcessSingleCandidate(
