@@ -1,6 +1,6 @@
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,8 +15,21 @@ const Login = () => {
   const [name, setName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const { signInWithEmail, signInWithGoogle, signUp } = useAuth();
+  const { signInWithEmail, signInWithGoogle, signUp, currentUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Extract tab parameter from URL
+  const searchParams = new URLSearchParams(location.search);
+  const signupParam = searchParams.get('signup');
+  const defaultTab = signupParam === 'true' ? 'signup' : 'signin';
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (currentUser) {
+      navigate('/dashboard');
+    }
+  }, [currentUser, navigate]);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,10 +38,9 @@ const Login = () => {
     
     try {
       await signInWithEmail(email, password);
-      navigate('/dashboard');
-    } catch (err) {
-      setError('Failed to sign in. Please check your credentials.');
-      console.error(err);
+      // Navigation is handled in the auth context
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in. Please check your credentials.');
     } finally {
       setIsSubmitting(false);
     }
@@ -41,10 +53,9 @@ const Login = () => {
     
     try {
       await signUp(email, password, name);
-      navigate('/dashboard');
-    } catch (err) {
-      setError('Failed to create account. Please try again.');
-      console.error(err);
+      // Navigation is handled in the auth context
+    } catch (err: any) {
+      setError(err.message || 'Failed to create account. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -56,11 +67,9 @@ const Login = () => {
     
     try {
       await signInWithGoogle();
-      navigate('/dashboard');
-    } catch (err) {
-      setError('Failed to sign in with Google. Please try again.');
-      console.error(err);
-    } finally {
+      // Navigation is handled automatically via redirectTo option
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in with Google. Please try again.');
       setIsSubmitting(false);
     }
   };
@@ -83,7 +92,7 @@ const Login = () => {
             <CardDescription>Sign in to your account or create a new one</CardDescription>
           </CardHeader>
           
-          <Tabs defaultValue="signin" className="w-full">
+          <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -194,6 +203,7 @@ const Login = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         className="pl-10"
                         required
+                        minLength={6}
                       />
                     </div>
                   </div>

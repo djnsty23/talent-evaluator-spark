@@ -2,6 +2,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { Session, User } from '@supabase/supabase-js';
 
 // Define user type
 export interface User {
@@ -42,98 +44,109 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  // For demo purposes, we'll use local storage to simulate auth
-  // In a real app, this would connect to a backend auth service
+  // Convert Supabase User to our User type
+  const formatUser = (session: Session | null): User | null => {
+    if (!session?.user) return null;
+    
+    const { id, email, user_metadata } = session.user;
+    
+    return {
+      id,
+      email: email || '',
+      name: user_metadata?.full_name || user_metadata?.name || email?.split('@')[0] || '',
+      photoURL: user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user_metadata?.full_name || email?.split('@')[0] || 'User')}&background=0D8ABC&color=fff`,
+    };
+  };
+
+  // Setup Supabase auth listener
   useEffect(() => {
-    const storedUser = localStorage.getItem('talentEvaluatorUser');
-    if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    setIsLoading(true);
+    
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setCurrentUser(formatUser(session));
+      setIsLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUser(formatUser(session));
+      setIsLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // Save user to local storage when it changes
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('talentEvaluatorUser', JSON.stringify(currentUser));
-    }
-  }, [currentUser]);
-
-  // Email/password sign in (simulated)
+  // Email/password sign in
   const signInWithEmail = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // This would be a real auth API call in production
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo, create a mock user
-      const user: User = {
-        id: 'user1',
+      const { error } = await supabase.auth.signInWithPassword({
         email,
-        name: email.split('@')[0],
-      };
+        password,
+      });
       
-      setCurrentUser(user);
+      if (error) throw error;
+      
       toast.success('Signed in successfully');
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sign in error:', error);
-      toast.error('Failed to sign in. Please check your credentials.');
+      toast.error(error.message || 'Failed to sign in. Please check your credentials.');
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Google sign in (simulated)
+  // Google sign in
   const signInWithGoogle = async () => {
     setIsLoading(true);
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
       
-      // For demo, create a mock Google user
-      const user: User = {
-        id: 'google_user1',
-        email: 'user@example.com',
-        name: 'Demo User',
-        photoURL: 'https://ui-avatars.com/api/?name=Demo+User&background=0D8ABC&color=fff',
-      };
+      if (error) throw error;
       
-      setCurrentUser(user);
-      toast.success('Signed in with Google successfully');
-      navigate('/dashboard');
-    } catch (error) {
+      // Note: The success toast will be shown after the redirect
+      // The navigation happens automatically via redirectTo
+    } catch (error: any) {
       console.error('Google sign in error:', error);
-      toast.error('Failed to sign in with Google.');
+      toast.error(error.message || 'Failed to sign in with Google.');
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Sign up with email/password (simulated)
+  // Sign up with email/password
   const signUp = async (email: string, password: string, name: string) => {
     setIsLoading(true);
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo, create a mock user
-      const user: User = {
-        id: 'new_user1',
+      const { error } = await supabase.auth.signUp({
         email,
-        name,
-        photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`,
-      };
+        password,
+        options: {
+          data: {
+            full_name: name,
+          },
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
       
-      setCurrentUser(user);
-      toast.success('Account created successfully');
-      navigate('/dashboard');
-    } catch (error) {
+      if (error) throw error;
+      
+      toast.success('Account created successfully. Please check your email to confirm your account.');
+      navigate('/login');
+    } catch (error: any) {
       console.error('Sign up error:', error);
-      toast.error('Failed to create account. Please try again.');
+      toast.error(error.message || 'Failed to create account. Please try again.');
       throw error;
     } finally {
       setIsLoading(false);
@@ -144,30 +157,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     setIsLoading(true);
     try {
-      // Clear user from local storage
-      localStorage.removeItem('talentEvaluatorUser');
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) throw error;
+      
       setCurrentUser(null);
       toast.success('Signed out successfully');
       navigate('/');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sign out error:', error);
-      toast.error('Failed to sign out. Please try again.');
+      toast.error(error.message || 'Failed to sign out. Please try again.');
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Password reset (simulated)
+  // Password reset
   const resetPassword = async (email: string) => {
     setIsLoading(true);
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) throw error;
+      
       toast.success('Password reset email sent. Please check your inbox.');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Password reset error:', error);
-      toast.error('Failed to send password reset email. Please try again.');
+      toast.error(error.message || 'Failed to send password reset email. Please try again.');
       throw error;
     } finally {
       setIsLoading(false);
