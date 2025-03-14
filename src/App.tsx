@@ -69,6 +69,7 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
+                {/* Ensure this route comes before the candidate-specific route */}
                 <Route path="/jobs/:jobId/report" element={
                   <ProtectedRoute>
                     <ReportGeneration />
@@ -81,7 +82,7 @@ function App() {
                   </ProtectedRoute>
                 } />
 
-                {/* New route for individual candidate view */}
+                {/* Individual candidate view - make this route more specific */}
                 <Route path="/jobs/:jobId/candidates/:candidateId" element={
                   <ProtectedRoute>
                     <CandidateAnalysis />

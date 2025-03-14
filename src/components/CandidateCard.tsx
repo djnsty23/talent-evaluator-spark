@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Star, ChevronDown, ChevronUp, User, FileText, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,7 @@ interface CandidateCardProps {
   onStar: (isStarred: boolean) => void;
   onProcess: () => void;
   onDelete: () => void;
+  onViewDetails?: () => void;
   isProcessing?: boolean;
 }
 
@@ -22,6 +22,7 @@ const CandidateCard = ({
   onStar,
   onProcess,
   onDelete,
+  onViewDetails,
   isProcessing = false,
 }: CandidateCardProps) => {
   const [expanded, setExpanded] = useState(false);
@@ -30,7 +31,6 @@ const CandidateCard = ({
     setExpanded(!expanded);
   };
 
-  // Format processing date
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', {
@@ -40,7 +40,6 @@ const CandidateCard = ({
     }).format(date);
   };
 
-  // Get score level class
   const getScoreLevelClass = (score: number) => {
     if (score >= 8) return 'bg-green-500';
     if (score >= 6) return 'bg-blue-500';
@@ -48,7 +47,6 @@ const CandidateCard = ({
     return 'bg-red-500';
   };
 
-  // Get overview score color
   const getOverallScoreColor = () => {
     if (candidate.overallScore >= 8) return 'text-green-500';
     if (candidate.overallScore >= 6) return 'text-blue-500';
@@ -56,12 +54,10 @@ const CandidateCard = ({
     return 'text-red-500';
   };
 
-  // Handle star click
   const handleStarClick = () => {
     onStar(!candidate.isStarred);
   };
 
-  // Check if candidate has been processed
   const isProcessed = candidate.scores.length > 0;
 
   return (
@@ -114,6 +110,21 @@ const CandidateCard = ({
             <span>Resume uploaded, not yet processed</span>
           )}
         </div>
+
+        {isProcessed && onViewDetails && (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="w-full mb-4"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewDetails();
+            }}
+          >
+            <User className="h-4 w-4 mr-2" />
+            View Detailed Analysis
+          </Button>
+        )}
 
         {isProcessed && (
           <>
@@ -256,18 +267,20 @@ const CandidateCard = ({
         </Button>
         
         <div className="flex space-x-2">
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="text-xs h-8"
-          >
-            Delete
-          </Button>
-          
+          {onViewDetails && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewDetails();
+              }}
+              className="text-xs h-8"
+            >
+              Details
+            </Button>
+          )}
+        
           {!isProcessed && (
             <Button
               variant="default"

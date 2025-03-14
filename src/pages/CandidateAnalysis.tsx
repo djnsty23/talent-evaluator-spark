@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
@@ -21,7 +22,7 @@ import EmptyCandidatesState from '@/components/EmptyCandidatesState';
 
 const CandidateAnalysis = () => {
   const { jobId, candidateId } = useParams<{ jobId: string; candidateId?: string }>();
-  const { jobs, isLoading, processCandidate, starCandidate, deleteCandidate } = useJob();
+  const { jobs, isLoading, processCandidate, handleProcessAllCandidates, starCandidate, deleteCandidate } = useJob();
   const [job, setJob] = useState<Job | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [processingCandidateIds, setProcessingCandidateIds] = useState<string[]>([]);
@@ -101,7 +102,7 @@ const CandidateAnalysis = () => {
     }
   };
 
-  const handleProcessAllCandidates = async () => {
+  const handleProcessAllCandidatesClick = async () => {
     if (!jobId || !job) return;
     
     const unprocessedCandidates = job.candidates.filter(c => c.scores.length === 0);
@@ -116,31 +117,33 @@ const CandidateAnalysis = () => {
     setProcessingProgress(0);
     
     try {
-      // Process each unprocessed candidate sequentially
-      for (let i = 0; i < unprocessedCandidates.length; i++) {
-        const candidate = unprocessedCandidates[i];
-        setCurrentProcessing(candidate.name);
-        setProcessingCandidateIds(prev => [...prev, candidate.id]);
-        
-        try {
-          await processCandidate(jobId, candidate.id);
-          // Update progress after each successful processing
-          setProcessingProgress(Math.round(((i + 1) / unprocessedCandidates.length) * 100));
-        } catch (error) {
-          console.error(`Error processing candidate ${candidate.name}:`, error);
-          toast.error(`Failed to process ${candidate.name}`);
-        }
-        
-        setProcessingCandidateIds(prev => prev.filter(id => id !== candidate.id));
-      }
+      // Show progress visually while we process candidates
+      const updateProgressInterval = setInterval(() => {
+        setProcessingProgress(prev => {
+          // Increase progress by small increments
+          if (prev < 95) {
+            return prev + 5;
+          }
+          return prev;
+        });
+      }, 1000);
       
-      toast.success(`Processed ${unprocessedCandidates.length} candidates successfully`);
+      // Use the JobContext function to process all candidates with rate limiting
+      await handleProcessAllCandidates(jobId);
+      
+      clearInterval(updateProgressInterval);
+      setProcessingProgress(100);
+      
+      // Delay to show 100% completion
+      setTimeout(() => {
+        setIsProcessingAll(false);
+        setCurrentProcessing('');
+      }, 1000);
+      
     } catch (error) {
       console.error('Batch process error:', error);
       toast.error('An error occurred during batch processing');
-    } finally {
       setIsProcessingAll(false);
-      setProcessingCandidateIds([]);
       setCurrentProcessing('');
     }
   };
@@ -214,7 +217,7 @@ const CandidateAnalysis = () => {
           <div className="flex flex-col sm:flex-row gap-2 mt-4 md:mt-0">
             {unprocessedCount > 0 && !isProcessingAll && (
               <Button 
-                onClick={handleProcessAllCandidates}
+                onClick={handleProcessAllCandidatesClick}
                 disabled={isProcessingAll || processingCandidateIds.length > 0}
                 variant="outline"
                 className="flex items-center gap-2"
