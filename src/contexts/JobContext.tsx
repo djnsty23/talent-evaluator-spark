@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
@@ -206,7 +207,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
       // Get the candidate and process it
       const processedCandidate = processCandidate(job.candidates[candidateIndex], job.requirements);
       
-      // Create updated job
+      // Create updated job with processed candidate
       const updatedCandidates = [...job.candidates];
       updatedCandidates[candidateIndex] = processedCandidate;
       
@@ -219,7 +220,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
       // Simulate API delay
       await mockSaveData(updatedJob);
       
-      // Update local state
+      // Update local state immediately
       setJobs(prevJobs => 
         prevJobs.map(j => j.id === jobId ? updatedJob : j)
       );
@@ -228,16 +229,20 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
         setCurrentJob(updatedJob);
       }
       
+      console.log(`Successfully processed candidate: ${processedCandidate.name}`);
+      return Promise.resolve();
+      
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error processing candidate';
       setError(errorMessage);
-      throw new Error(errorMessage);
+      console.error(`Error processing candidate: ${errorMessage}`);
+      return Promise.reject(errorMessage);
     } finally {
       setIsLoading(false);
     }
   }, [jobs, currentJob]);
 
-  // Process all unprocessed candidates
+  // Process all unprocessed candidates - improved with better error handling and state updates
   const handleProcessAllCandidates = useCallback(async (jobId: string): Promise<void> => {
     try {
       console.log('Processing all candidates for job:', jobId);
@@ -253,21 +258,58 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
       const unprocessedCandidates = job.candidates.filter(c => c.scores.length === 0);
       console.log(`Found ${unprocessedCandidates.length} unprocessed candidates`);
       
-      if (unprocessedCandidates.length === 0) return;
+      if (unprocessedCandidates.length === 0) {
+        toast.info('No unprocessed candidates found');
+        return Promise.resolve();
+      }
+      
+      // Track processed candidates and errors
+      let successCount = 0;
+      let errorCount = 0;
+      const processingErrors: string[] = [];
       
       // Process each candidate sequentially to avoid race conditions
       for (const candidate of unprocessedCandidates) {
-        console.log(`Processing candidate: ${candidate.name} (${candidate.id})`);
-        await processCandidateAction(jobId, candidate.id);
+        try {
+          console.log(`Processing candidate: ${candidate.name} (${candidate.id})`);
+          await processCandidateAction(jobId, candidate.id);
+          successCount++;
+        } catch (error) {
+          errorCount++;
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          processingErrors.push(`Failed to process ${candidate.name}: ${errorMessage}`);
+          console.error(`Error processing candidate ${candidate.name}:`, error);
+        }
       }
       
-      toast.success(`Successfully processed ${unprocessedCandidates.length} candidates`);
+      // Fetch the updated job to ensure we have the latest state
+      const updatedJob = jobs.find(j => j.id === jobId);
+      
+      // Log processing results
+      console.log(`Processing completed. Success: ${successCount}, Errors: ${errorCount}`);
+      
+      // Show appropriate toast message
+      if (successCount > 0 && errorCount === 0) {
+        toast.success(`Successfully processed ${successCount} candidates`);
+      } else if (successCount > 0 && errorCount > 0) {
+        toast.warning(`Processed ${successCount} candidates with ${errorCount} errors`);
+      } else if (successCount === 0 && errorCount > 0) {
+        toast.error(`Failed to process any candidates. Check console for details.`);
+      }
+      
+      // If we had any errors, log them to console
+      if (processingErrors.length > 0) {
+        console.error('Processing errors:', processingErrors);
+      }
+      
+      return Promise.resolve();
       
     } catch (err) {
       console.error('Error in handleProcessAllCandidates:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error processing candidates';
       setError(errorMessage);
-      throw new Error(errorMessage);
+      toast.error('Failed to process candidates');
+      return Promise.reject(errorMessage);
     }
   }, [jobs, processCandidateAction]);
 
@@ -408,3 +450,4 @@ export const useJob = (): JobContextType => {
   }
   return context;
 };
+

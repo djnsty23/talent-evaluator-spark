@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
 import { toast } from 'sonner';
@@ -26,27 +25,26 @@ const CandidateAnalysis = () => {
   const [isProcessingAll, setIsProcessingAll] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
   const [totalToProcess, setTotalToProcess] = useState(0);
+  const [processedCount, setProcessedCount] = useState(0);
+  const [errorCount, setErrorCount] = useState(0);
   const [currentProcessing, setCurrentProcessing] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (jobId && jobs) {
+    if (jobId && jobs && jobs.length > 0) {
       const foundJob = jobs.find(j => j.id === jobId);
       if (foundJob) {
         setJob(foundJob);
         
-        // If we have a candidateId, filter to show only that candidate
         if (candidateId) {
           const candidate = foundJob.candidates.find(c => c.id === candidateId);
           if (candidate) {
             setFilteredCandidates([candidate]);
           } else {
-            // Candidate not found, redirect to analysis page
             navigate(`/jobs/${jobId}/analysis`);
           }
         }
       } else {
-        // Job not found, redirect to dashboard
         navigate('/dashboard');
       }
     }
@@ -56,7 +54,6 @@ const CandidateAnalysis = () => {
     if (job && !candidateId) {
       let candidates = [...job.candidates];
       
-      // Apply filter
       if (filter === 'starred') {
         candidates = candidates.filter(c => c.isStarred);
       } else if (filter === 'processed') {
@@ -65,7 +62,6 @@ const CandidateAnalysis = () => {
         candidates = candidates.filter(c => c.scores.length === 0);
       }
       
-      // Apply search
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         candidates = candidates.filter(c => 
@@ -75,7 +71,6 @@ const CandidateAnalysis = () => {
         );
       }
       
-      // Sort by score (highest first)
       candidates.sort((a, b) => b.overallScore - a.overallScore);
       
       setFilteredCandidates(candidates);
@@ -86,6 +81,7 @@ const CandidateAnalysis = () => {
     if (!jobId) return;
     
     setProcessingCandidateIds(prev => [...prev, candidateId]);
+    
     try {
       await processCandidate(jobId, candidateId);
       toast.success('Candidate processed successfully');
@@ -106,34 +102,71 @@ const CandidateAnalysis = () => {
       return;
     }
     
-    // Set state to show we're processing all candidates
     setIsProcessingAll(true);
     setTotalToProcess(unprocessedCandidates.length);
+    setProcessedCount(0);
+    setErrorCount(0);
     setProcessingProgress(0);
     
     try {
-      // Start progress animation
-      const updateProgressInterval = setInterval(() => {
+      const currentJob = jobs.find(j => j.id === jobId);
+      const candidatesToProcess = currentJob?.candidates.filter(c => c.scores.length === 0) || [];
+      const total = candidatesToProcess.length;
+      
+      let processed = 0;
+      let errors = 0;
+
+      const progressInterval = setInterval(() => {
         setProcessingProgress(prev => {
           if (prev < 95) {
-            return prev + 5;
+            return Math.min(prev + 5, 95);
           }
           return prev;
         });
       }, 1000);
       
-      // Use the JobContext function to process all candidates
+      console.log(`Starting batch processing for ${total} candidates`);
+      
+      const jobElement = document.getElementById('job-candidates-container');
+      
+      if (jobElement) {
+        const observer = new MutationObserver(() => {
+          const currentJob = jobs.find(j => j.id === jobId);
+          if (currentJob) {
+            const processedCandidates = currentJob.candidates.filter(c => c.scores.length > 0);
+            const newProcessed = processedCandidates.length;
+            
+            setProcessedCount(newProcessed);
+            
+            const actualProgress = Math.min(Math.floor((newProcessed / total) * 100), 95);
+            
+            setProcessingProgress(prev => Math.max(prev, actualProgress));
+          }
+        });
+        
+        observer.observe(jobElement, { childList: true, subtree: true });
+      }
+      
       await handleProcessAllCandidates(jobId);
       
-      // Clean up and show completion
-      clearInterval(updateProgressInterval);
+      clearInterval(progressInterval);
+      
       setProcessingProgress(100);
       
-      // Delay to show 100% completion
+      const updatedJob = jobs.find(j => j.id === jobId);
+      if (updatedJob) {
+        setJob(updatedJob);
+        
+        const processedCandidates = updatedJob.candidates.filter(c => c.scores.length > 0);
+        setProcessedCount(processedCandidates.length);
+        
+        setErrorCount(total - (processedCandidates.length - (job.candidates.filter(c => c.scores.length > 0).length)));
+      }
+      
       setTimeout(() => {
         setIsProcessingAll(false);
         setCurrentProcessing('');
-      }, 1500);
+      }, 2000);
       
     } catch (error) {
       console.error('Batch process error:', error);
@@ -167,13 +200,12 @@ const CandidateAnalysis = () => {
     return <CandidateAnalysisLoading />;
   }
 
-  // Count candidates by status
   const unprocessedCount = job?.candidates.filter(c => c.scores.length === 0).length || 0;
   const processedCount = job?.candidates.filter(c => c.scores.length > 0).length || 0;
   const starredCount = job?.candidates.filter(c => c.isStarred).length || 0;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8" id="job-candidates-container">
       <CandidateAnalysisNavigation jobId={jobId || ''} candidateId={candidateId} />
       
       <CandidateAnalysisHeader
@@ -187,9 +219,10 @@ const CandidateAnalysis = () => {
         processingProgress={processingProgress}
         currentProcessing={currentProcessing}
         totalToProcess={totalToProcess}
+        processedCountTracking={processedCount}
+        errorCount={errorCount}
       />
       
-      {/* Requirements Summary */}
       <JobRequirementsSummary 
         jobId={jobId || ''} 
         requirements={job.requirements} 
