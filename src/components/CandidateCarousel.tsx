@@ -1,6 +1,6 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Filter, ChevronLeft, ChevronRight, User } from 'lucide-react';
+import { Filter, ChevronLeft, ChevronRight, User, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Carousel,
@@ -69,9 +69,18 @@ const CandidateCarousel = ({
       <div className="text-center py-12">
         <Filter className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
         <h3 className="text-lg font-medium mb-2">No candidates match your filter</h3>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground mb-6">
           Try changing your search query or filter criteria
         </p>
+        <div className="flex justify-center gap-3">
+          <Button 
+            onClick={() => navigate(`/jobs/${getCurrentJobId()}/upload`)}
+            className="flex gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            Upload Candidates
+          </Button>
+        </div>
       </div>
     );
   }
@@ -88,10 +97,19 @@ const CandidateCarousel = ({
       <div className="mb-4 flex justify-between items-center">
         <h2 className="text-xl font-medium">Candidates ({candidates.length})</h2>
         
-        {/* Add view options if needed */}
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate(`/jobs/${getCurrentJobId()}/upload`)}
+            className="flex gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            Upload More
+          </Button>
+          
           {candidates.length > 1 && (
-            <div className="text-sm text-muted-foreground flex items-center">
+            <div className="text-sm text-muted-foreground flex items-center ml-2">
               Showing candidate {activeIndex + 1} of {candidates.length}
             </div>
           )}
@@ -131,24 +149,38 @@ const CandidateCarousel = ({
         </div>
       </Carousel>
       
-      {/* Carousel navigation instructions */}
-      <div className="text-center mt-4 flex flex-col md:flex-row justify-center items-center gap-2">
-        <p className="text-sm text-muted-foreground">
-          Swipe or use arrows to view more candidates
-        </p>
-        
-        {/* View all button for individual candidate views */}
-        {candidates.length > 1 && candidates.length < 4 && getCurrentJobId() && (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => navigate(`/jobs/${getCurrentJobId()}/analysis`)}
-            className="ml-2"
-          >
-            <User className="h-4 w-4 mr-2" />
-            View All Candidates
-          </Button>
+      {/* Carousel navigation instructions with more obvious next steps */}
+      <div className="text-center mt-6 flex flex-col md:flex-row justify-center items-center gap-3">
+        {candidates.length > 1 && (
+          <p className="text-sm text-muted-foreground mb-2 md:mb-0">
+            Swipe or use arrows to view more candidates
+          </p>
         )}
+        
+        <div className="flex flex-wrap justify-center gap-3">
+          {/* View all button for individual candidate views */}
+          {candidates.length > 1 && getCurrentJobId() && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate(`/jobs/${getCurrentJobId()}/analysis`)}
+              className="flex gap-2"
+            >
+              <User className="h-4 w-4" />
+              View All Candidates
+            </Button>
+          )}
+          
+          {/* Upload more candidates button */}
+          <Button 
+            size="sm"
+            onClick={() => navigate(`/jobs/${getCurrentJobId()}/upload`)}
+            className="flex gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            Upload More Candidates
+          </Button>
+        </div>
       </div>
     </div>
   );

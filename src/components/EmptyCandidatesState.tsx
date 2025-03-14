@@ -1,5 +1,5 @@
 
-import { FileText } from 'lucide-react';
+import { Upload, List, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
@@ -18,9 +18,20 @@ const EmptyCandidatesState = ({ jobId }: EmptyCandidatesStateProps) => {
       <p className="text-muted-foreground text-center mb-6 max-w-md">
         You haven't uploaded any candidates for this job yet. Upload candidate resumes to see the analysis.
       </p>
-      <Button asChild>
-        <Link to={`/jobs/${jobId}/upload`}>Upload Candidates</Link>
-      </Button>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Button asChild size="lg" className="flex gap-2">
+          <Link to={`/jobs/${jobId}/upload`}>
+            <Upload className="h-4 w-4" />
+            Upload Candidates
+          </Link>
+        </Button>
+        <Button variant="outline" asChild size="lg" className="flex gap-2">
+          <Link to={`/jobs/${jobId}/candidates`}>
+            <List className="h-4 w-4" />
+            View Candidates
+          </Link>
+        </Button>
+      </div>
     </Card>
   );
 };

@@ -5,7 +5,7 @@ import { JobRequirement } from '@/contexts/JobContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Info, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Info, AlertTriangle, CheckCircle2, ListChecks, Upload } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface JobRequirementsSummaryProps {
@@ -14,7 +14,8 @@ interface JobRequirementsSummaryProps {
 }
 
 const JobRequirementsSummary = ({ jobId, requirements }: JobRequirementsSummaryProps) => {
-  const [showRequirements, setShowRequirements] = useState(false);
+  // Always show requirements by default
+  const [showRequirements, setShowRequirements] = useState(true);
 
   // Format weight for display
   const formatWeight = (weight: number) => {
