@@ -1,6 +1,6 @@
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from './components/theme-provider';
+import { ThemeProvider } from '@/components/theme-provider';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
 import { JobProvider } from './contexts/JobContext';
@@ -22,9 +22,9 @@ import './App.css';
 function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="ui-theme">
-      <AuthProvider>
-        <JobProvider>
-          <Router>
+      <Router>
+        <AuthProvider>
+          <JobProvider>
             <Navbar />
             <main className="min-h-screen bg-background pt-16 pb-12">
               <Routes>
@@ -87,9 +87,9 @@ function App() {
               </Routes>
             </main>
             <Toaster />
-          </Router>
-        </JobProvider>
-      </AuthProvider>
+          </JobProvider>
+        </AuthProvider>
+      </Router>
     </ThemeProvider>
   );
 }
