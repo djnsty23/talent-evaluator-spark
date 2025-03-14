@@ -1,6 +1,6 @@
 
 import { useEffect } from 'react';
-import { Job } from '@/contexts/JobContext';
+import { Job } from '@/types/job.types';
 
 export function useProcessingEffects(
   job: Job | null,

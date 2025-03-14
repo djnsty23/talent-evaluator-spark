@@ -1,5 +1,5 @@
 
-import { Job } from '@/contexts/JobContext';
+import { Job } from '@/types/job.types';
 import { useProcessingState } from './useProcessingState';
 import { useProcessSingleCandidate } from './useProcessSingleCandidate';
 import { useProcessAllCandidates } from './useProcessAllCandidates';
