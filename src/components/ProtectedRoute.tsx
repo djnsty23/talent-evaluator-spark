@@ -1,6 +1,6 @@
 
 import { ReactNode, useEffect } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
@@ -10,14 +10,20 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { currentUser, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Effect to redirect if user is not authenticated after loading
   useEffect(() => {
     if (!isLoading && !currentUser) {
       console.log('Not authenticated, redirecting to login');
-      navigate('/login', { replace: true });
+      // Save the attempted path to redirect back after login
+      const returnPath = location.pathname !== '/login' ? location.pathname : '/dashboard';
+      navigate('/login', { 
+        replace: true,
+        state: { returnTo: returnPath }
+      });
     }
-  }, [currentUser, isLoading, navigate]);
+  }, [currentUser, isLoading, navigate, location.pathname]);
 
   if (isLoading) {
     return (
@@ -32,7 +38,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (!currentUser) {
     console.log('No current user, redirecting to login');
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ returnTo: location.pathname }} />;
   }
 
   console.log('User authenticated, rendering protected content');

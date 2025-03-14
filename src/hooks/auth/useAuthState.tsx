@@ -52,25 +52,33 @@ export const useAuthState = () => {
 
   // Setup Supabase auth listener with proper cleanup
   useEffect(() => {
+    let mounted = true;
     let authSubscription: { unsubscribe: () => void } | null = null;
     
     // Initial session check function
     const checkInitialSession = async () => {
+      if (!mounted) return;
+      
       setIsLoading(true);
       try {
         const { data: { session } } = await supabase.auth.getSession();
         const formattedUser = formatUser(session);
         console.log('Initial session check:', formattedUser ? 'User found' : 'No user');
-        setCurrentUser(formattedUser);
         
-        // If user is already logged in and on login page, redirect to dashboard
-        if (formattedUser && location.pathname === '/login') {
-          navigate('/dashboard');
+        if (mounted) {
+          setCurrentUser(formattedUser);
+          
+          // If user is already logged in and on login page, redirect to dashboard
+          if (formattedUser && location.pathname === '/login') {
+            navigate('/dashboard', { replace: true });
+          }
         }
       } catch (error) {
         console.error('Initial session check error:', error);
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
     
@@ -80,6 +88,8 @@ export const useAuthState = () => {
     // Setup auth state change listener
     try {
       const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!mounted) return;
+        
         console.log('Auth state changed:', _event);
         const formattedUser = formatUser(session);
         
@@ -101,7 +111,7 @@ export const useAuthState = () => {
           case 'SIGNED_IN':
             if (formattedUser) {
               console.log('User signed in, redirecting to dashboard');
-              navigate('/dashboard');
+              navigate('/dashboard', { replace: true });
             }
             break;
             
@@ -109,7 +119,7 @@ export const useAuthState = () => {
             console.log('User signed out');
             // Only redirect to login if not already there
             if (location.pathname !== '/login' && location.pathname !== '/') {
-              navigate('/login');
+              navigate('/login', { replace: true });
             }
             break;
             
@@ -130,11 +140,14 @@ export const useAuthState = () => {
       authSubscription = data.subscription;
     } catch (error) {
       console.error('Error setting up auth listener:', error);
-      setIsLoading(false);
+      if (mounted) {
+        setIsLoading(false);
+      }
     }
 
     // Cleanup function to prevent memory leaks and stale auth states
     return () => {
+      mounted = false;
       if (authSubscription) {
         console.log('Unsubscribing from auth state changes');
         authSubscription.unsubscribe();

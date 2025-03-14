@@ -55,7 +55,7 @@ export const saveStorageData = (data: StorageData): void => {
  * Mock function to simulate saving data to a backend with optimistic updates
  */
 export const mockSaveData = async (data: any): Promise<void> => {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     setTimeout(() => {
       // Save to localStorage
       try {
@@ -97,11 +97,11 @@ export const mockSaveData = async (data: any): Promise<void> => {
         
         // Save back to localStorage
         saveStorageData(currentData);
+        resolve();
       } catch (err) {
         console.error('Error saving to localStorage:', err);
+        reject(err);
       }
-      
-      resolve();
     }, 500);
   });
 };

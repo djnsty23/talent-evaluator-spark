@@ -12,7 +12,10 @@ export const useOAuthAuth = () => {
 
   // Memoized Google sign-in function
   const signInWithGoogle = useCallback(async () => {
-    if (isLoading) return; // Prevent duplicate calls
+    if (isLoading) {
+      console.log('Sign-in already in progress, ignoring duplicate call');
+      return;
+    }
     
     setIsLoading(true);
     

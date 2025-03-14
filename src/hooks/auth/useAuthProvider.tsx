@@ -10,11 +10,11 @@ import { useSignOut } from './useSignOut';
 export const useAuthProvider = () => {
   const { currentUser, isLoading: isStateLoading } = useAuthState();
   const { signInWithEmail, signUp, resetPassword, isAuthLoading } = useEmailAuth();
-  const { signInWithGoogle } = useOAuthAuth();
+  const { signInWithGoogle, isLoading: isOAuthLoading } = useOAuthAuth();
   const { signOut, isSignOutLoading } = useSignOut();
   
   // Combine loading states
-  const isLoading = isStateLoading || isAuthLoading || isSignOutLoading;
+  const isLoading = isStateLoading || isAuthLoading || isOAuthLoading || isSignOutLoading;
 
   return {
     currentUser,

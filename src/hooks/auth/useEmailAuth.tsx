@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,8 +12,11 @@ export const useEmailAuth = () => {
   const navigate = useNavigate();
 
   // Email/password sign in
-  const signInWithEmail = async (email: string, password: string) => {
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
+    if (isLoading) return;
+    
     setIsLoading(true);
+    
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -24,7 +27,8 @@ export const useEmailAuth = () => {
       
       console.log('Signed in with email:', data);
       toast.success('Signed in successfully');
-      navigate('/dashboard');
+      
+      // Navigation is handled by auth state change listener
     } catch (error: any) {
       console.error('Sign in error:', error);
       toast.error(error.message || 'Failed to sign in. Please check your credentials.');
@@ -32,11 +36,14 @@ export const useEmailAuth = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isLoading]);
 
   // Sign up with email/password
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = useCallback(async (email: string, password: string, name: string) => {
+    if (isLoading) return;
+    
     setIsLoading(true);
+    
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -52,7 +59,7 @@ export const useEmailAuth = () => {
       
       console.log('Signed up:', data);
       toast.success('Account created successfully! You can now sign in.');
-      navigate('/login');
+      // Don't navigate - let the user sign in manually as the confirmation email might be needed
     } catch (error: any) {
       console.error('Sign up error:', error);
       toast.error(error.message || 'Failed to create account. Please try again.');
@@ -60,11 +67,14 @@ export const useEmailAuth = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isLoading]);
 
   // Password reset
-  const resetPassword = async (email: string) => {
+  const resetPassword = useCallback(async (email: string) => {
+    if (isLoading) return;
+    
     setIsLoading(true);
+    
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
@@ -80,7 +90,7 @@ export const useEmailAuth = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isLoading]);
 
   return {
     signInWithEmail,

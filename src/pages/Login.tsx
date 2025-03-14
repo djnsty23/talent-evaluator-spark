@@ -1,133 +1,126 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import LoginLayout from '@/components/auth/LoginLayout';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SignInForm from '@/components/auth/SignInForm';
 import SignUpForm from '@/components/auth/SignUpForm';
+import LoginLayout from '@/components/auth/LoginLayout';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
+  const { currentUser, signInWithEmail, signInWithGoogle, signUp, isLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const { signInWithEmail, signInWithGoogle, signUp, currentUser } = useAuth();
-  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const location = useLocation();
+  const navigate = useNavigate();
   
-  // Extract tab parameter from URL once on initial render
-  const searchParams = new URLSearchParams(location.search);
-  const signupParam = searchParams.get('signup');
-  const defaultTab = signupParam === 'true' ? 'signup' : 'signin';
-
-  // Memoized function to handle OAuth redirects
-  const handleHashFragment = useCallback(async () => {
-    // Check if we have an access_token in the URL hash (OAuth redirect)
-    if (location.hash && location.hash.includes('access_token=')) {
-      console.log('Login page detected access_token in URL hash, processing OAuth response');
-      setIsSubmitting(true);
-      
-      try {
-        // Let Supabase process the hash fragment
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error processing OAuth response:', error);
-          throw error;
-        }
-        
-        console.log('Successfully processed OAuth session:', data.session ? 'Valid session' : 'No session');
-        
-        // Clear the hash fragment from the URL without causing a page refresh
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        if (data.session) {
-          toast.success('Successfully signed in!');
-          navigate('/dashboard');
-        }
-      } catch (err: any) {
-        console.error('OAuth callback processing error:', err);
-        setError(err.message || 'Failed to complete authentication');
-        toast.error('Authentication failed. Please try again.');
-      } finally {
-        setIsSubmitting(false);
-      }
-    }
-  }, [location.hash, navigate]);
-
-  // Process hash fragment only when it changes
+  // Check query params for active tab or location state
   useEffect(() => {
-    handleHashFragment();
-  }, [handleHashFragment]);
-
-  // Redirect if already logged in - only run this check once on mount and when currentUser changes
-  useEffect(() => {
-    if (currentUser) {
-      console.log('User already logged in, redirecting to dashboard');
-      navigate('/dashboard');
+    // Get destination from location state
+    const returnTo = location.state?.returnTo || '/dashboard';
+    
+    // If user is already logged in, redirect to destination
+    if (currentUser && !isLoading) {
+      console.log('User already logged in, redirecting to:', returnTo);
+      navigate(returnTo, { replace: true });
+      return;
     }
-  }, [currentUser, navigate]);
+    
+    // Check URL for signup param
+    const params = new URLSearchParams(location.search);
+    if (params.get('signup') === 'true') {
+      setActiveTab('signup');
+    }
+  }, [currentUser, isLoading, location, navigate]);
 
-  // Memoized form submission handlers to prevent recreating on every render
-  const handleEmailSignIn = useCallback(async (e: React.FormEvent) => {
+  // Handle email sign in
+  const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    if (!email || !password) {
+      setError('Please enter both email and password');
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
       await signInWithEmail(email, password);
-      // Navigation is handled in the auth context
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in. Please check your credentials.');
+      // No need to redirect here, useAuth handles it
+    } catch (error: any) {
+      console.error('Sign in error:', error);
+      setError(error.message || 'Failed to sign in');
     } finally {
       setIsSubmitting(false);
     }
-  }, [email, password, signInWithEmail]);
-
-  const handleSignUp = useCallback(async (e: React.FormEvent) => {
+  };
+  
+  // Handle Google sign in
+  const handleGoogleSignIn = async () => {
+    setError('');
+    
+    try {
+      await signInWithGoogle();
+      // Auth state change will handle redirect
+    } catch (error: any) {
+      // Error is handled in the hook
+      console.error('Google sign in error:', error);
+    }
+  };
+  
+  // Handle sign up
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    if (!name || !email || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
+    
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
       await signUp(email, password, name);
-      // Navigation is handled in the auth context
-    } catch (err: any) {
-      setError(err.message || 'Failed to create account. Please try again.');
+      toast.success('Account created successfully! You can now sign in.');
+      setActiveTab('signin');
+    } catch (error: any) {
+      console.error('Sign up error:', error);
+      setError(error.message || 'Failed to create account');
     } finally {
       setIsSubmitting(false);
     }
-  }, [email, password, name, signUp]);
-
-  const handleGoogleSignIn = useCallback(async () => {
-    setError('');
-    
-    try {
-      console.log('Initiating Google sign-in from Login page');
-      setIsSubmitting(true);
-      await signInWithGoogle();
-      // Navigation happens automatically due to OAuth redirect
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in with Google. Please try again.');
-      setIsSubmitting(false);
-    }
-  }, [signInWithGoogle]);
+  };
 
   return (
     <LoginLayout>
-      <Card className="border-border/40 shadow-lg">
+      <Card className="w-full">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-          <CardDescription>Sign in to your account or create a new one</CardDescription>
+          <CardTitle className="text-2xl font-bold">
+            {activeTab === 'signin' ? 'Sign In' : 'Create Account'}
+          </CardTitle>
+          <CardDescription>
+            {activeTab === 'signin' 
+              ? 'Enter your credentials to access your account' 
+              : 'Fill in your details to create a new account'}
+          </CardDescription>
         </CardHeader>
         
-        <Tabs defaultValue={defaultTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="signin">Sign In</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
           </TabsList>

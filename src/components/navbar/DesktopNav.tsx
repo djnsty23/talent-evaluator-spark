@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import UserDropdown from './UserDropdown';
 import { AuthUser } from '@/contexts/AuthContext';
+import { isPathActive } from './utils';
 
 interface DesktopNavProps {
   navItems: { name: string; path: string; protected: boolean }[];
@@ -21,7 +22,7 @@ const DesktopNav = ({ navItems, currentUser, location }: DesktopNavProps) => {
             key={item.path}
             to={item.path}
             className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-              location.pathname === item.path
+              isPathActive(location.pathname, item.path)
                 ? 'text-primary'
                 : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
             }`}
