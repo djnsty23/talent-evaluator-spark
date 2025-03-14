@@ -9,7 +9,334 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      candidate_analysis: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          cultural_fit: string | null
+          id: string
+          personality_traits: Json | null
+          skills_assessment: Json | null
+          strengths: Json | null
+          updated_at: string
+          weaknesses: Json | null
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          cultural_fit?: string | null
+          id?: string
+          personality_traits?: Json | null
+          skills_assessment?: Json | null
+          strengths?: Json | null
+          updated_at?: string
+          weaknesses?: Json | null
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          cultural_fit?: string | null
+          id?: string
+          personality_traits?: Json | null
+          skills_assessment?: Json | null
+          strengths?: Json | null
+          updated_at?: string
+          weaknesses?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_analysis_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: true
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidate_scores: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          explanation: string | null
+          id: string
+          requirement_id: string
+          score: number
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          requirement_id: string
+          score: number
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          requirement_id?: string
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_scores_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_scores_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "job_requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidates: {
+        Row: {
+          content_type: string | null
+          created_at: string
+          file_name: string | null
+          id: string
+          is_starred: boolean | null
+          job_id: string
+          name: string
+          resume_text: string | null
+          updated_at: string
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          is_starred?: boolean | null
+          job_id: string
+          name: string
+          resume_text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          is_starred?: boolean | null
+          job_id?: string
+          name?: string
+          resume_text?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidates_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_context_files: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          job_id: string
+          name: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          job_id: string
+          name: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_context_files_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_requirements: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          job_id: string
+          title: string
+          updated_at: string
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          job_id: string
+          title: string
+          updated_at?: string
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          job_id?: string
+          title?: string
+          updated_at?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_requirements_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          company: string | null
+          created_at: string
+          department: string | null
+          description: string | null
+          id: string
+          location: string | null
+          salary: Json | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          department?: string | null
+          description?: string | null
+          id?: string
+          location?: string | null
+          salary?: Json | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          department?: string | null
+          description?: string | null
+          id?: string
+          location?: string | null
+          salary?: Json | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      report_candidates: {
+        Row: {
+          candidate_id: string
+          report_id: string
+        }
+        Insert: {
+          candidate_id: string
+          report_id: string
+        }
+        Update: {
+          candidate_id?: string
+          report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_candidates_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_candidates_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          job_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          job_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

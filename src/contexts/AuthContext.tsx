@@ -3,10 +3,10 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Session, User } from '@supabase/supabase-js';
+import { Session } from '@supabase/supabase-js';
 
 // Define user type
-export interface User {
+export interface AuthUser {
   id: string;
   email: string;
   name?: string;
@@ -15,7 +15,7 @@ export interface User {
 
 // Define context type
 interface AuthContextType {
-  currentUser: User | null;
+  currentUser: AuthUser | null;
   isLoading: boolean;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -40,12 +40,12 @@ export const useAuth = () => useContext(AuthContext);
 
 // Auth Provider component
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   // Convert Supabase User to our User type
-  const formatUser = (session: Session | null): User | null => {
+  const formatUser = (session: Session | null): AuthUser | null => {
     if (!session?.user) return null;
     
     const { id, email, user_metadata } = session.user;
