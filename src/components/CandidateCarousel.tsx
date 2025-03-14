@@ -1,6 +1,6 @@
 
-import { useState, useRef, useCallback, useEffect } from 'react';
-import { Filter, ChevronLeft, ChevronRight, User, Upload } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Filter, ChevronLeft, ChevronRight, Upload, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Carousel,
@@ -32,7 +32,6 @@ const CandidateCarousel = ({
 }: CandidateCarouselProps) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [api, setApi] = useState<any>(null);
-  const carouselRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   
   // Update active index when the API changes slide
@@ -80,6 +79,17 @@ const CandidateCarousel = ({
             <Upload className="h-4 w-4" />
             Upload Candidates
           </Button>
+          
+          {getCurrentJobId() && (
+            <Button 
+              variant="outline"
+              onClick={() => navigate(`/jobs/${getCurrentJobId()}/report`)}
+              className="flex gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              Generate Report
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -91,6 +101,8 @@ const CandidateCarousel = ({
       navigate(`/jobs/${jobId}/candidates/${candidateId}`);
     }
   };
+
+  const jobId = getCurrentJobId();
 
   return (
     <div className="relative py-4">
@@ -121,7 +133,6 @@ const CandidateCarousel = ({
         opts={{
           align: "start",
         }}
-        ref={carouselRef}
         setApi={setApi}
       >
         <CarouselContent>
@@ -136,6 +147,7 @@ const CandidateCarousel = ({
                   onDelete={() => onDelete(candidate.id)}
                   isProcessing={processingCandidateIds.includes(candidate.id)}
                   onViewDetails={() => handleViewDetails(candidate.id)}
+                  jobId={jobId || undefined}
                   allCandidatesData={candidates}
                 />
               </div>

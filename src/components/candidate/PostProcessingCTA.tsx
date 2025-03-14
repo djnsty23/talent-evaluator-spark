@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { FileText, BarChart } from "lucide-react";
+import { FileText, BarChart, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface PostProcessingCTAProps {
@@ -22,10 +22,10 @@ const PostProcessingCTA = ({ jobId, processedCandidatesCount, show }: PostProces
 
   return (
     <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 my-6">
-      <h3 className="text-lg font-semibold mb-2">All candidates processed!</h3>
+      <h3 className="text-lg font-semibold mb-2">All candidates processed successfully!</h3>
       <p className="text-muted-foreground mb-4">
         You've successfully processed {processedCandidatesCount} candidates. 
-        Now you can generate a detailed comparison report.
+        Now you can generate a detailed comparison report or view your job dashboard.
       </p>
       <div className="flex flex-col sm:flex-row gap-3">
         <Button 

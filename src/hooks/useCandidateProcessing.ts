@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useJob } from '@/contexts/JobContext';
 import { Job } from '@/contexts/JobContext';
@@ -15,6 +15,21 @@ export function useCandidateProcessing(jobId: string | undefined, job: Job | nul
   const [currentProcessing, setCurrentProcessing] = useState('');
   const [showPostProcessCTA, setShowPostProcessCTA] = useState(false);
 
+  // Check if all candidates are processed when the job changes
+  useEffect(() => {
+    if (job && job.candidates.length > 0) {
+      const unprocessedCount = job.candidates.filter(c => c.scores.length === 0).length;
+      const processedCount = job.candidates.filter(c => c.scores.length > 0).length;
+      
+      // If all candidates are processed, show the CTA
+      if (processedCount > 0 && unprocessedCount === 0) {
+        setShowPostProcessCTA(true);
+      } else {
+        setShowPostProcessCTA(false);
+      }
+    }
+  }, [job]);
+
   const handleProcessCandidate = async (candidateId: string) => {
     if (!jobId) return;
     
@@ -23,6 +38,15 @@ export function useCandidateProcessing(jobId: string | undefined, job: Job | nul
     try {
       await processCandidate(jobId, candidateId);
       toast.success('Candidate processed successfully');
+      
+      // Check if all candidates are now processed
+      const currentJob = jobs.find(j => j.id === jobId);
+      if (currentJob) {
+        const remainingUnprocessed = currentJob.candidates.filter(c => c.scores.length === 0).length;
+        if (remainingUnprocessed === 0 && currentJob.candidates.length > 0) {
+          setShowPostProcessCTA(true);
+        }
+      }
     } catch (error) {
       console.error('Process error:', error);
       toast.error('Failed to process candidate');
@@ -51,6 +75,7 @@ export function useCandidateProcessing(jobId: string | undefined, job: Job | nul
       const currentJob = jobs.find(j => j.id === jobId);
       const candidatesToProcess = currentJob?.candidates.filter(c => c.scores.length === 0) || [];
       const total = candidatesToProcess.length;
+      const initialProcessedCount = job.candidates.filter(c => c.scores.length > 0).length;
       
       const progressInterval = setInterval(() => {
         setProcessingProgress(prev => {
@@ -67,16 +92,15 @@ export function useCandidateProcessing(jobId: string | undefined, job: Job | nul
       
       if (jobElement) {
         const observer = new MutationObserver(() => {
-          const currentJob = jobs.find(j => j.id === jobId);
-          if (currentJob) {
-            const processedCandidates = currentJob.candidates.filter(c => c.scores.length > 0);
-            const newProcessed = processedCandidates.length;
+          const updatedJob = jobs.find(j => j.id === jobId);
+          if (updatedJob) {
+            const processedCandidates = updatedJob.candidates.filter(c => c.scores.length > 0);
+            const newProcessedCount = processedCandidates.length - initialProcessedCount;
             
-            setProcessedCountTracking(newProcessed);
+            setProcessedCountTracking(newProcessedCount);
             
-            const actualProgress = Math.min(Math.floor((newProcessed / total) * 100), 95);
-            
-            setProcessingProgress(prev => Math.max(prev, actualProgress));
+            const percentComplete = Math.min(Math.floor((newProcessedCount / total) * 100), 95);
+            setProcessingProgress(prev => Math.max(prev, percentComplete));
           }
         });
         
@@ -92,13 +116,15 @@ export function useCandidateProcessing(jobId: string | undefined, job: Job | nul
       const updatedJob = jobs.find(j => j.id === jobId);
       if (updatedJob) {
         const processedCandidates = updatedJob.candidates.filter(c => c.scores.length > 0);
-        setProcessedCountTracking(processedCandidates.length);
+        const newProcessedCount = processedCandidates.length - initialProcessedCount;
+        setProcessedCountTracking(newProcessedCount);
         
-        if (job) {
-          setErrorCount(total - (processedCandidates.length - (job.candidates.filter(c => c.scores.length > 0).length)));
+        setErrorCount(total - newProcessedCount);
+        
+        // Show post-processing CTA if all candidates are processed
+        if (updatedJob.candidates.filter(c => c.scores.length === 0).length === 0) {
+          setShowPostProcessCTA(true);
         }
-        
-        setShowPostProcessCTA(true);
       }
       
       setTimeout(() => {

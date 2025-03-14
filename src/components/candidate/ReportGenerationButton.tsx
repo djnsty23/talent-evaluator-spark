@@ -18,7 +18,23 @@ const ReportGenerationButton = ({
 }: ReportGenerationButtonProps) => {
   const navigate = useNavigate();
 
-  if (processedCandidatesCount === 0 || candidateId || showPostProcessCTA) {
+  if (candidateId) {
+    // Show in individual candidate view
+    return (
+      <div className="mt-6">
+        <Button
+          onClick={() => navigate(`/jobs/${jobId}/report`)}
+          variant="outline"
+          className="flex items-center gap-2 w-full"
+        >
+          <FileText className="h-4 w-4" />
+          Generate Comparison Report
+        </Button>
+      </div>
+    );
+  }
+
+  if (processedCandidatesCount === 0 || showPostProcessCTA) {
     return null;
   }
 
