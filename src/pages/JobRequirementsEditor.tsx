@@ -151,13 +151,14 @@ const JobRequirementsEditor = () => {
   };
   
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
+    <div className="container mx-auto max-w-5xl px-4 py-8">
       <div className="flex items-center gap-4 mb-6">
         <Button
           variant="ghost"
           onClick={() => navigate(`/jobs/${jobId}`)}
+          className="flex items-center gap-2"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4" />
           Back to Job
         </Button>
         
@@ -165,25 +166,32 @@ const JobRequirementsEditor = () => {
       </div>
       
       <Card className="mb-6">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Requirements for {job.title}</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between pb-4 space-y-0">
+          <div>
+            <CardTitle className="text-xl">Requirements for {job.title}</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              {requirements.length > 0 
+                ? `${requirements.length} requirements defined` 
+                : 'No requirements defined yet'}
+            </p>
+          </div>
           <div className="flex items-center gap-2">
             <OpenAIKeyInput />
             
             <Button 
               variant="outline"
               onClick={() => setShowContextUploader(!showContextUploader)}
-              className="gap-2"
+              className="flex items-center gap-2"
             >
               <FileText className="h-4 w-4" />
-              {showContextUploader ? 'Hide Context Files' : 'Add Context Files'}
+              {showContextUploader ? 'Hide Files' : 'Add Context Files'}
             </Button>
             
             <Button 
               variant="outline"
               onClick={handleGenerateRequirements}
               disabled={isGenerating}
-              className="gap-2"
+              className="flex items-center gap-2"
             >
               {isGenerating ? (
                 <>
@@ -198,8 +206,11 @@ const JobRequirementsEditor = () => {
               )}
             </Button>
             
-            <Button onClick={handleAddRequirement}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button 
+              onClick={handleAddRequirement}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
               Add Requirement
             </Button>
           </div>
@@ -246,87 +257,93 @@ const JobRequirementsEditor = () => {
         <CardContent>
           <div className="space-y-6">
             {requirements.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No requirements yet. Click 'Add Requirement' to create one manually 
-                or use 'Generate with AI' to create them automatically from the job description.
+              <div className="text-center py-12 text-muted-foreground border rounded-md bg-muted/10">
+                <p className="text-lg mb-2">No requirements yet</p>
+                <p className="text-sm max-w-md mx-auto">
+                  Click 'Add Requirement' to create one manually 
+                  or use 'Generate with AI' to create them automatically from the job description.
+                </p>
               </div>
             ) : (
-              requirements.map((req, index) => (
-                <div key={req.id} className="grid grid-cols-12 gap-4 p-4 border rounded-md">
-                  <div className="col-span-3">
-                    <label className="text-sm font-medium mb-1 block">Category</label>
-                    <Select
-                      value={req.category}
-                      onValueChange={(value) => handleRequirementChange(req.id, 'category', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Technical Skills">Technical Skills</SelectItem>
-                        <SelectItem value="Soft Skills">Soft Skills</SelectItem>
-                        <SelectItem value="Education">Education</SelectItem>
-                        <SelectItem value="Experience">Experience</SelectItem>
-                        <SelectItem value="Certifications">Certifications</SelectItem>
-                        <SelectItem value="Language">Language</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="col-span-5">
-                    <label className="text-sm font-medium mb-1 block">Description</label>
-                    <Textarea
-                      value={req.description}
-                      onChange={(e) => handleRequirementChange(req.id, 'description', e.target.value)}
-                      placeholder="Requirement description"
-                      className="min-h-[60px]"
-                    />
-                  </div>
-                  
-                  <div className="col-span-2">
-                    <label className="text-sm font-medium mb-1 block">Weight (1-10)</label>
-                    <Select
-                      value={req.weight.toString()}
-                      onValueChange={(value) => handleRequirementChange(req.id, 'weight', parseInt(value))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Weight" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(value => (
-                          <SelectItem key={value} value={value.toString()}>
-                            {value}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="col-span-1 flex items-end">
-                    <div className="flex items-center space-x-2 h-10">
+              <div className="space-y-6">
+                <div className="grid grid-cols-12 gap-4 p-3 font-medium text-sm border-b">
+                  <div className="col-span-3">Category</div>
+                  <div className="col-span-5">Description</div>
+                  <div className="col-span-2">Weight (1-10)</div>
+                  <div className="col-span-1 text-center">Required</div>
+                  <div className="col-span-1"></div>
+                </div>
+                
+                {requirements.map((req, index) => (
+                  <div key={req.id} className="grid grid-cols-12 gap-4 p-4 border rounded-md hover:bg-muted/5 transition-colors">
+                    <div className="col-span-3">
+                      <Select
+                        value={req.category}
+                        onValueChange={(value) => handleRequirementChange(req.id, 'category', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Technical Skills">Technical Skills</SelectItem>
+                          <SelectItem value="Soft Skills">Soft Skills</SelectItem>
+                          <SelectItem value="Education">Education</SelectItem>
+                          <SelectItem value="Experience">Experience</SelectItem>
+                          <SelectItem value="Certifications">Certifications</SelectItem>
+                          <SelectItem value="Language">Language</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="col-span-5">
+                      <Textarea
+                        value={req.description}
+                        onChange={(e) => handleRequirementChange(req.id, 'description', e.target.value)}
+                        placeholder="Requirement description"
+                        className="min-h-[60px] resize-none"
+                      />
+                    </div>
+                    
+                    <div className="col-span-2">
+                      <Select
+                        value={req.weight.toString()}
+                        onValueChange={(value) => handleRequirementChange(req.id, 'weight', parseInt(value))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Weight" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(value => (
+                            <SelectItem key={value} value={value.toString()}>
+                              {value}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="col-span-1 flex items-center justify-center">
                       <Switch
                         checked={req.isRequired}
                         onCheckedChange={(checked) => handleRequirementChange(req.id, 'isRequired', checked)}
                         id={`required-${req.id}`}
                       />
-                      <label htmlFor={`required-${req.id}`} className="text-sm">
-                        Required
-                      </label>
+                    </div>
+                    
+                    <div className="col-span-1 flex items-center justify-center">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveRequirement(req.id)}
+                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                  
-                  <div className="col-span-1 flex items-end justify-end">
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => handleRemoveRequirement(req.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
             
             <div className="flex justify-end space-x-4 mt-8">
@@ -339,6 +356,7 @@ const JobRequirementsEditor = () => {
               <Button
                 onClick={handleSave}
                 disabled={isSaving}
+                className="min-w-[120px]"
               >
                 {isSaving ? (
                   <>

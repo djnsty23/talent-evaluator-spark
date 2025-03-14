@@ -95,8 +95,10 @@ export class AIService {
                      - Write a clear, concise description that's distinct from the original text
                      
                   3. DO NOT just copy text from the job description. Analyze and transform it into proper requirement statements.
-                  4. Generate a balanced set of 8-12 requirements that cover different categories.
-                  5. Make sure each requirement is specific and measurable.`
+                  4. Generate EXACTLY 10-12 requirements that cover different categories.
+                  5. ALWAYS include a Language category requirement for English proficiency if the job involves communication.
+                  6. Make sure each requirement is specific and measurable.
+                  7. Include at least one requirement from each relevant category.`
                 },
                 {
                   role: 'user',
@@ -118,7 +120,9 @@ export class AIService {
                     ...
                   ]
                   
-                  Return ONLY the JSON array with no explanation or additional text. Do not include the word "json" or any code formatting.`
+                  Return ONLY the JSON array with no explanation or additional text. Do not include the word "json" or any code formatting.
+                  
+                  Generate EXACTLY 10-12 requirements covering all relevant categories, and ALWAYS include a Language requirement for English proficiency.`
                 }
               ],
               temperature: 0.7,
@@ -189,9 +193,91 @@ export class AIService {
     const isTechnical = /developer|engineer|programmer|architect|data|tech|IT|software/i.test(title);
     const isMarketing = /marketing|brand|content|social media|SEO|growth/i.test(title);
     const isSales = /sales|account|business development|customer|client/i.test(title);
+    const isCustomerSuccess = /customer success|customer support|account manager/i.test(title) || 
+                             description.toLowerCase().includes('customer success');
     
-    // Technical skills (based on job type)
-    if (isTechnical) {
+    // Custom mock requirements based on job type
+    if (isCustomerSuccess || isSales) {
+      mockRequirements.push({
+        id: `req_${Date.now()}_1`,
+        category: 'Experience',
+        description: 'Demonstrated experience in customer success or a related role',
+        weight: 9,
+        isRequired: true,
+      });
+      
+      mockRequirements.push({
+        id: `req_${Date.now()}_2`,
+        category: 'Technical Skills',
+        description: 'Familiarity with SaaS platforms and knowledge of A/B testing, experimentation, or conversion rate optimization (CRO)',
+        weight: 8,
+        isRequired: true,
+      });
+      
+      mockRequirements.push({
+        id: `req_${Date.now()}_3`,
+        category: 'Soft Skills',
+        description: 'Strong problem-solving and analytical skills to identify customer pain points and interpret data effectively',
+        weight: 7,
+        isRequired: true,
+      });
+      
+      mockRequirements.push({
+        id: `req_${Date.now()}_4`,
+        category: 'Soft Skills',
+        description: 'Excellent communication skills with the ability to build and maintain strong customer relationships',
+        weight: 9,
+        isRequired: true,
+      });
+      
+      mockRequirements.push({
+        id: `req_${Date.now()}_5`,
+        category: 'Soft Skills',
+        description: 'Proactive approach with demonstrated ability to take ownership of customer issues and drive product adoption',
+        weight: 8,
+        isRequired: true,
+      });
+      
+      mockRequirements.push({
+        id: `req_${Date.now()}_6`,
+        category: 'Technical Skills',
+        description: 'Proficiency with CRM tools, analytics platforms, and customer success software such as Hubspot and Google Analytics',
+        weight: 7,
+        isRequired: true,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_7`,
+        category: 'Experience',
+        description: 'Track record of successful customer onboarding, retention, and expansion',
+        weight: 8,
+        isRequired: false,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_8`,
+        category: 'Education',
+        description: 'Bachelor\'s degree in Business, Marketing, or a related field',
+        weight: 5,
+        isRequired: false,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_9`,
+        category: 'Technical Skills',
+        description: 'Experience with data analysis and reporting to track customer health metrics',
+        weight: 6,
+        isRequired: false,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_10`,
+        category: 'Language',
+        description: 'Professional level English language proficiency (written and verbal)',
+        weight: 9,
+        isRequired: true,
+      });
+    } else if (isTechnical) {
       mockRequirements.push({
         id: `req_${Date.now()}_1`,
         category: 'Technical Skills',
@@ -205,6 +291,70 @@ export class AIService {
         category: 'Technical Skills',
         description: 'Experience with cloud platforms (AWS, Azure, or GCP) and containerization',
         weight: 8,
+        isRequired: true,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_3`,
+        category: 'Technical Skills',
+        description: 'Knowledge of modern software development practices including CI/CD and version control',
+        weight: 7,
+        isRequired: true,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_4`,
+        category: 'Experience',
+        description: 'Minimum 3 years of experience in software development or related technical role',
+        weight: 8,
+        isRequired: true,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_5`,
+        category: 'Soft Skills',
+        description: 'Strong collaboration skills and ability to work effectively in cross-functional teams',
+        weight: 7,
+        isRequired: true,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_6`,
+        category: 'Education',
+        description: 'Bachelor\'s degree in Computer Science, Engineering or related field',
+        weight: 6,
+        isRequired: false,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_7`,
+        category: 'Technical Skills',
+        description: 'Experience in database design and management (SQL, NoSQL)',
+        weight: 7,
+        isRequired: false,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_8`,
+        category: 'Technical Skills',
+        description: 'Knowledge of security best practices and implementation',
+        weight: 6,
+        isRequired: false,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_9`,
+        category: 'Soft Skills',
+        description: 'Excellent problem-solving abilities and analytical thinking',
+        weight: 8,
+        isRequired: true,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_10`,
+        category: 'Language',
+        description: 'Fluent English communication skills (written and verbal)',
+        weight: 9,
         isRequired: true,
       });
     } else if (isMarketing) {
@@ -223,23 +373,72 @@ export class AIService {
         weight: 8,
         isRequired: true,
       });
-    } else if (isSales) {
+
       mockRequirements.push({
-        id: `req_${Date.now()}_1`,
-        category: 'Technical Skills',
-        description: 'Proficiency with CRM systems and sales tracking tools',
-        weight: 9,
-        isRequired: true,
-      });
-      
-      mockRequirements.push({
-        id: `req_${Date.now()}_2`,
-        category: 'Technical Skills',
-        description: 'Demonstrated ability to meet and exceed sales targets consistently',
+        id: `req_${Date.now()}_3`,
+        category: 'Experience',
+        description: 'Minimum 3 years of experience in digital marketing or content strategy',
         weight: 8,
         isRequired: true,
       });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_4`,
+        category: 'Technical Skills',
+        description: 'Demonstrated ability to use SEO and SEM strategies effectively',
+        weight: 7,
+        isRequired: true,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_5`,
+        category: 'Soft Skills',
+        description: 'Creative thinking and innovative approach to marketing challenges',
+        weight: 8,
+        isRequired: true,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_6`,
+        category: 'Education',
+        description: 'Bachelor\'s degree in Marketing, Communications, or related field',
+        weight: 6,
+        isRequired: false,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_7`,
+        category: 'Technical Skills',
+        description: 'Experience with content management systems and social media platforms',
+        weight: 7,
+        isRequired: true,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_8`,
+        category: 'Soft Skills',
+        description: 'Strong project management and organizational abilities',
+        weight: 7,
+        isRequired: true,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_9`,
+        category: 'Technical Skills',
+        description: 'Understanding of branding principles and visual design fundamentals',
+        weight: 6,
+        isRequired: false,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_10`,
+        category: 'Language',
+        description: 'Excellent English language proficiency with strong writing skills',
+        weight: 9,
+        isRequired: true,
+      });
     } else {
+      // Generic requirements for other job types
       mockRequirements.push({
         id: `req_${Date.now()}_1`,
         category: 'Technical Skills',
@@ -255,66 +454,76 @@ export class AIService {
         weight: 8,
         isRequired: true,
       });
-    }
-    
-    // Soft skills (common across most jobs)
-    mockRequirements.push({
-      id: `req_${Date.now()}_3`,
-      category: 'Soft Skills',
-      description: 'Strong written and verbal communication abilities with stakeholders at all levels',
-      weight: 7,
-      isRequired: true,
-    });
-    
-    mockRequirements.push({
-      id: `req_${Date.now()}_4`,
-      category: 'Soft Skills',
-      description: 'Excellent problem-solving skills with a solutions-oriented mindset',
-      weight: 8,
-      isRequired: true,
-    });
-    
-    // Education (vary by job type)
-    mockRequirements.push({
-      id: `req_${Date.now()}_5`,
-      category: 'Education',
-      description: `Bachelor's degree in ${isTechnical ? 'Computer Science, Engineering or related field' : isMarketing ? 'Marketing, Communications, or Business' : isSales ? 'Business, Marketing, or related field' : 'a relevant field'}`,
-      weight: 6,
-      isRequired: false,
-    });
-    
-    // Experience
-    mockRequirements.push({
-      id: `req_${Date.now()}_6`,
-      category: 'Experience',
-      description: `3+ years of professional experience in ${isTechnical ? 'software development' : isMarketing ? 'marketing or communications' : isSales ? 'sales or account management' : 'a relevant role'}`,
-      weight: 8,
-      isRequired: true,
-    });
-    
-    // Language
-    mockRequirements.push({
-      id: `req_${Date.now()}_7`,
-      category: 'Language',
-      description: 'Professional-level English communication skills (written and verbal)',
-      weight: 9,
-      isRequired: true,
-    });
-    
-    // Add job-specific requirement based on anything in the description
-    if (description.toLowerCase().includes('team') || description.toLowerCase().includes('collaboration')) {
+
       mockRequirements.push({
-        id: `req_${Date.now()}_8`,
+        id: `req_${Date.now()}_3`,
+        category: 'Experience',
+        description: `3+ years of professional experience in ${title.toLowerCase()} or a related role`,
+        weight: 8,
+        isRequired: true,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_4`,
+        category: 'Soft Skills',
+        description: 'Strong written and verbal communication abilities with stakeholders at all levels',
+        weight: 7,
+        isRequired: true,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_5`,
+        category: 'Soft Skills',
+        description: 'Excellent problem-solving skills with a solutions-oriented mindset',
+        weight: 8,
+        isRequired: true,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_6`,
+        category: 'Education',
+        description: 'Bachelor\'s degree in a relevant field',
+        weight: 6,
+        isRequired: false,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_7`,
         category: 'Soft Skills',
         description: 'Demonstrated ability to work collaboratively in cross-functional teams',
         weight: 7,
         isRequired: true,
       });
-    }
-    
-    if (description.toLowerCase().includes('leadership') || description.toLowerCase().includes('manage')) {
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_8`,
+        category: 'Technical Skills',
+        description: 'Ability to analyze data and use it to inform decision-making',
+        weight: 7,
+        isRequired: false,
+      });
+
       mockRequirements.push({
         id: `req_${Date.now()}_9`,
+        category: 'Experience',
+        description: 'Demonstrated track record of successful project completion',
+        weight: 7,
+        isRequired: false,
+      });
+
+      mockRequirements.push({
+        id: `req_${Date.now()}_10`,
+        category: 'Language',
+        description: 'Professional-level English communication skills (written and verbal)',
+        weight: 9,
+        isRequired: true,
+      });
+    }
+    
+    // Add any additional requirements based on job description keywords
+    if (description.toLowerCase().includes('leadership') || description.toLowerCase().includes('manage')) {
+      mockRequirements.push({
+        id: `req_${Date.now()}_11`,
         category: 'Experience',
         description: 'Prior leadership experience managing projects or teams',
         weight: 7, 
