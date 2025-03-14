@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
@@ -14,6 +13,8 @@ import CandidateAnalysisNavigation from '@/components/CandidateAnalysisNavigatio
 import CandidateAnalysisHeader from '@/components/CandidateAnalysisHeader';
 import CandidateAnalysisActions from '@/components/CandidateAnalysisActions';
 import CandidateAnalysisLoading from '@/components/CandidateAnalysisLoading';
+import { Button } from '@/components/ui/button';
+import { FileText, BarChart } from 'lucide-react';
 
 const CandidateAnalysis = () => {
   const { jobId, candidateId } = useParams<{ jobId: string; candidateId?: string }>();
@@ -30,6 +31,7 @@ const CandidateAnalysis = () => {
   const [errorCount, setErrorCount] = useState(0);
   const [currentProcessing, setCurrentProcessing] = useState('');
   const navigate = useNavigate();
+  const [showPostProcessCTA, setShowPostProcessCTA] = useState(false);
 
   useEffect(() => {
     if (jobId && jobs && jobs.length > 0) {
@@ -108,6 +110,7 @@ const CandidateAnalysis = () => {
     setProcessedCount(0);
     setErrorCount(0);
     setProcessingProgress(0);
+    setShowPostProcessCTA(false);
     
     try {
       const currentJob = jobs.find(j => j.id === jobId);
@@ -162,6 +165,8 @@ const CandidateAnalysis = () => {
         setProcessedCount(processedCandidates.length);
         
         setErrorCount(total - (processedCandidates.length - (job.candidates.filter(c => c.scores.length > 0).length)));
+        
+        setShowPostProcessCTA(true);
       }
       
       setTimeout(() => {
@@ -195,6 +200,10 @@ const CandidateAnalysis = () => {
     } catch (error) {
       console.error('Delete error:', error);
     }
+  };
+
+  const handleGenerateReport = () => {
+    navigate(`/jobs/${jobId}/report`);
   };
 
   if (isLoading || !job) {
@@ -234,16 +243,45 @@ const CandidateAnalysis = () => {
       ) : (
         <>
           {!candidateId && (
-            <CandidateFilter
-              totalCandidates={job.candidates.length}
-              processedCount={processedCandidatesCount}
-              unprocessedCount={unprocessedCount}
-              starredCount={starredCount}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              filter={filter}
-              onFilterChange={setFilter}
-            />
+            <>
+              <CandidateFilter
+                totalCandidates={job.candidates.length}
+                processedCount={processedCandidatesCount}
+                unprocessedCount={unprocessedCount}
+                starredCount={starredCount}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                filter={filter}
+                onFilterChange={setFilter}
+              />
+              
+              {showPostProcessCTA && processedCandidatesCount > 0 && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 my-6">
+                  <h3 className="text-lg font-semibold mb-2">All candidates processed!</h3>
+                  <p className="text-muted-foreground mb-4">
+                    You've successfully processed {processedCandidatesCount} candidates. 
+                    Now you can generate a detailed comparison report.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button 
+                      onClick={handleGenerateReport}
+                      className="flex items-center gap-2"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Generate Comparison Report
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate(`/jobs/${jobId}`)}
+                      className="flex items-center gap-2"
+                    >
+                      <BarChart className="h-4 w-4" />
+                      View Job Dashboard
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
           
           <CandidateCarousel
@@ -263,6 +301,19 @@ const CandidateAnalysis = () => {
             processingCandidateIds={processingCandidateIds}
             onProcessAll={handleProcessAllCandidatesClick}
           />
+
+          {processedCandidatesCount > 0 && !candidateId && !showPostProcessCTA && (
+            <div className="mt-6 flex justify-center">
+              <Button
+                onClick={handleGenerateReport}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                Generate Candidate Comparison Report
+              </Button>
+            </div>
+          )}
         </>
       )}
     </div>

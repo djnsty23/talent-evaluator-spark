@@ -9,6 +9,8 @@ import { Job, Report } from '@/contexts/JobContext';
 import { ArrowLeft, Download, FileText, Calendar, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import CandidateScoreTable from '@/components/reports/CandidateScoreTable';
 
 const ViewReport = () => {
   const { jobId, reportId } = useParams<{ jobId: string; reportId: string }>();
@@ -42,23 +44,39 @@ const ViewReport = () => {
   }, [reportId, reports, jobId, navigate]);
 
   const handleExportCSV = () => {
-    if (!report) return;
+    if (!report || !job) return;
     
-    // Simple CSV generation for demo purposes
-    const lines = report.content.split('\n');
-    const csv = lines.map(line => 
-      line.replace(/^#{1,6}\s+/, '') // Remove markdown headers
-          .replace(/\*\*/g, '') // Remove bold markers
-          .replace(/- /g, '') // Remove list markers
-    ).join('\n');
+    // Get the candidates included in the report
+    const candidates = job.candidates.filter(c => report.candidateIds.includes(c.id));
     
-    // Create a blob and download
-    const blob = new Blob([csv], { type: 'text/csv' });
+    // Create CSV header row with requirement descriptions
+    let csvContent = "Candidate Name,";
+    job.requirements.forEach(req => {
+      csvContent += `"${req.description}",`;
+    });
+    csvContent += "Overall Score\n";
+    
+    // Add candidate data rows
+    candidates.forEach(candidate => {
+      csvContent += `"${candidate.name}",`;
+      
+      // Add scores for each requirement
+      job.requirements.forEach(req => {
+        const score = candidate.scores.find(s => s.requirementId === req.id);
+        csvContent += `${score ? score.score : "N/A"},`;
+      });
+      
+      // Add overall score
+      csvContent += `${candidate.overallScore}\n`;
+    });
+    
+    // Create and download the CSV file
+    const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.setAttribute('hidden', '');
     a.setAttribute('href', url);
-    a.setAttribute('download', `Report_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    a.setAttribute('download', `${job.title}_Candidate_Scores_${format(new Date(), 'yyyy-MM-dd')}.csv`);
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -78,13 +96,11 @@ const ViewReport = () => {
     );
   }
 
-  // Get candidate names
-  const candidateNames = report.candidateIds
-    .map(id => job.candidates.find(c => c.id === id)?.name || 'Unknown')
-    .join(', ');
+  // Get candidates included in report
+  const reportCandidates = job.candidates.filter(c => report.candidateIds.includes(c.id));
 
   return (
-    <div className="container mx-auto max-w-5xl px-4 py-8">
+    <div className="container mx-auto max-w-6xl px-4 py-8">
       <Button 
         variant="ghost" 
         asChild 
@@ -158,6 +174,21 @@ const ViewReport = () => {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Candidate Comparison Matrix</CardTitle>
+          <CardDescription>
+            Scores of each candidate against job requirements (scale: 1-10)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-auto">
+          <CandidateScoreTable 
+            candidates={reportCandidates}
+            requirements={job.requirements}
+          />
+        </CardContent>
+      </Card>
       
       <Card className="mb-8">
         <CardHeader>
