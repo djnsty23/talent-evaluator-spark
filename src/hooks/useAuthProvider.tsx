@@ -71,10 +71,14 @@ export const useAuthProvider = () => {
       console.log('Starting Google sign-in');
       // Don't set isLoading to true here as it will block the redirect
       
+      // Get the current origin for proper redirect
+      const origin = window.location.origin;
+      console.log('Current origin for redirect:', origin);
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/dashboard',
+          redirectTo: `${origin}/dashboard`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',

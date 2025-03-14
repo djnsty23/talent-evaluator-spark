@@ -25,6 +25,7 @@ const GoogleButton = ({ onClick, isDisabled }: GoogleButtonProps) => {
       className="w-full"
       onClick={handleClick}
       disabled={isDisabled}
+      aria-label="Sign in with Google"
     >
       <FcGoogle className="mr-2 h-5 w-5" />
       Google
