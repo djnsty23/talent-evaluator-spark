@@ -15,14 +15,14 @@ export const useOAuthAuth = () => {
       toast.info('Redirecting to Google for authentication...');
       
       // Get the current URL's origin to use as base for redirection
-      const redirectTo = window.location.origin + '/login';
-      console.log('Setting redirect URL to:', redirectTo);
+      const origin = window.location.origin;
+      console.log('Current origin:', origin);
       
       // Use the redirectTo parameter to ensure proper return to application
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo, // Set explicit redirect back to our app
+          redirectTo: `${origin}/login`, // Explicitly redirect back to login page
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -38,9 +38,11 @@ export const useOAuthAuth = () => {
     } catch (error: any) {
       console.error('Google sign in error:', error);
       
-      // Provide more specific error messages
+      // Provide specific error messages for common issues
       if (error.message?.includes('refused to connect')) {
-        toast.error('Connection to Google authentication failed. Please check your Supabase project configuration for correct Site URL and Redirect URL.');
+        toast.error('Connection to Google authentication failed. Please check that your Supabase project has the correct Site URL and Redirect URL configured.');
+      } else if (error.message?.includes('popup')) {
+        toast.error('Google popup was blocked. Please allow popups for this site and try again.');
       } else {
         toast.error(error.message || 'Failed to sign in with Google.');
       }

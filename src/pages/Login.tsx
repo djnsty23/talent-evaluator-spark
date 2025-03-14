@@ -28,24 +28,29 @@ const Login = () => {
   // Handle hash fragments from OAuth redirects
   useEffect(() => {
     const handleHashFragment = async () => {
+      // Check if we have an access_token in the URL hash (OAuth redirect)
       if (location.hash && location.hash.includes('access_token=')) {
-        console.log('Login page detected access_token in URL, handling OAuth callback');
+        console.log('Login page detected access_token in URL hash, processing OAuth response');
         setIsSubmitting(true);
         
         try {
-          // Let Supabase process the hash
-          const { error } = await supabase.auth.getSession();
+          // Let Supabase process the hash fragment
+          const { data, error } = await supabase.auth.getSession();
           
           if (error) {
-            console.error('Error processing OAuth redirect:', error);
+            console.error('Error processing OAuth response:', error);
             throw error;
           }
           
-          // Clear the URL hash
-          window.history.replaceState(null, document.title, location.pathname);
-          toast.success('Successfully signed in!');
+          console.log('Successfully processed OAuth session:', data.session ? 'Valid session' : 'No session');
           
-          // Navigation to dashboard happens in useAuthState
+          // Clear the hash fragment from the URL
+          window.history.replaceState(null, document.title, window.location.pathname);
+          
+          if (data.session) {
+            toast.success('Successfully signed in!');
+            navigate('/dashboard');
+          }
         } catch (err: any) {
           console.error('OAuth callback processing error:', err);
           setError(err.message || 'Failed to complete authentication');

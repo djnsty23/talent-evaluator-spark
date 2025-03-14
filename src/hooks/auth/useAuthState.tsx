@@ -22,16 +22,25 @@ export const useAuthState = () => {
       if (location.hash && location.hash.includes('access_token=')) {
         console.log('Detected access_token in URL hash, processing OAuth response');
         
-        // Let Supabase handle the OAuth response
-        const { error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error processing OAuth response:', error);
-          toast.error('Failed to complete sign in. Please try again.');
-        } else {
-          console.log('Successfully processed OAuth response');
-          // Clear the hash fragment from the URL
-          window.history.replaceState(null, document.title, window.location.pathname);
+        try {
+          // Let Supabase handle the OAuth response
+          const { data, error } = await supabase.auth.getSession();
+          
+          if (error) {
+            console.error('Error processing OAuth response:', error);
+            toast.error('Failed to complete sign in. Please try again.');
+          } else {
+            console.log('Successfully processed OAuth response');
+            // Clear the hash fragment from the URL
+            window.history.replaceState(null, document.title, window.location.pathname);
+            
+            if (data.session) {
+              // We'll let the auth state change event handle the redirection
+              toast.success('Successfully signed in!');
+            }
+          }
+        } catch (error) {
+          console.error('OAuth callback processing error:', error);
         }
       }
     };
@@ -46,7 +55,7 @@ export const useAuthState = () => {
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       const formattedUser = formatUser(session);
-      console.log('Initial session check:', formattedUser);
+      console.log('Initial session check:', formattedUser ? 'User found' : 'No user');
       setCurrentUser(formattedUser);
       setIsLoading(false);
       
@@ -68,12 +77,16 @@ export const useAuthState = () => {
         console.log('User signed in, redirecting to dashboard');
         navigate('/dashboard');
       } else if (_event === 'SIGNED_OUT') {
-        console.log('User signed out, redirecting to login');
-        navigate('/login');
+        console.log('User signed out');
+        // Only redirect to login if not already there
+        if (location.pathname !== '/login' && location.pathname !== '/') {
+          navigate('/login');
+        }
       } else if (_event === 'TOKEN_REFRESHED') {
         console.log('Token refreshed');
       } else if (_event === 'USER_UPDATED') {
         console.log('User updated');
+        toast.success('Account information updated');
       }
     });
 
