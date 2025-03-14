@@ -41,10 +41,10 @@ const CreateJob = () => {
     setLoading(true);
     
     try {
-      // Create a new job with initial data
+      // Create a new job with initial data - don't include requirements 
+      // as it's already excluded in the type definition
       const newJob = await createJob({
         ...formData,
-        requirements: [],
       });
       
       toast.success('Job created successfully!');
