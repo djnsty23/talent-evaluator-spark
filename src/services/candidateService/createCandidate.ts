@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Candidate } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
 import { extractCandidateName, extractNameFromContent, generateRealisticName } from '@/utils/candidateUtils';
-import { extractTextFromFile } from '@/services/api';
+import { extractTextFromFile } from '@/services/aiService';
 
 /**
  * Creates a new candidate from an uploaded file

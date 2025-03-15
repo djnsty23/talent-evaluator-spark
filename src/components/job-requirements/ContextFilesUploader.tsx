@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { CardContent } from '@/components/ui/card';
 import { Loader2, FileText } from 'lucide-react';
 import FileUploader from '@/components/FileUploader';
-import { extractTextFromFile } from '@/services/api';
+import { extractTextFromFile } from '@/services/aiService';
 import { toast } from 'sonner';
 
 interface ContextFilesUploaderProps {

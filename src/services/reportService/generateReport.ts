@@ -7,8 +7,8 @@ import { generateReportContent } from './generateReportContent';
 import { linkCandidatesToReport } from './reportLinking';
 import { formatCandidatesForAI, formatJobForAI } from './formatters';
 
-// Import AIService directly from api.ts to avoid circular dependencies
-import { AIService as ApiAIService } from '@/services/api';
+// Import AIService directly from aiService to avoid circular dependencies
+import { AIService } from '@/services/aiService';
 
 /**
  * Generate a new report for the given job and candidates
@@ -76,8 +76,8 @@ export const generateReport = async (
         console.log('Formatted data for AI:', { formattedJob, formattedCandidates });
         
         // Call the AI service
-        // Use ApiAIService to prevent circular dependency
-        const aiResult = await ApiAIService.generateReport(
+        // Use AIService directly to prevent circular dependency
+        const aiResult = await AIService.generateReport(
           formattedJob,
           formattedCandidates,
           additionalPrompt

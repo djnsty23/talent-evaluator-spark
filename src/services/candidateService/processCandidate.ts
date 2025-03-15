@@ -1,7 +1,7 @@
 
 import { Candidate, JobRequirement, RequirementScore } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
-import { AIService } from '@/services/api';
+import { AIService } from '@/services/aiService';
 import { v4 as uuidv4 } from 'uuid';
 
 // Helper function to check if a string is a valid UUID
