@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Candidate, JobRequirement } from '@/contexts/JobContext';
@@ -116,7 +117,6 @@ const CandidateCard = ({
         isProcessed={isProcessed}
         isProcessing={isProcessing}
         onProcess={onProcess}
-        onDelete={onDelete}
         onViewDetails={onViewDetails}
         jobId={jobId}
       />

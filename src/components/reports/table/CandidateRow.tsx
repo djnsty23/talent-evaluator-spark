@@ -13,7 +13,7 @@ interface CandidateRowProps {
 const CandidateRow = ({ candidate, requirements, maxScores }: CandidateRowProps) => {
   return (
     <TableRow key={candidate.id}>
-      <TableCell className="font-medium whitespace-nowrap">
+      <TableCell className="font-medium">
         <div className="flex items-center gap-1">
           {candidate.name}
           {candidate.isStarred && (
@@ -32,7 +32,6 @@ const CandidateRow = ({ candidate, requirements, maxScores }: CandidateRowProps)
             key={req.id}
             score={scoreValue}
             isHighest={isHighest}
-            weight={req.weight}
           />
         );
       })}

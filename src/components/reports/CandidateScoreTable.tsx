@@ -30,30 +30,7 @@ const CandidateScoreTable = ({ candidates, requirements }: CandidateScoreTablePr
     setSortConfig({ key, direction });
   };
 
-  // Check if we have candidates to display
-  if (candidates.length === 0) {
-    return (
-      <div className="text-center p-8 border rounded-md">
-        <p className="text-muted-foreground">No candidates available to display</p>
-      </div>
-    );
-  }
-
-  // Make sure we have processed candidates with scores
-  const processedCandidates = candidates.filter(c => c.status === 'processed');
-  
-  if (processedCandidates.length === 0) {
-    return (
-      <div className="text-center p-8 border rounded-md">
-        <p className="text-muted-foreground">No processed candidates available</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Process candidates to view their scores
-        </p>
-      </div>
-    );
-  }
-
-  const sortedCandidates = [...processedCandidates].sort((a, b) => {
+  const sortedCandidates = [...candidates].sort((a, b) => {
     if (!sortConfig) return 0;
     
     if (sortConfig.key === 'name') {
@@ -63,11 +40,6 @@ const CandidateScoreTable = ({ candidates, requirements }: CandidateScoreTablePr
     }
     
     if (sortConfig.key === 'overallScore') {
-      // Handle cases where one or both scores are 0 (N/A)
-      if (a.overallScore === 0 && b.overallScore === 0) return 0;
-      if (a.overallScore === 0) return sortConfig.direction === 'ascending' ? -1 : 1;
-      if (b.overallScore === 0) return sortConfig.direction === 'ascending' ? 1 : -1;
-      
       return sortConfig.direction === 'ascending'
         ? a.overallScore - b.overallScore
         : b.overallScore - a.overallScore;
@@ -78,25 +50,17 @@ const CandidateScoreTable = ({ candidates, requirements }: CandidateScoreTablePr
     const scoreA = a.scores.find(s => s.requirementId === reqId)?.score || 0;
     const scoreB = b.scores.find(s => s.requirementId === reqId)?.score || 0;
     
-    // Handle cases where one or both scores are 0 (N/A)
-    if (scoreA === 0 && scoreB === 0) return 0;
-    if (scoreA === 0) return sortConfig.direction === 'ascending' ? -1 : 1;
-    if (scoreB === 0) return sortConfig.direction === 'ascending' ? 1 : -1;
-    
     return sortConfig.direction === 'ascending'
       ? scoreA - scoreB
       : scoreB - scoreA;
   });
 
   // Find max score for each requirement
-  const maxScores = calculateMaxScores(processedCandidates, requirements);
+  const maxScores = calculateMaxScores(candidates, requirements);
 
   return (
-    <div className="border rounded-md overflow-x-auto">
+    <div className="border rounded-md">
       <Table>
-        <TableCaption>
-          Scores of each candidate against job requirements (scale: 1-10, or N/A if not evaluated)
-        </TableCaption>
         <TableHeader className="bg-muted/50">
           <TableRow>
             <SortableTableHeader
@@ -125,7 +89,7 @@ const CandidateScoreTable = ({ candidates, requirements }: CandidateScoreTablePr
               sortKey="overallScore"
               currentSort={sortConfig}
               onSort={requestSort}
-              className="text-right w-[120px]"
+              className="text-right"
             />
           </TableRow>
         </TableHeader>

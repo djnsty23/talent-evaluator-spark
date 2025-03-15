@@ -1,75 +1,57 @@
-
+// Define all types related to jobs and candidates here
 export interface JobRequirement {
   id: string;
   description: string;
   weight: number;
-  category: string;
   isRequired: boolean;
-}
-
-export interface RequirementScore {
-  requirementId: string;
-  score: number;
-  comment?: string;
+  category: string;
 }
 
 export interface Candidate {
   id: string;
   name: string;
-  email?: string;
+  email: string;
   resumeUrl?: string;
-  scores: RequirementScore[];
   overallScore: number;
+  scores: {
+    requirementId: string;
+    score: number;
+    comment: string;
+  }[];
   strengths: string[];
   weaknesses: string[];
-  isStarred?: boolean;
-  status?: 'pending' | 'processed';
+  isStarred: boolean;
+  status: 'pending' | 'processed' | 'reviewed';
   jobId: string;
   processedAt: string;
-  
-  // Additional candidate details
-  personalityTraits?: string[];
-  zodiacSign?: string;
-  workStyle?: string;
-  cultureFit?: number;
-  leadershipPotential?: number;
-  education?: string;
-  yearsOfExperience?: number;
-  location?: string;
-  skillKeywords?: string[];
-  communicationStyle?: string;
-  preferredTools?: string[];
-}
-
-export interface ContextFile {
-  id: string;
-  name: string;
-  content: string;
-  type: string;
+  personalityTraits: string[];
+  zodiacSign: string;
+  workStyle: string;
+  cultureFit: number;
+  leadershipPotential: number;
+  education: string;
+  yearsOfExperience: number;
+  location: string;
+  skillKeywords: string[];
+  availabilityDate?: string;
+  communicationStyle: string;
+  preferredTools: string[];
 }
 
 export interface Job {
   id: string;
   title: string;
   company: string;
+  department: string;
+  location: string;
   description: string;
+  salary?: string;
   requirements: JobRequirement[];
   candidates: Candidate[];
-  department?: string;
-  location?: string;
-  salary?: {
-    min: number;
-    max: number;
-    currency: string;
-  };
+  contextFiles?: File[];
+  userId: string;
   createdAt: string;
   updatedAt: string;
-  contextFiles?: ContextFile[];
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-  };
 }
 
 export interface Report {
@@ -78,8 +60,25 @@ export interface Report {
   summary: string;
   content: string;
   candidateIds: string[];
+  additionalPrompt?: string;
   jobId: string;
   createdAt: string;
-  additionalPrompt?: string;
-  metadata?: any; // For storing AI-generated structured data
+}
+
+export interface JobContextType {
+  jobs: Job[];
+  reports: Report[];
+  currentJob: Job | null;
+  isLoading: boolean;
+  error: string | null;
+  createJob: (jobData: Partial<Job>) => Promise<Job>;
+  updateJob: (jobData: Job) => Promise<Job>;
+  deleteJob: (jobId: string) => Promise<void>;
+  uploadCandidateFiles: (jobId: string, files: File[]) => Promise<void>;
+  processCandidate: (jobId: string, candidateId: string) => Promise<void>;
+  handleProcessAllCandidates: (jobId: string) => Promise<void>;
+  starCandidate: (jobId: string, candidateId: string, isStarred: boolean) => Promise<void>;
+  deleteCandidate: (jobId: string, candidateId: string) => Promise<void>;
+  generateReport: (jobId: string, candidateIds: string[], additionalPrompt?: string) => Promise<Report>;
+  setCurrentJob: (job: Job | null) => void;
 }

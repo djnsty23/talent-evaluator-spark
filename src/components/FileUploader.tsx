@@ -11,8 +11,6 @@ interface FileUploaderProps {
   multiple?: boolean;
   maxFiles?: number;
   maxSizeMB?: number;
-  selectedFiles?: File[];
-  onFileRemove?: (indexToRemove: number) => void;
 }
 
 const FileUploader = ({
@@ -21,11 +19,9 @@ const FileUploader = ({
   multiple = true,
   maxFiles = 50,
   maxSizeMB = 10,
-  selectedFiles: externalSelectedFiles,
-  onFileRemove,
 }: FileUploaderProps) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState<File[]>(externalSelectedFiles || []);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -103,33 +99,19 @@ const FileUploader = ({
       return true;
     });
 
-    // Update files
-    let newFiles: File[];
     if (!multiple && validFiles.length > 0) {
-      newFiles = [validFiles[0]];
+      setSelectedFiles([validFiles[0]]);
     } else {
-      newFiles = [...selectedFiles, ...validFiles];
-    }
-    
-    // If we're using external files, just call the callback
-    if (externalSelectedFiles) {
-      onFilesSelected(newFiles);
-    } else {
-      setSelectedFiles(newFiles);
+      setSelectedFiles(prev => [...prev, ...validFiles]);
     }
   };
 
   const removeFile = (indexToRemove: number) => {
-    if (onFileRemove) {
-      onFileRemove(indexToRemove);
-    } else {
-      setSelectedFiles(prev => prev.filter((_, index) => index !== indexToRemove));
-    }
+    setSelectedFiles(prev => prev.filter((_, index) => index !== indexToRemove));
   };
 
   const handleUpload = async () => {
-    const filesToUpload = externalSelectedFiles || selectedFiles;
-    if (filesToUpload.length === 0) {
+    if (selectedFiles.length === 0) {
       toast.error('Please select at least one file to upload');
       return;
     }
@@ -145,15 +127,13 @@ const FileUploader = ({
       }
 
       // Invoke the callback with the selected files
-      onFilesSelected(filesToUpload);
+      onFilesSelected(selectedFiles);
       
       setUploadProgress(100);
-      toast.success(`${filesToUpload.length} file(s) uploaded successfully`);
+      toast.success(`${selectedFiles.length} file(s) uploaded successfully`);
       
-      // Clear selected files after successful upload if not using external files
-      if (!externalSelectedFiles) {
-        setSelectedFiles([]);
-      }
+      // Clear selected files after successful upload
+      setSelectedFiles([]);
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Failed to upload files. Please try again.');
@@ -173,9 +153,6 @@ const FileUploader = ({
     const extension = getFileExtension(filename).toLowerCase();
     return <FileText className="w-5 h-5" />;
   };
-
-  // Use the appropriate files array
-  const filesToDisplay = externalSelectedFiles || selectedFiles;
 
   return (
     <div className="w-full">
@@ -222,12 +199,12 @@ const FileUploader = ({
         </div>
       </div>
 
-      {filesToDisplay.length > 0 && (
+      {selectedFiles.length > 0 && (
         <div className="mt-4">
-          <h4 className="text-sm font-semibold mb-2">Selected Files ({filesToDisplay.length})</h4>
+          <h4 className="text-sm font-semibold mb-2">Selected Files ({selectedFiles.length})</h4>
           <div className="overflow-y-auto max-h-60 rounded-md border border-gray-200 dark:border-gray-800">
             <ul className="divide-y divide-gray-200 dark:divide-gray-800">
-              {filesToDisplay.map((file, index) => (
+              {selectedFiles.map((file, index) => (
                 <li key={index} className="flex items-center justify-between py-2 px-3 hover:bg-gray-50 dark:hover:bg-gray-900/20">
                   <div className="flex items-center">
                     {getFileIcon(file.name)}
@@ -263,13 +240,7 @@ const FileUploader = ({
             <div className="flex justify-between mt-4">
               <Button 
                 variant="outline" 
-                onClick={() => {
-                  if (externalSelectedFiles) {
-                    onFilesSelected([]);
-                  } else {
-                    setSelectedFiles([]);
-                  }
-                }}
+                onClick={() => setSelectedFiles([])}
                 size="sm"
               >
                 Clear All
@@ -281,7 +252,7 @@ const FileUploader = ({
                 className="gap-1"
               >
                 <Check className="h-4 w-4" />
-                Upload {filesToDisplay.length} File{filesToDisplay.length !== 1 ? 's' : ''}
+                Upload {selectedFiles.length} File{selectedFiles.length !== 1 ? 's' : ''}
               </Button>
             </div>
           )}

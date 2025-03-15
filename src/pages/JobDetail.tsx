@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
@@ -47,7 +48,7 @@ const JobDetail = () => {
   };
 
   const handleEditRequirements = () => {
-    navigate(`/jobs/${jobId}/requirements`);
+    navigate(`/jobs/${jobId}/requirements/edit`);
   };
 
   const handleGenerateRequirements = async () => {
@@ -58,6 +59,7 @@ const JobDetail = () => {
 
     if (!job) return;
     
+    // If we already have requirements, confirm before replacing
     if (job.requirements.length > 0) {
       const confirmed = window.confirm(
         'This will replace your existing requirements. Continue?'
@@ -76,8 +78,7 @@ const JobDetail = () => {
           title: job.title,
           company: job.company,
           description: job.description,
-        },
-        contextFiles: []
+        }
       });
       
       const updatedJob = {

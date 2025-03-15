@@ -1,19 +1,10 @@
 
-import { useState } from 'react';
-import { Job } from '@/types/job.types';
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Upload, Loader2, CheckCircle2 } from 'lucide-react';
-import CandidateCard from '@/components/CandidateCard';
-import EmptyCandidatesState from '@/components/EmptyCandidatesState';
-import CandidateFilter from '@/components/CandidateFilter';
-import { useCandidateFiltering } from '@/hooks/useCandidateFiltering';
-import { useCandidateProcessing } from '@/hooks/candidate-processing';
-import ProcessingStatus from '@/components/ProcessingStatus';
-import ProcessAllCandidatesButton from '@/components/ProcessAllCandidatesButton';
-import PostProcessingCTA from '@/components/candidate/PostProcessingCTA';
-import ReportGenerationButton from '@/components/candidate/ReportGenerationButton';
-import { useJob } from '@/contexts/job';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Upload, Star, FileText } from 'lucide-react';
+import { Job } from '@/types/job.types';
 
 interface JobCandidatesListProps {
   job: Job;
@@ -24,145 +15,113 @@ interface JobCandidatesListProps {
 const JobCandidatesList = ({
   job,
   handleUploadCandidates,
-  handleAnalyzeCandidate,
+  handleAnalyzeCandidate
 }: JobCandidatesListProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const { starCandidate, deleteCandidate } = useJob();
-  
-  // Filter candidates
-  const { filteredCandidates, filter, setFilter } = 
-    useCandidateFiltering(job, searchTerm);
-  
-  // Candidate processing
-  const {
-    isProcessingAll,
-    processingCandidateIds,
-    showPostProcessCTA,
-    processingProgress,
-    currentProcessing,
-    processedCountTracking,
-    totalToProcess,
-    errorCount,
-    unprocessedCount,
-    handleProcessCandidate,
-    handleProcessAllCandidatesClick,
-    cancelProcessing,
-    setShowPostProcessCTA
-  } = useCandidateProcessing(job.id, job);
-
-  // Handle star candidate
-  const handleStarCandidate = (candidateId: string, isStarred: boolean) => {
-    starCandidate(job.id, candidateId, isStarred);
-  };
-
-  // Handle delete candidate
-  const handleDeleteCandidate = (candidateId: string) => {
-    return deleteCandidate(job.id, candidateId);
-  };
-  
   return (
-    <div className="space-y-6">
-      {/* Filter and search */}
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-        <div className="flex-1 max-w-md">
-          <Input
-            placeholder="Search candidates..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full"
-          />
-        </div>
-        
-        <div className="flex gap-3 flex-wrap">
-          <CandidateFilter 
-            filter={filter}
-            onFilterChange={setFilter}
-            searchQuery={searchTerm}
-            setSearchQuery={setSearchTerm}
-            totalCandidates={job.candidates.length}
-            starredCount={job.candidates.filter(c => c.isStarred).length}
-            processedCount={job.candidates.filter(c => c.scores.length > 0).length}
-            unprocessedCount={job.candidates.filter(c => c.scores.length === 0).length}
-          />
-          
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleUploadCandidates}
-              className="flex items-center whitespace-nowrap"
-            >
-              <Upload className="h-4 w-4 mr-1" />
-              Upload More
-            </Button>
-            
-            <ProcessAllCandidatesButton
-              unprocessedCount={unprocessedCount}
-              isProcessingAll={isProcessingAll}
-              processingCandidateIds={processingCandidateIds}
-              onProcessAll={handleProcessAllCandidatesClick}
-            />
-          </div>
-        </div>
-      </div>
-      
-      {/* Processing status */}
-      <ProcessingStatus
-        isProcessingAll={isProcessingAll}
-        processingProgress={processingProgress}
-        currentProcessing={currentProcessing}
-        totalToProcess={totalToProcess}
-        processedCount={processedCountTracking}
-        errorCount={errorCount}
-        onCancel={cancelProcessing}
-      />
-      
-      {/* Post processing CTA */}
-      {showPostProcessCTA && !isProcessingAll && (
-        <div className="mb-6">
-          <PostProcessingCTA
-            jobId={job.id}
-            processedCandidatesCount={job.candidates.filter(c => c.scores.length > 0).length}
-            show={showPostProcessCTA}
-          />
-        </div>
-      )}
-      
-      {/* No candidates state */}
-      {job.candidates.length === 0 ? (
-        <EmptyCandidatesState jobId={job.id} />
-      ) : (
-        <>
-          {/* No results from filter */}
-          {filteredCandidates.length === 0 ? (
-            <div className="text-center py-12 border rounded-lg">
-              <h3 className="text-lg font-medium">No candidates found</h3>
-              <p className="text-muted-foreground mt-1">
-                Try changing your search or filter
-              </p>
-            </div>
-          ) : (
-            /* Candidate cards grid */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredCandidates.map((candidate) => (
-                <CandidateCard
-                  key={candidate.id}
-                  candidate={candidate}
-                  jobId={job.id}
-                  requirements={job.requirements}
-                  onStar={(isStarred) => handleStarCandidate(candidate.id, isStarred)}
-                  onDelete={() => handleDeleteCandidate(candidate.id)}
-                  onViewDetails={() => handleAnalyzeCandidate(candidate.id)}
-                  onProcess={() => handleProcessCandidate(candidate.id)}
-                  isProcessing={processingCandidateIds.includes(candidate.id)}
-                  allCandidatesData={job.candidates}
-                />
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Candidates</CardTitle>
+        <Button onClick={handleUploadCandidates}>
+          <Upload className="h-4 w-4 mr-2" />
+          Upload Candidates
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {job.candidates.length > 0 ? (
+          <ScrollArea className="h-[500px] pr-4">
+            <div className="space-y-4">
+              {job.candidates.map(candidate => (
+                <Card key={candidate.id} className="overflow-hidden">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="font-medium text-lg">{candidate.name}</h3>
+                        <div className="flex items-center mt-1">
+                          <FileText className="h-3 w-3 mr-1 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">
+                            Processed on {new Date(candidate.processedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        {candidate.isStarred && (
+                          <Star className="h-5 w-5 fill-yellow-400 text-yellow-400 mr-2" />
+                        )}
+                        <Badge className={`${
+                          candidate.overallScore >= 8 ? 'bg-green-100 text-green-800' : 
+                          candidate.overallScore >= 6 ? 'bg-blue-100 text-blue-800' : 
+                          candidate.overallScore >= 4 ? 'bg-yellow-100 text-yellow-800' : 
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          Score: {candidate.overallScore}/10
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Strengths</h4>
+                        {candidate.strengths.length > 0 ? (
+                          <ul className="list-disc list-inside text-sm space-y-1">
+                            {candidate.strengths.slice(0, 3).map((strength, index) => (
+                              <li key={index} className="text-green-600">{strength}</li>
+                            ))}
+                            {candidate.strengths.length > 3 && (
+                              <li className="text-muted-foreground">
+                                +{candidate.strengths.length - 3} more
+                              </li>
+                            )}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">None identified</p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Areas for Improvement</h4>
+                        {candidate.weaknesses.length > 0 ? (
+                          <ul className="list-disc list-inside text-sm space-y-1">
+                            {candidate.weaknesses.slice(0, 3).map((weakness, index) => (
+                              <li key={index} className="text-red-600">{weakness}</li>
+                            ))}
+                            {candidate.weaknesses.length > 3 && (
+                              <li className="text-muted-foreground">
+                                +{candidate.weaknesses.length - 3} more
+                              </li>
+                            )}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">None identified</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <Button
+                      onClick={() => handleAnalyzeCandidate(candidate.id)}
+                      className="w-full"
+                    >
+                      View Detailed Analysis
+                    </Button>
+                  </CardContent>
+                </Card>
               ))}
             </div>
-          )}
-        </>
-      )}
-    </div>
+          </ScrollArea>
+        ) : (
+          <div className="text-center py-12">
+            <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">No candidates uploaded yet</h3>
+            <p className="text-muted-foreground mb-6">
+              Upload candidate resumes to start the evaluation process
+            </p>
+            <Button onClick={handleUploadCandidates}>
+              <Upload className="h-4 w-4 mr-2" />
+              Upload Candidates
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
