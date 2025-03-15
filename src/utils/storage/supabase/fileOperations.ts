@@ -8,7 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export const saveContextFiles = async (jobId: string, files: ContextFile[]): Promise<void> => {
   for (const file of files) {
-    const fileId = file.id || uuidv4();
+    // Generate a valid UUID for the file if not provided
+    const fileId = file.id && file.id.includes('-') && file.id.length >= 36 ? file.id : uuidv4();
     
     const { error } = await supabase
       .from('job_context_files')

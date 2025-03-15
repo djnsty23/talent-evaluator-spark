@@ -2,6 +2,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Report } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 /**
  * Save reports to Supabase
@@ -9,10 +10,19 @@ import { supabase } from '@/integrations/supabase/client';
 export const saveReports = async (reports: Report[]): Promise<void> => {
   for (const report of reports) {
     try {
+      // Ensure we have all required fields and valid IDs
+      const reportId = report.id || uuidv4();
+      
+      if (!report.jobId) {
+        console.error('Missing jobId for report:', report);
+        toast.error('Missing job ID for report');
+        continue;
+      }
+      
       const { error } = await supabase
         .from('reports')
         .upsert({ 
-          id: report.id,
+          id: reportId,
           job_id: report.jobId,
           title: report.title || 'Candidate Report',
           content: report.content
@@ -20,16 +30,16 @@ export const saveReports = async (reports: Report[]): Promise<void> => {
       
       if (error) {
         console.error('Error saving report to Supabase:', error);
-        throw error;
+        toast.error('Failed to save report to database');
+        continue;
       }
       
-      // Link candidates to report
+      // Link candidates to report if the initial insertion worked
       if (report.candidateIds && report.candidateIds.length > 0) {
-        await linkCandidatesToReport(report.id, report.candidateIds);
+        await linkCandidatesToReport(reportId, report.candidateIds);
       }
     } catch (err) {
       console.error('Failed to save report:', err);
-      throw err;
     }
   }
 };
@@ -39,10 +49,19 @@ export const saveReports = async (reports: Report[]): Promise<void> => {
  */
 export const saveReportData = async (data: Report): Promise<void> => {
   try {
+    // Ensure report ID is valid
+    const reportId = data.id || uuidv4();
+    
+    if (!data.jobId) {
+      console.error('Missing jobId for report:', data);
+      toast.error('Missing job ID for report');
+      return;
+    }
+    
     const { error } = await supabase
       .from('reports')
       .upsert({ 
-        id: data.id,
+        id: reportId,
         title: data.title || 'Candidate Report',
         content: data.content,
         job_id: data.jobId
@@ -50,14 +69,17 @@ export const saveReportData = async (data: Report): Promise<void> => {
     
     if (error) {
       console.error('Error saving report to Supabase:', error);
-      throw error;
+      toast.error('Failed to save report to database');
+      return;
     }
     
-    // Link candidates to report
-    await linkCandidatesToReport(data.id, data.candidateIds);
+    // Only link candidates if candidates are provided and initial insertion worked
+    if (data.candidateIds && data.candidateIds.length > 0) {
+      await linkCandidatesToReport(reportId, data.candidateIds);
+    }
   } catch (err) {
     console.error('Failed to save report data:', err);
-    throw err;
+    toast.error('Failed to save report data');
   }
 };
 

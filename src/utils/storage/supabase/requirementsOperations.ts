@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 export const saveJobRequirements = async (jobId: string, requirements: JobRequirement[]): Promise<void> => {
   for (const req of requirements) {
     // Ensure requirement ID is a valid UUID
-    const requirementId = req.id && req.id.includes('-') ? req.id : uuidv4();
+    const requirementId = req.id && req.id.includes('-') && req.id.length >= 36 ? req.id : uuidv4();
     
     const { error } = await supabase
       .from('job_requirements')
@@ -34,7 +34,7 @@ export const saveJobRequirements = async (jobId: string, requirements: JobRequir
 export const saveRequirementsData = async (requirements: JobRequirement[], jobId: string): Promise<void> => {
   for (const req of requirements) {
     // Ensure requirement ID is a valid UUID
-    const requirementId = req.id && req.id.includes('-') ? req.id : uuidv4();
+    const requirementId = req.id && req.id.includes('-') && req.id.length >= 36 ? req.id : uuidv4();
     
     const { error } = await supabase
       .from('job_requirements')

@@ -65,7 +65,15 @@ export const saveCandidatesData = async (candidates: Candidate[], jobId: string)
  */
 export const saveCandidateScores = async (candidateId: string, scores: any[]): Promise<void> => {
   for (const score of scores) {
-    // Generate a proper UUID instead of using string concatenation
+    // Ensure requirement ID is a valid UUID
+    const requirementId = score.requirementId;
+    // If requirementId doesn't look like a UUID, generate a new one
+    const validRequirementId = requirementId && 
+      requirementId.includes('-') && 
+      requirementId.length >= 36 ? 
+      requirementId : uuidv4();
+    
+    // Generate a proper UUID for the score
     const scoreId = score.id || uuidv4();
     
     const { error } = await supabase
@@ -73,7 +81,7 @@ export const saveCandidateScores = async (candidateId: string, scores: any[]): P
       .upsert({ 
         id: scoreId,
         candidate_id: candidateId,
-        requirement_id: score.requirementId,
+        requirement_id: validRequirementId,
         score: score.score,
         explanation: score.comment || ''
       });
@@ -90,7 +98,15 @@ export const saveCandidateScores = async (candidateId: string, scores: any[]): P
  */
 export const saveCandidateScoresData = async (candidateId: string, scores: any[]): Promise<void> => {
   for (const score of scores) {
-    // Generate a proper UUID instead of using string concatenation
+    // Ensure requirement ID is a valid UUID
+    const requirementId = score.requirementId;
+    // If requirementId doesn't look like a UUID, generate a new one
+    const validRequirementId = requirementId && 
+      requirementId.includes('-') && 
+      requirementId.length >= 36 ? 
+      requirementId : uuidv4();
+    
+    // Generate a proper UUID for the score
     const scoreId = score.id || uuidv4();
     
     const { error } = await supabase
@@ -98,7 +114,7 @@ export const saveCandidateScoresData = async (candidateId: string, scores: any[]
       .upsert({ 
         id: scoreId,
         candidate_id: candidateId,
-        requirement_id: score.requirementId,
+        requirement_id: validRequirementId,
         score: score.score,
         explanation: score.comment || ''
       });

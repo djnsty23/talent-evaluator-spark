@@ -39,7 +39,12 @@ export const saveStorageData = async (data: { jobs?: Job[], reports?: Report[] }
     
     // If reports are provided, save them
     if (data.reports && data.reports.length > 0) {
-      await saveReports(data.reports);
+      try {
+        await saveReports(data.reports);
+      } catch (reportError) {
+        console.error('Error saving reports:', reportError);
+        toast.error('Failed to save reports');
+      }
     }
   } catch (err) {
     console.error('Error saving data to Supabase:', err);
