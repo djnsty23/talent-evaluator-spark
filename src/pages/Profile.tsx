@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getInitials } from '@/components/navbar/utils';
 
 const Profile = () => {
-  const { currentUser, updateUserProfile } = useAuth();
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   
   const [fullName, setFullName] = useState(currentUser?.name || '');
@@ -41,9 +40,11 @@ const Profile = () => {
     setIsUpdating(true);
     
     try {
-      await updateUserProfile({
-        name: fullName,
+      const { error } = await supabase.auth.updateUser({
+        data: { full_name: fullName }
       });
+      
+      if (error) throw error;
       
       toast.success('Profile updated successfully');
     } catch (error) {

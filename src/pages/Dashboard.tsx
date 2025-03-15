@@ -10,14 +10,8 @@ import { Job } from '@/types/job.types';
 
 const Dashboard = () => {
   const { currentUser } = useAuth();
-  const { jobs, reports, loadJobs, isLoading, error } = useJob();
+  const { jobs, reports, isLoading, error } = useJob();
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
-  
-  useEffect(() => {
-    if (currentUser && !isLoading && !jobs.length) {
-      loadJobs();
-    }
-  }, [currentUser, loadJobs, isLoading, jobs]);
   
   useEffect(() => {
     // Get recent jobs (limited to 10)

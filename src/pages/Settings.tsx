@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Monitor, Moon, Sun, Bell, Globe, Key, Trash2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/hooks/useTheme';
 import OpenAIKeyInput from '@/components/OpenAIKeyInput';
 
 const Settings = () => {
@@ -153,7 +153,7 @@ const Settings = () => {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>OpenAI API Key</Label>
-                <OpenAIKeyInput showSuccessMessage />
+                <OpenAIKeyInput />
                 <p className="text-xs text-muted-foreground mt-1">
                   This key is required for AI-powered features like generating job requirements and analyzing candidates
                 </p>
