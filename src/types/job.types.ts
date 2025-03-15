@@ -1,4 +1,3 @@
-
 // Define all types related to jobs and candidates here
 export interface JobRequirement {
   id: string;

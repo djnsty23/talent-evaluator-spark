@@ -1,33 +1,34 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Plus, Save, Trash2, Loader2, Sparkles, FileText } from 'lucide-react';
+  ArrowLeft, 
+  Plus, 
+  Save, 
+  Loader2, 
+  Sparkles, 
+  FileText 
+} from 'lucide-react';
 import { toast } from 'sonner';
-import { JobRequirement } from '@/contexts/JobContext';
+import { JobRequirement } from '@/types/job.types';
 import { AIService } from '@/services/api';
 import OpenAIKeyInput from '@/components/OpenAIKeyInput';
-import FileUploader from '@/components/FileUploader';
-import { extractTextFromFile } from '@/services/api';
+import RequirementsList from '@/components/job-requirements/RequirementsList';
+import ContextFilesUploader from '@/components/job-requirements/ContextFilesUploader';
+import { REQUIREMENT_CATEGORIES } from '@/components/job-requirements/JobRequirementForm';
 
 const JobRequirementsEditor = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const { jobs, updateJob } = useJob();
   const navigate = useNavigate();
   
+  // Find the current job
   const job = jobs.find(j => j.id === jobId);
   
+  // State management
   const [requirements, setRequirements] = useState<JobRequirement[]>(
     job?.requirements || []
   );
@@ -35,9 +36,9 @@ const JobRequirementsEditor = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [contextFiles, setContextFiles] = useState<File[]>([]);
   const [extractedContexts, setExtractedContexts] = useState<string[]>([]);
-  const [isExtractingContext, setIsExtractingContext] = useState(false);
   const [showContextUploader, setShowContextUploader] = useState(false);
   
+  // Sync requirements with job data
   useEffect(() => {
     if (jobId && jobs.length > 0) {
       const currentJob = jobs.find(j => j.id === jobId);
@@ -50,6 +51,7 @@ const JobRequirementsEditor = () => {
     }
   }, [jobId, jobs, navigate]);
   
+  // Show loading state if job is not found
   if (!job) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -63,10 +65,11 @@ const JobRequirementsEditor = () => {
     );
   }
   
+  // Add a new requirement
   const handleAddRequirement = () => {
     const newRequirement: JobRequirement = {
       id: `req_${Date.now()}_${requirements.length}`,
-      category: 'Technical Skills',
+      category: REQUIREMENT_CATEGORIES[0], // Default to first category
       description: '',
       weight: 7,
       isRequired: true,
@@ -75,50 +78,19 @@ const JobRequirementsEditor = () => {
     setRequirements([...requirements, newRequirement]);
   };
   
+  // Remove a requirement
   const handleRemoveRequirement = (id: string) => {
     setRequirements(requirements.filter(req => req.id !== id));
   };
   
+  // Update a requirement
   const handleRequirementChange = (id: string, field: keyof JobRequirement, value: any) => {
     setRequirements(requirements.map(req => 
       req.id === id ? { ...req, [field]: value } : req
     ));
   };
   
-  const handleContextFilesSelected = async (files: File[]) => {
-    setContextFiles(files);
-    
-    if (files.length > 0) {
-      setIsExtractingContext(true);
-      
-      try {
-        const extractedTexts = await Promise.all(
-          files.map(file => extractTextFromFile(file))
-        );
-        
-        setExtractedContexts(extractedTexts);
-        toast.success(`Successfully extracted content from ${files.length} file(s)`);
-      } catch (error) {
-        console.error('Error extracting text from files:', error);
-        toast.error('Failed to extract text from some files');
-      } finally {
-        setIsExtractingContext(false);
-      }
-    } else {
-      setExtractedContexts([]);
-    }
-  };
-  
-  const handleRemoveContextFile = (index: number) => {
-    const newFiles = [...contextFiles];
-    newFiles.splice(index, 1);
-    setContextFiles(newFiles);
-    
-    const newExtractedContexts = [...extractedContexts];
-    newExtractedContexts.splice(index, 1);
-    setExtractedContexts(newExtractedContexts);
-  };
-  
+  // Generate requirements using AI
   const handleGenerateRequirements = async () => {
     if (!window.openAIKey) {
       toast.error('Please set your OpenAI API key first');
@@ -158,6 +130,7 @@ const JobRequirementsEditor = () => {
     }
   };
   
+  // Save requirements
   const handleSave = async () => {
     setIsSaving(true);
     
@@ -245,123 +218,20 @@ const JobRequirementsEditor = () => {
         </CardHeader>
         
         {showContextUploader && (
-          <CardContent className="border-t pt-4">
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium mb-2">Upload Context Files</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Upload any company documents, job descriptions, or team information to help the AI better understand the role.
-                These files will be used as additional context (20% weight) for generating requirements.
-              </p>
-              
-              <FileUploader 
-                onFilesSelected={handleContextFilesSelected}
-                accept=".pdf,.doc,.docx,.txt,.csv,.xlsx"
-                multiple={true}
-                selectedFiles={contextFiles}
-                onFileRemove={handleRemoveContextFile}
-              />
-              
-              {isExtractingContext && (
-                <div className="flex items-center justify-center p-4">
-                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                  <span>Extracting content from files...</span>
-                </div>
-              )}
-            </div>
-          </CardContent>
+          <ContextFilesUploader
+            contextFiles={contextFiles}
+            setContextFiles={setContextFiles}
+            setExtractedContexts={setExtractedContexts}
+          />
         )}
         
         <CardContent>
           <div className="space-y-6">
-            {requirements.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground border rounded-md bg-muted/10">
-                <p className="text-lg mb-2">No requirements yet</p>
-                <p className="text-sm max-w-md mx-auto">
-                  Click 'Add Requirement' to create one manually 
-                  or use 'Generate with AI' to create them automatically from the job description.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="grid grid-cols-12 gap-4 p-3 font-medium text-sm border-b">
-                  <div className="col-span-3">Category</div>
-                  <div className="col-span-5">Description</div>
-                  <div className="col-span-2">Weight (1-10)</div>
-                  <div className="col-span-1 text-center">Required</div>
-                  <div className="col-span-1"></div>
-                </div>
-                
-                {requirements.map((req, index) => (
-                  <div key={req.id} className="grid grid-cols-12 gap-4 p-4 border rounded-md hover:bg-muted/5 transition-colors">
-                    <div className="col-span-3">
-                      <Select
-                        value={req.category}
-                        onValueChange={(value) => handleRequirementChange(req.id, 'category', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Technical Skills">Technical Skills</SelectItem>
-                          <SelectItem value="Soft Skills">Soft Skills</SelectItem>
-                          <SelectItem value="Education">Education</SelectItem>
-                          <SelectItem value="Experience">Experience</SelectItem>
-                          <SelectItem value="Certifications">Certifications</SelectItem>
-                          <SelectItem value="Language">Language</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="col-span-5">
-                      <Textarea
-                        value={req.description}
-                        onChange={(e) => handleRequirementChange(req.id, 'description', e.target.value)}
-                        placeholder="Requirement description"
-                        className="min-h-[60px] resize-none"
-                      />
-                    </div>
-                    
-                    <div className="col-span-2">
-                      <Select
-                        value={req.weight.toString()}
-                        onValueChange={(value) => handleRequirementChange(req.id, 'weight', parseInt(value))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Weight" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(value => (
-                            <SelectItem key={value} value={value.toString()}>
-                              {value}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="col-span-1 flex items-center justify-center">
-                      <Switch
-                        checked={req.isRequired}
-                        onCheckedChange={(checked) => handleRequirementChange(req.id, 'isRequired', checked)}
-                        id={`required-${req.id}`}
-                      />
-                    </div>
-                    
-                    <div className="col-span-1 flex items-center justify-center">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemoveRequirement(req.id)}
-                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <RequirementsList
+              requirements={requirements}
+              onRemoveRequirement={handleRemoveRequirement}
+              onRequirementChange={handleRequirementChange}
+            />
             
             <div className="flex justify-end space-x-4 mt-8">
               <Button
