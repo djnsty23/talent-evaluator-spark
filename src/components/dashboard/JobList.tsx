@@ -37,7 +37,7 @@ const JobList = ({ jobs }: JobListProps) => {
       toast.error('Failed to delete job');
     } finally {
       setIsDeleting(false);
-      setJobToDelete(null);
+      setJobToDelete(null); // Always reset jobToDelete to ensure dialog is closed
     }
   };
   
@@ -128,15 +128,18 @@ const JobList = ({ jobs }: JobListProps) => {
         </Card>
       </div>
 
-      <ConfirmDialog 
-        isOpen={!!jobToDelete}
-        title="Delete Job"
-        description="Are you sure you want to delete this job? This will permanently remove the job and all associated candidates. This action cannot be undone."
-        onConfirm={() => jobToDelete && handleDeleteJob(jobToDelete)}
-        onCancel={() => setJobToDelete(null)}
-        confirmText={isDeleting ? "Deleting..." : "Delete"}
-        cancelText="Cancel"
-      />
+      {/* Only render the dialog when jobToDelete is not null */}
+      {jobToDelete && (
+        <ConfirmDialog 
+          isOpen={!!jobToDelete}
+          title="Delete Job"
+          description="Are you sure you want to delete this job? This will permanently remove the job and all associated candidates. This action cannot be undone."
+          onConfirm={() => jobToDelete && handleDeleteJob(jobToDelete)}
+          onCancel={() => setJobToDelete(null)}
+          confirmText={isDeleting ? "Deleting..." : "Delete"}
+          cancelText="Cancel"
+        />
+      )}
     </>
   );
 };

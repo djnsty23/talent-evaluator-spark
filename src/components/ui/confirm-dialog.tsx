@@ -39,6 +39,9 @@ export function ConfirmDialog({
       onConfirm();
     } catch (error) {
       console.error("Error in confirm handler:", error);
+    } finally {
+      // Ensure dialog is closed even if there's an error
+      onCancel();
     }
   };
 

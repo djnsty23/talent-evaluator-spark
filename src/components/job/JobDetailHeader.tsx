@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -36,7 +35,9 @@ const JobDetailHeader = ({
     } catch (error) {
       console.error('Error deleting job:', error);
       toast.error('Failed to delete job');
+    } finally {
       setIsDeleting(false);
+      setShowDeleteConfirm(false); // Always reset modal state
     }
   };
 
@@ -120,15 +121,17 @@ const JobDetailHeader = ({
         </div>
       </div>
 
-      <ConfirmDialog 
-        isOpen={showDeleteConfirm}
-        title="Delete Job"
-        description="Are you sure you want to delete this job? This will permanently remove the job and all associated candidates. This action cannot be undone."
-        onConfirm={handleDelete}
-        onCancel={() => setShowDeleteConfirm(false)}
-        confirmText={isDeleting ? "Deleting..." : "Delete"}
-        cancelText="Cancel"
-      />
+      {showDeleteConfirm && (
+        <ConfirmDialog 
+          isOpen={showDeleteConfirm}
+          title="Delete Job"
+          description="Are you sure you want to delete this job? This will permanently remove the job and all associated candidates. This action cannot be undone."
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+          confirmText={isDeleting ? "Deleting..." : "Delete"}
+          cancelText="Cancel"
+        />
+      )}
     </div>
   );
 };
