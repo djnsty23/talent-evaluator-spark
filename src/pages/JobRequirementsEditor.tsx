@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 import { useJob } from '@/contexts/JobContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -62,7 +62,7 @@ const JobRequirementsEditor = () => {
   // Add a new requirement
   const handleAddRequirement = () => {
     const newRequirement: JobRequirement = {
-      id: `req_${Date.now()}_${requirements.length}`,
+      id: uuidv4(), // Using proper UUID instead of timestamp-based ID
       category: REQUIREMENT_CATEGORIES[0], // Default to first category
       description: '',
       weight: 7,
@@ -114,7 +114,13 @@ const JobRequirementsEditor = () => {
         }
       }
       
-      setRequirements(result.requirements);
+      // Ensure all generated requirements have proper UUIDs
+      const requirementsWithUUIDs = result.requirements.map(req => ({
+        ...req,
+        id: uuidv4()
+      }));
+      
+      setRequirements(requirementsWithUUIDs);
       toast.success('Requirements generated successfully');
     } catch (error) {
       console.error('Error generating requirements:', error);
