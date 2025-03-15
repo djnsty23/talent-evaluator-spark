@@ -23,25 +23,50 @@ const ViewReport = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (jobId && jobs) {
-      const foundJob = jobs.find(j => j.id === jobId);
-      if (foundJob) {
+    const loadData = () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        if (!jobId || !reportId) {
+          setError("Missing job or report ID");
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log("Loading report with ID:", reportId);
+        console.log("Available reports:", reports);
+        
+        // Find the job
+        const foundJob = jobs?.find(j => j.id === jobId);
+        if (!foundJob) {
+          setError("Job not found");
+          setIsLoading(false);
+          return;
+        }
+        
+        // Find the report
+        const foundReport = reports?.find(r => r.id === reportId);
+        if (!foundReport) {
+          setError("Report not found");
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log("Found report:", foundReport);
+        console.log("Found job:", foundJob);
+        
         setJob(foundJob);
-      } else {
-        setError("Job not found");
-      }
-    }
-
-    if (reportId && reports) {
-      const foundReport = reports.find(r => r.id === reportId);
-      if (foundReport) {
         setReport(foundReport);
-      } else {
-        setError("Report not found");
+      } catch (err) {
+        console.error("Error loading report data:", err);
+        setError("Failed to load report data");
+      } finally {
+        setIsLoading(false);
       }
-    }
-
-    setIsLoading(false);
+    };
+    
+    loadData();
   }, [jobId, reportId, jobs, reports]);
 
   const handleExportCSV = () => {
@@ -65,7 +90,9 @@ const ViewReport = () => {
   }
 
   // Get candidates included in report
-  const reportCandidates = job.candidates.filter(c => report.candidateIds.includes(c.id));
+  const reportCandidates = job.candidates.filter(c => 
+    report.candidateIds && report.candidateIds.includes(c.id)
+  );
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8">
@@ -79,7 +106,7 @@ const ViewReport = () => {
         <div className="lg:col-span-2">
           <ReportMetrics 
             report={report} 
-            candidateCount={report.candidateIds.length} 
+            candidateCount={report.candidateIds?.length || 0} 
           />
           
           <ReportScoreMatrix 
@@ -89,10 +116,10 @@ const ViewReport = () => {
           
           <ReportCandidates 
             job={job} 
-            candidateIds={report.candidateIds} 
+            candidateIds={report.candidateIds || []} 
           />
           
-          <ReportContent content={report.content} />
+          <ReportContent content={report.content || ''} />
         </div>
         
         <div className="space-y-6">

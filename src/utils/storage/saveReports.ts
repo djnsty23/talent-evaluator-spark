@@ -12,6 +12,14 @@ export const saveReports = async (reports: Report[]): Promise<void> => {
   
   for (const report of reports) {
     try {
+      console.log(`Saving report to Supabase: ${report.id}`);
+      
+      if (!report.id || !report.title || !report.jobId) {
+        console.error('Invalid report data:', report);
+        errorCount++;
+        continue;
+      }
+      
       const { error } = await supabase
         .from('reports')
         .upsert({ 
@@ -55,6 +63,17 @@ export const saveReports = async (reports: Report[]): Promise<void> => {
 const saveCandidateReportLinks = async (reportId: string, candidateIds: string[]): Promise<void> => {
   let linkedCount = 0;
   
+  // First clear existing links to avoid duplicates
+  try {
+    await supabase
+      .from('report_candidates')
+      .delete()
+      .eq('report_id', reportId);
+  } catch (error) {
+    console.error('Error clearing existing candidate-report links:', error);
+  }
+  
+  // Add new links
   for (const candidateId of candidateIds) {
     try {
       const { error } = await supabase

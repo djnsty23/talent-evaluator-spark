@@ -37,7 +37,7 @@ const JobRequirementForm = ({ requirement, onRemove, onChange }: JobRequirementF
     <div className="grid grid-cols-12 gap-4 p-3 border rounded-md bg-white dark:bg-gray-950">
       <div className="col-span-3">
         <Select
-          value={requirement.category}
+          value={requirement.category || ''}
           onValueChange={(value) => handleInputChange('category', value)}
         >
           <SelectTrigger>
