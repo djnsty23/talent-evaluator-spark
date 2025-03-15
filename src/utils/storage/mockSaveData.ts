@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { getUserId } from '@/utils/authUtils';
+import { toast } from 'sonner';
 
 /**
  * Save a single entity to Supabase
@@ -30,7 +31,8 @@ export const mockSaveData = async (data: any): Promise<void> => {
     }
   } catch (err) {
     console.error('Error saving to Supabase:', err);
-    throw err;
+    // Don't throw, just log the error and show a toast
+    toast.error('Failed to save data');
   }
 };
 
@@ -38,30 +40,35 @@ export const mockSaveData = async (data: any): Promise<void> => {
  * Save job data to Supabase
  */
 const saveJobData = async (data: any): Promise<void> => {
-  // Get the current authenticated user ID
-  const currentUserId = await getUserId();
-  
-  if (!currentUserId) {
-    console.error('No authenticated user found when saving job');
-    throw new Error('You must be logged in to save jobs');
-  }
+  try {
+    // Get the current authenticated user ID
+    const currentUserId = await getUserId();
+    
+    if (!currentUserId) {
+      console.error('No authenticated user found when saving job');
+      toast.error('You must be logged in to save jobs');
+      return;
+    }
 
-  const { error } = await supabase
-    .from('jobs')
-    .upsert({ 
-      id: data.id,
-      title: data.title || 'Untitled Job',
-      company: data.company || '',
-      description: data.description || '',
-      location: data.location || '',
-      department: data.department || '',
-      salary: data.salary || null,
-      user_id: currentUserId // Use the current user ID from auth
-    });
-  
-  if (error) {
-    console.error('Error saving job to Supabase:', error);
-    throw error;
+    const { error } = await supabase
+      .from('jobs')
+      .upsert({ 
+        id: data.id,
+        title: data.title || 'Untitled Job',
+        company: data.company || '',
+        description: data.description || '',
+        location: data.location || '',
+        department: data.department || '',
+        salary: data.salary || null,
+        user_id: currentUserId // Use the current user ID from auth
+      });
+    
+    if (error) {
+      console.error('Error saving job to Supabase:', error);
+      toast.error('Failed to save job details');
+    }
+  } catch (error) {
+    console.error('Exception saving job:', error);
   }
 };
 
@@ -69,74 +76,148 @@ const saveJobData = async (data: any): Promise<void> => {
  * Save candidates to Supabase
  */
 const saveCandidates = async (candidates: any[], jobId: string): Promise<void> => {
+  let savedCount = 0;
+  let errorCount = 0;
+  
   for (const candidate of candidates) {
-    const { error: candidateError } = await supabase
-      .from('candidates')
-      .upsert({ 
-        id: candidate.id,
-        name: candidate.name,
-        is_starred: candidate.isStarred,
-        job_id: jobId
-        // Add other fields as needed
-      });
-    
-    if (candidateError) {
-      console.error('Error saving candidate to Supabase:', candidateError);
+    try {
+      const { error: candidateError } = await supabase
+        .from('candidates')
+        .upsert({ 
+          id: candidate.id,
+          name: candidate.name,
+          is_starred: candidate.isStarred,
+          job_id: jobId
+          // Add other fields as needed
+        });
+      
+      if (candidateError) {
+        console.error('Error saving candidate to Supabase:', candidateError);
+        errorCount++;
+      } else {
+        savedCount++;
+      }
+    } catch (error) {
+      console.error('Exception saving candidate:', error);
+      errorCount++;
     }
   }
+  
+  console.log(`Saved ${savedCount}/${candidates.length} candidates to Supabase`);
 };
 
 /**
  * Save report data to Supabase
  */
 const saveReportData = async (data: any): Promise<void> => {
-  const { error } = await supabase
-    .from('reports')
-    .upsert({ 
-      id: data.id,
-      title: data.title || 'Candidate Report',
-      content: data.content,
-      job_id: data.jobId
-    });
-  
-  if (error) {
-    console.error('Error saving report to Supabase:', error);
-    throw error;
+  try {
+    const { error } = await supabase
+      .from('reports')
+      .upsert({ 
+        id: data.id,
+        title: data.title || 'Candidate Report',
+        content: data.content,
+        job_id: data.jobId
+      });
+    
+    if (error) {
+      console.error('Error saving report to Supabase:', error);
+      throw error;
+    }
+    
+    // Link candidates to report
+    await linkCandidatesToReport(data.id, data.candidateIds);
+  } catch (error) {
+    console.error('Exception saving report:', error);
+    toast.error('Failed to save report');
   }
-  
-  // Link candidates to report
-  await linkCandidatesToReport(data.id, data.candidateIds);
 };
 
 /**
  * Link candidates to a report
  */
 const linkCandidatesToReport = async (reportId: string, candidateIds: string[]): Promise<void> => {
+  let linkedCount = 0;
+  
   for (const candidateId of candidateIds) {
-    const { error: linkError } = await supabase
-      .from('report_candidates')
-      .upsert({
-        report_id: reportId,
-        candidate_id: candidateId
-      });
-    
-    if (linkError) {
-      console.error('Error linking candidate to report:', linkError);
+    try {
+      const { error: linkError } = await supabase
+        .from('report_candidates')
+        .upsert({
+          report_id: reportId,
+          candidate_id: candidateId
+        });
+      
+      if (linkError) {
+        console.error('Error linking candidate to report:', linkError);
+      } else {
+        linkedCount++;
+      }
+    } catch (error) {
+      console.error('Exception linking candidate to report:', error);
     }
   }
+  
+  console.log(`Linked ${linkedCount}/${candidateIds.length} candidates to report ${reportId}`);
 };
 
 /**
  * Delete a job from Supabase
  */
 const deleteJob = async (jobId: string): Promise<void> => {
-  const { error } = await supabase
-    .from('jobs')
-    .delete()
-    .eq('id', jobId);
-  
-  if (error) {
-    console.error('Error deleting job from Supabase:', error);
-    throw error;
+  try {
+    // First clean up any reports associated with this job
+    try {
+      // Get all reports for this job
+      const { data: reports } = await supabase
+        .from('reports')
+        .select('id')
+        .eq('job_id', jobId);
+      
+      if (reports && reports.length > 0) {
+        // Delete candidate-report links
+        for (const report of reports) {
+          await supabase
+            .from('report_candidates')
+            .delete()
+            .eq('report_id', report.id);
+        }
+        
+        // Delete reports
+        await supabase
+          .from('reports')
+          .delete()
+          .eq('job_id', jobId);
+      }
+    } catch (error) {
+      console.error('Error cleaning up reports during job deletion:', error);
+      // Continue with deletion
+    }
+    
+    // Delete candidates
+    try {
+      await supabase
+        .from('candidates')
+        .delete()
+        .eq('job_id', jobId);
+    } catch (error) {
+      console.error('Error deleting candidates during job deletion:', error);
+      // Continue with deletion
+    }
+    
+    // Delete the job
+    const { error } = await supabase
+      .from('jobs')
+      .delete()
+      .eq('id', jobId);
+    
+    if (error) {
+      console.error('Error deleting job from Supabase:', error);
+      toast.error('Failed to delete job from database');
+      throw error;
+    }
+  } catch (error) {
+    console.error('Exception deleting job:', error);
+    toast.error('Failed to delete job');
   }
 };

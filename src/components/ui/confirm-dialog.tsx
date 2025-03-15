@@ -33,6 +33,15 @@ export function ConfirmDialog({
   cancelText = "Cancel",
   variant = "destructive",
 }: ConfirmDialogProps) {
+  const handleConfirm = (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      onConfirm();
+    } catch (error) {
+      console.error("Error in confirm handler:", error);
+    }
+  };
+
   return (
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
       <AlertDialogContent>
@@ -45,7 +54,7 @@ export function ConfirmDialog({
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel}>{cancelText}</AlertDialogCancel>
           <AlertDialogAction asChild>
-            <Button variant={variant} onClick={onConfirm}>
+            <Button variant={variant} onClick={handleConfirm}>
               {confirmText}
             </Button>
           </AlertDialogAction>

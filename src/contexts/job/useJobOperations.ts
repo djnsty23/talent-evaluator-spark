@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
@@ -6,6 +5,7 @@ import { Job, Report, ContextFile } from '@/types/job.types';
 import { mockSaveData } from '@/utils/storage';
 import { generateReport } from '@/services/reportService';
 import { getUserId } from '@/utils/authUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 export function useJobOperations() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -98,7 +98,57 @@ export function useJobOperations() {
   const deleteJob = useCallback(async (jobId: string): Promise<void> => {
     setIsLoading(true);
     try {
-      // Mock API call
+      // First, check if there are any reports for this job
+      try {
+        const { data: reports } = await supabase
+          .from('reports')
+          .select('id')
+          .eq('job_id', jobId);
+        
+        // If there are reports, delete them first
+        if (reports && reports.length > 0) {
+          // Delete report_candidates links
+          for (const report of reports) {
+            await supabase
+              .from('report_candidates')
+              .delete()
+              .eq('report_id', report.id);
+          }
+          
+          // Delete the reports
+          await supabase
+            .from('reports')
+            .delete()
+            .eq('job_id', jobId);
+        }
+      } catch (error) {
+        console.error('Error cleaning up reports:', error);
+        // Continue with job deletion even if report cleanup fails
+      }
+      
+      // Try to delete candidates from Supabase
+      try {
+        await supabase
+          .from('candidates')
+          .delete()
+          .eq('job_id', jobId);
+      } catch (error) {
+        console.error('Error deleting candidates from Supabase:', error);
+        // Continue with job deletion even if candidate deletion fails
+      }
+      
+      // Delete the job from Supabase
+      try {
+        await supabase
+          .from('jobs')
+          .delete()
+          .eq('id', jobId);
+      } catch (error) {
+        console.error('Error deleting job from Supabase:', error);
+        // Continue with local deletion even if Supabase deletion fails
+      }
+      
+      // Mock API call for local storage
       await mockSaveData({ id: jobId, deleted: true });
 
       // Update local state
@@ -114,11 +164,12 @@ export function useJobOperations() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error deleting job';
       setError(errorMessage);
+      toast.error(errorMessage);
       throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  }, [currentJob, jobs]);
+  }, [currentJob, jobs, setCurrentJob, setError, setJobs]);
 
   // Generate a report
   const generateReportAction = useCallback(async (

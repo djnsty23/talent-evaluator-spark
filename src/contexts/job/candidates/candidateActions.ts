@@ -1,6 +1,8 @@
 
 import { Job } from '../types';
 import { mockSaveData } from '@/utils/storage';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Hook for managing candidate star/unstar operations
@@ -87,7 +89,41 @@ export function useDeleteCandidate(
         updatedAt: new Date().toISOString(),
       };
       
-      // Mock API call
+      // First, try to delete any reports that reference this candidate
+      try {
+        // Check if there are reports with this candidate
+        const { data: reportLinks } = await supabase
+          .from('report_candidates')
+          .select('report_id')
+          .eq('candidate_id', candidateId);
+        
+        // If there are report links, update those reports by removing this candidate ID
+        if (reportLinks && reportLinks.length > 0) {
+          for (const link of reportLinks) {
+            await supabase
+              .from('report_candidates')
+              .delete()
+              .eq('report_id', link.report_id)
+              .eq('candidate_id', candidateId);
+          }
+        }
+      } catch (error) {
+        console.error('Error cleaning up candidate references in reports:', error);
+        // Continue with deletion even if report cleanup fails
+      }
+      
+      // Try to delete the candidate from Supabase (if it exists there)
+      try {
+        await supabase
+          .from('candidates')
+          .delete()
+          .eq('id', candidateId);
+      } catch (error) {
+        console.error('Error deleting candidate from Supabase:', error);
+        // Continue with local deletion even if Supabase deletion fails
+      }
+      
+      // Mock API call for local storage
       await mockSaveData(updatedJob);
       
       // Update local state
@@ -102,6 +138,8 @@ export function useDeleteCandidate(
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error deleting candidate';
       setError(errorMessage);
+      console.error('Error in deleteCandidate:', err);
+      toast.error(errorMessage);
       throw new Error(errorMessage);
     }
   };

@@ -48,22 +48,27 @@ export const generateReport = async (
       createdAt: new Date().toISOString(),
     };
     
-    // Save to Supabase
-    const { error } = await supabase.from('reports').insert({
-      id: report.id,
-      title: report.title,
-      content: report.content,
-      job_id: report.jobId // Map from our app's jobId to the DB's job_id
-    });
-    
-    if (error) {
-      console.error('Error saving report:', error);
-      toast.error('Failed to save report to database');
-      throw new Error(`Failed to save report: ${error.message}`);
+    // Try to save to Supabase, but don't block if it fails
+    try {
+      const { error } = await supabase.from('reports').insert({
+        id: report.id,
+        title: report.title,
+        content: report.content,
+        job_id: report.jobId // Map from our app's jobId to the DB's job_id
+      });
+      
+      if (error) {
+        console.error('Error saving report to Supabase:', error);
+        toast.error('Could not save report to database');
+        // Continue execution - we'll at least return the report object even if DB save fails
+      } else {
+        // Only try to link candidates if report was saved successfully
+        await linkCandidatesToReport(report.id, validCandidateIds);
+      }
+    } catch (error) {
+      console.error('Exception saving report to Supabase:', error);
+      // Continue execution
     }
-    
-    // Link candidates to report
-    await linkCandidatesToReport(report.id, validCandidateIds);
     
     return report;
   } catch (error) {
@@ -82,18 +87,23 @@ export const linkCandidatesToReport = async (reportId: string, candidateIds: str
     }
     
     for (const candidateId of candidateIds) {
-      const { error } = await supabase.from('report_candidates').insert({
-        report_id: reportId,
-        candidate_id: candidateId
-      });
-      
-      if (error) {
-        console.error('Error linking candidate to report:', error);
-        toast.error('Error linking candidate to report');
+      try {
+        const { error } = await supabase.from('report_candidates').insert({
+          report_id: reportId,
+          candidate_id: candidateId
+        });
+        
+        if (error) {
+          console.error('Error linking candidate to report:', error);
+        }
+      } catch (linkError) {
+        console.error('Exception linking candidate to report:', linkError);
+        // Continue with next candidate
       }
     }
   } catch (error) {
-    console.error('Error linking candidates to report:', error);
+    console.error('Error in linkCandidatesToReport:', error);
+    // Don't throw, just log the error
   }
 };
 
