@@ -187,6 +187,7 @@ export function useJobOperations() {
       // Find the job
       const job = jobs.find(j => j.id === jobId);
       if (!job) {
+        console.error(`Job with ID ${jobId} not found. Available jobs:`, jobs.map(j => ({ id: j.id, title: j.title })));
         throw new Error('Job not found');
       }
       

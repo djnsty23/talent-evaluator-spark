@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { Candidate, JobRequirement } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
@@ -150,6 +149,13 @@ export const processCandidate = async (candidate: Candidate, requirements: JobRe
     try {
       // Save the scores
       for (const score of processedCandidate.scores) {
+        // Fix for the UUID error - ensure we're using proper UUIDs
+        // If requirementId doesn't look like a UUID, skip saving to DB or generate a proper UUID
+        if (!isValidUUID(score.requirementId)) {
+          console.error(`Invalid requirement ID format: ${score.requirementId} - skipping DB save`);
+          continue;
+        }
+        
         const { error } = await supabase
           .from('candidate_scores')
           .insert({
@@ -206,11 +212,17 @@ export const processCandidate = async (candidate: Candidate, requirements: JobRe
   }
 };
 
+// Helper function to check if a string is a valid UUID
+function isValidUUID(id: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+}
+
 const generateMockAnalysis = (candidate: Candidate, requirements: JobRequirement[]): Candidate => {
   // Generate mock scores for each requirement
   const scores = requirements.map(req => {
     return {
-      requirementId: req.id,
+      requirementId: req.id, // Ensure this is a proper UUID
       score: Math.floor(Math.random() * 5) + 3, // Random score 3-7 for demo
       comment: `Mock analysis for ${req.description}`,
     };

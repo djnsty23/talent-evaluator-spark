@@ -33,7 +33,10 @@ export function useCandidateProcessing(jobId: string | undefined, job: Job | nul
 
   // Process a single candidate
   const handleProcessCandidate = async (candidateId: string) => {
-    if (!jobId) return;
+    if (!jobId || !job) {
+      console.error("Cannot process candidate - missing jobId or job");
+      return;
+    }
     
     // Prevent duplicate processing
     if (processingCandidateIds.includes(candidateId)) return;
@@ -63,7 +66,10 @@ export function useCandidateProcessing(jobId: string | undefined, job: Job | nul
 
   // Process all candidates
   const handleProcessAllCandidatesClick = async () => {
-    if (!jobId || !job) return;
+    if (!jobId || !job) {
+      console.error("Cannot process candidates - missing jobId or job");
+      return;
+    }
     
     const unprocessedCandidates = job.candidates.filter(c => c.scores.length === 0);
     if (unprocessedCandidates.length === 0) {

@@ -13,11 +13,19 @@ export function transformJobData(jobData: SupabaseJob[]): Job[] {
     description: job.description || '',
     location: job.location || '',
     department: job.department || '',
-    salary: job.salary ? JSON.parse(String(job.salary)) : undefined, // Parse the JSON string into an object
+    salary: job.salary ? 
+      (typeof job.salary === 'string' ? JSON.parse(job.salary) : job.salary) : 
+      undefined,
     requirements: [], // Will need to fetch these separately in a real implementation
     candidates: [], // Will need to fetch these separately in a real implementation
+    contextFiles: [], // Will need to fetch these separately
     createdAt: job.created_at,
-    updatedAt: job.updated_at
+    updatedAt: job.updated_at,
+    user: {
+      id: job.user_id,
+      name: '',
+      email: ''
+    }
   })) : [];
 }
 
