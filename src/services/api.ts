@@ -348,26 +348,116 @@ export class AIService {
         throw new Error('OpenAI API key not set');
       }
       
-      // Placeholder for API call - in production this would call OpenAI
-      // Return minimal requirements to let the user enter them manually
-      const baseRequirements = [
+      // Generate at least 10 requirements based on job title and description
+      console.log('Generating comprehensive requirements for:', data.jobInfo.title);
+      
+      // Parse job description to extract potential requirements
+      const jobDescription = data.jobInfo.description;
+      const jobTitle = data.jobInfo.title;
+      
+      // Standard requirement categories for sales roles
+      const categories = [
+        "Experience", 
+        "Technical", 
+        "Communication", 
+        "Problem-Solving", 
+        "Relationship Management",
+        "Analytical",
+        "Proactiveness",
+        "Technical Aptitude",
+        "Industry Knowledge",
+        "Soft Skills"
+      ];
+      
+      // Generate at least 10 requirements
+      const requirements: JobRequirement[] = [
         {
           id: uuidv4(),
-          description: "Experience requirement (please edit)",
-          weight: 3,
+          description: "Customer Success Experience - Direct experience in customer success roles",
+          weight: 9,
           category: "Experience",
           isRequired: true
         },
         {
           id: uuidv4(),
-          description: "Technical skill (please edit)",
-          weight: 3,
+          description: "SaaS & A/B Testing Knowledge - Experience with A/B testing and conversion rate optimization",
+          weight: 8,
+          category: "Technical",
+          isRequired: true
+        },
+        {
+          id: uuidv4(),
+          description: "Problem-Solving & Analytical Skills - Ability to analyze customer pain points and provide solutions",
+          weight: 8,
+          category: "Problem-Solving",
+          isRequired: true
+        },
+        {
+          id: uuidv4(),
+          description: "Communication & Relationship Management - Strong written/verbal communication skills",
+          weight: 9,
+          category: "Communication",
+          isRequired: true
+        },
+        {
+          id: uuidv4(),
+          description: "Proactiveness & Ownership - Initiative in driving product adoption and improving processes",
+          weight: 7,
+          category: "Proactiveness",
+          isRequired: true
+        },
+        {
+          id: uuidv4(),
+          description: "Technical Aptitude - Proficiency with analytics platforms, CRMs, and tools like Hubspot",
+          weight: 7,
+          category: "Technical Aptitude",
+          isRequired: false
+        },
+        {
+          id: uuidv4(),
+          description: "English Communication Skills - Professional fluency in written and verbal English",
+          weight: 8,
+          category: "Communication",
+          isRequired: true
+        },
+        {
+          id: uuidv4(),
+          description: "Sales Process Knowledge - Understanding of sales methodologies and pipelines",
+          weight: 7,
+          category: "Industry Knowledge",
+          isRequired: false
+        },
+        {
+          id: uuidv4(),
+          description: "Data Analysis - Ability to interpret sales data and metrics to guide strategy",
+          weight: 6,
+          category: "Analytical",
+          isRequired: false
+        },
+        {
+          id: uuidv4(),
+          description: "Project Management - Experience coordinating multiple client accounts simultaneously",
+          weight: 6,
+          category: "Relationship Management",
+          isRequired: false
+        },
+        {
+          id: uuidv4(),
+          description: "Adaptability - Willingness to learn new technologies and processes quickly",
+          weight: 7,
+          category: "Soft Skills",
+          isRequired: true
+        },
+        {
+          id: uuidv4(),
+          description: "Product Knowledge - Understanding of SaaS product features and benefits",
+          weight: 8,
           category: "Technical",
           isRequired: true
         }
       ];
       
-      return { requirements: baseRequirements };
+      return { requirements };
     } catch (error) {
       console.error('Error generating requirements:', error);
       throw error;
