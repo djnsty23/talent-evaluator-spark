@@ -1,4 +1,3 @@
-
 import { Candidate } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -44,8 +43,8 @@ export const saveCandidatesData = async (candidates: Candidate[], jobId: string)
         is_starred: candidate.isStarred,
         job_id: jobId,
         resume_text: candidate.resumeUrl || null,
-        file_name: candidate.fileName || null,
-        content_type: candidate.contentType || null
+        file_name: candidate.name || null,
+        content_type: 'text/plain'
       });
     
     if (candidateError) {
