@@ -1,8 +1,11 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
 import { Job } from '@/contexts/JobContext';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
+import { getJobById } from '@/utils/storage/supabase/jobOperations';
+import { toast } from 'sonner';
 
 // Import our components and hooks
 import JobRequirementsSummary from '@/components/JobRequirementsSummary';
@@ -23,6 +26,7 @@ const CandidateAnalysis = () => {
   const { jobId, candidateId } = useParams<{ jobId: string; candidateId?: string }>();
   const { jobs, isLoading, starCandidate, deleteCandidate } = useJob();
   const [job, setJob] = useState<Job | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const navigate = useNavigate();
 
   // Use our custom hooks
@@ -64,6 +68,36 @@ const CandidateAnalysis = () => {
     }
   }, [jobId, candidateId, jobs, navigate]);
 
+  const handleRefreshJobData = async () => {
+    if (!jobId) return;
+    
+    setIsRefreshing(true);
+    try {
+      const refreshedJob = await getJobById(jobId);
+      if (refreshedJob) {
+        // Dispatch the custom event to update the job in the context
+        const refreshEvent = new CustomEvent('job-data-refreshed', { 
+          detail: { 
+            jobId,
+            refreshedJob
+          } 
+        });
+        window.dispatchEvent(refreshEvent);
+        
+        // Also update the local state
+        setJob(refreshedJob);
+        toast.success('Candidate data refreshed from database');
+      } else {
+        toast.error('Failed to refresh job data');
+      }
+    } catch (error) {
+      console.error('Error refreshing job data:', error);
+      toast.error('Error refreshing job data');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const handleStarCandidate = async (candidateId: string, isStarred: boolean) => {
     if (!jobId) return;
     
@@ -96,20 +130,32 @@ const CandidateAnalysis = () => {
     <div className="container mx-auto px-4 py-8" id="job-candidates-container">
       <CandidateAnalysisNavigation jobId={jobId || ''} candidateId={candidateId} />
       
-      <CandidateAnalysisHeader
-        jobTitle={job.title}
-        jobCompany={job.company}
-        candidateId={candidateId}
-        jobId={jobId || ''}
-        candidatesCount={job.candidates.length}
-        processedCount={processedCandidatesCount}
-        isProcessingAll={isProcessingAll}
-        processingProgress={processingProgress}
-        currentProcessing={currentProcessing}
-        totalToProcess={totalToProcess}
-        processedCountTracking={processedCountTracking}
-        errorCount={errorCount}
-      />
+      <div className="flex justify-between items-center mb-6">
+        <CandidateAnalysisHeader
+          jobTitle={job.title}
+          jobCompany={job.company}
+          candidateId={candidateId}
+          jobId={jobId || ''}
+          candidatesCount={job.candidates.length}
+          processedCount={processedCandidatesCount}
+          isProcessingAll={isProcessingAll}
+          processingProgress={processingProgress}
+          currentProcessing={currentProcessing}
+          totalToProcess={totalToProcess}
+          processedCountTracking={processedCountTracking}
+          errorCount={errorCount}
+        />
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefreshJobData}
+          disabled={isRefreshing}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+          {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+        </Button>
+      </div>
       
       {isProcessingAll && (
         <ProcessingStatus

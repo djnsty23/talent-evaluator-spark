@@ -1,10 +1,10 @@
-
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useEffect } from 'react';
 import { toast } from 'sonner';
 import { JobContextType } from './types';
 import { useJobOperations } from './useJobOperations';
 import { useCandidateOperations } from './useCandidateOperations';
 import { useJobData } from './useJobData';
+import { Job } from '@/types/job.types';
 
 const JobContext = createContext<JobContextType | undefined>(undefined);
 
@@ -49,6 +49,32 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
     setIsLoading,
     setError
   );
+
+  // Listen for job data refresh events
+  useEffect(() => {
+    const handleJobDataRefreshed = (event: Event) => {
+      const customEvent = event as CustomEvent<{ jobId: string; refreshedJob: Job }>;
+      const { jobId, refreshedJob } = customEvent.detail;
+      
+      console.log('JobContext: Received job data refresh event for job:', jobId);
+      
+      // Update the jobs array with the refreshed job
+      setJobs(prevJobs => prevJobs.map(j => j.id === jobId ? refreshedJob : j));
+      
+      // Update currentJob if it's the one that was refreshed
+      if (currentJob && currentJob.id === jobId) {
+        setCurrentJob(refreshedJob);
+      }
+      
+      toast.success('Candidate data refreshed from database');
+    };
+
+    window.addEventListener('job-data-refreshed', handleJobDataRefreshed);
+    
+    return () => {
+      window.removeEventListener('job-data-refreshed', handleJobDataRefreshed);
+    };
+  }, [currentJob, setJobs, setCurrentJob]);
 
   const value: JobContextType = {
     jobs,

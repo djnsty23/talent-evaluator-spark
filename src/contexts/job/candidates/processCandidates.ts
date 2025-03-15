@@ -1,7 +1,7 @@
-
 import { Job, Candidate } from '../types';
 import { processCandidate } from '@/services/candidateService';
-import { mockSaveData } from '@/utils/storage';
+import { saveCandidates } from '@/utils/storage/supabase/candidateOperations';
+import { saveJobData, getJobById } from '@/utils/storage/supabase/jobOperations';
 import { toast } from 'sonner';
 
 /**
@@ -41,8 +41,9 @@ export function useProcessCandidate(
         updatedAt: new Date().toISOString(),
       };
       
-      // Simulate API delay
-      await mockSaveData(updatedJob);
+      // Save to Supabase
+      await saveCandidates(jobId, updatedCandidates);
+      await saveJobData(updatedJob);
       
       // Update local state immediately
       setJobs(prevJobs => 
@@ -119,34 +120,46 @@ export function useProcessAllCandidates(
         }
       }
       
-      // Fetch the updated job to ensure we have the latest state
-      const updatedJob = jobs.find(j => j.id === jobId);
-      
-      // Log processing results
-      console.log(`Processing completed. Success: ${successCount}, Errors: ${errorCount}`);
-      
-      // Show appropriate toast message
-      if (successCount > 0 && errorCount === 0) {
-        toast.success(`Successfully processed ${successCount} candidates`);
-      } else if (successCount > 0 && errorCount > 0) {
-        toast.warning(`Processed ${successCount} candidates with ${errorCount} errors`);
-      } else if (successCount === 0 && errorCount > 0) {
-        toast.error(`Failed to process any candidates. Check console for details.`);
+      // Fetch the latest job data from Supabase to ensure UI is in sync
+      try {
+        const refreshedJob = await getJobById(jobId);
+        if (refreshedJob) {
+          console.log('Refreshed job data from Supabase after processing');
+          
+          // Update the jobs array with the refreshed job data
+          const updatedJobs = jobs.map(j => j.id === jobId ? refreshedJob : j);
+          
+          // We need to access the setJobs function from the parent context
+          // This is a workaround since we don't have direct access to setJobs here
+          // In a real implementation, you might want to pass setJobs as a parameter
+          // or use a more sophisticated state management approach
+          
+          // Dispatch a custom event to notify the app that job data has been refreshed
+          const refreshEvent = new CustomEvent('job-data-refreshed', { 
+            detail: { 
+              jobId,
+              refreshedJob
+            } 
+          });
+          window.dispatchEvent(refreshEvent);
+        }
+      } catch (refreshError) {
+        console.error('Error refreshing job data:', refreshError);
       }
       
-      // If we had any errors, log them to console
-      if (processingErrors.length > 0) {
+      // Show summary toast
+      if (successCount > 0) {
+        toast.success(`Successfully processed ${successCount} candidates`);
+      }
+      if (errorCount > 0) {
+        toast.error(`Failed to process ${errorCount} candidates`);
         console.error('Processing errors:', processingErrors);
       }
       
-      return Promise.resolve();
-      
     } catch (err) {
-      console.error('Error in handleProcessAllCandidates:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error processing candidates';
       setError(errorMessage);
-      toast.error('Failed to process candidates');
-      return Promise.reject(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
