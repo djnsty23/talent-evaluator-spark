@@ -5,9 +5,10 @@ export const extractCandidateName = (fileName: string): string => {
   // Remove file extension
   let candidateName = fileName.split('.').slice(0, -1).join('.');
   
-  // Replace common prefixes
+  // Replace common prefixes and suffixes
   candidateName = candidateName
     .replace(/^(cv|resume|résumé|curriculum\s*vitae)[\s_-]*/i, '')
+    .replace(/[\s_-]*(cv|resume|résumé|curriculum\s*vitae)$/i, '')
     .replace(/^(cv|resume)_/i, '')
     .trim();
   

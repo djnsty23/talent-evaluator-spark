@@ -7,7 +7,7 @@ interface CandidateCultureFitProps {
   leadershipPotential?: number;
 }
 
-const CandidateCultureFit = ({ cultureFit, leadershipPotential }: CandidateCultureFitProps) => {
+const CandidateCultureFit = ({ cultureFit = 0, leadershipPotential = 0 }: CandidateCultureFitProps) => {
   return (
     <div className="grid grid-cols-2 gap-4 mb-4 border-t border-gray-100 dark:border-gray-800 pt-3">
       <div>
@@ -18,12 +18,12 @@ const CandidateCultureFit = ({ cultureFit, leadershipPotential }: CandidateCultu
         <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mb-1">
           <div 
             className="h-full bg-blue-500 transition-all duration-500"
-            style={{ width: `${(cultureFit || 0) * 10}%` }}
+            style={{ width: `${cultureFit * 10}%` }}
           />
         </div>
         <div className="flex justify-between items-center text-xs">
           <span className="text-gray-500">Culture Alignment</span>
-          <span className="font-medium">{cultureFit?.toFixed(1)}/10</span>
+          <span className="font-medium">{cultureFit.toFixed(1)}/10</span>
         </div>
       </div>
       
@@ -35,12 +35,12 @@ const CandidateCultureFit = ({ cultureFit, leadershipPotential }: CandidateCultu
         <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mb-1">
           <div 
             className="h-full bg-amber-500 transition-all duration-500"
-            style={{ width: `${(leadershipPotential || 0) * 10}%` }}
+            style={{ width: `${leadershipPotential * 10}%` }}
           />
         </div>
         <div className="flex justify-between items-center text-xs">
           <span className="text-gray-500">Leadership</span>
-          <span className="font-medium">{leadershipPotential?.toFixed(1)}/10</span>
+          <span className="font-medium">{leadershipPotential.toFixed(1)}/10</span>
         </div>
       </div>
     </div>

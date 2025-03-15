@@ -1,11 +1,12 @@
 
 import React from 'react';
 import { Award, Trophy } from 'lucide-react';
-import { JobRequirement } from '@/contexts/JobContext';
+import { JobRequirement } from '@/types/job.types';
 
 interface SkillScore {
   requirementId: string;
   score: number;
+  comment?: string;
 }
 
 interface CandidateSkillAssessmentProps {
@@ -21,6 +22,11 @@ const CandidateSkillAssessment = ({ scores, requirements, topScorers }: Candidat
     if (score >= 4) return 'bg-yellow-500';
     return 'bg-red-500';
   };
+
+  // Don't render if there are no scores
+  if (scores.length === 0) {
+    return null;
+  }
 
   return (
     <div className="mt-2 border-t border-gray-100 dark:border-gray-800 pt-3">
@@ -57,6 +63,9 @@ const CandidateSkillAssessment = ({ scores, requirements, topScorers }: Candidat
                   style={{ width: `${score.score * 10}%` }}
                 />
               </div>
+              {score.comment && (
+                <p className="text-xs text-gray-500 mt-1">{score.comment}</p>
+              )}
             </div>
           );
         })}

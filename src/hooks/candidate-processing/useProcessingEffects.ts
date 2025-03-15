@@ -18,6 +18,8 @@ export function useProcessingEffects(
       } else {
         setShowPostProcessCTA(false);
       }
+      
+      console.log(`Processing status: ${processedCount} processed, ${unprocessedCount} unprocessed candidates`);
     }
   }, [job, setShowPostProcessCTA]);
   

@@ -1,17 +1,20 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import { Candidate, JobRequirement } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
-import { extractCandidateName, extractNameFromContent } from '@/utils/candidateUtils';
+import { extractCandidateName, extractNameFromContent, generateRealisticName } from '@/utils/candidateUtils';
 import { extractTextFromFile } from '@/services/api';
 
 export const createCandidateFromFile = async (file: File, jobId: string, index: number): Promise<Candidate> => {
   // Try to extract candidate name, with multiple fallback strategies
-  let candidateName = 'N/A';
+  let candidateName = '';
   
   // First try to extract candidate name from filename
   const filenameExtractedName = extractCandidateName(file.name);
+  
   if (filenameExtractedName) {
     candidateName = filenameExtractedName;
+    console.log('Name extracted from filename:', candidateName);
   } else {
     // If filename-based extraction fails, try content-based extraction
     try {
@@ -21,20 +24,23 @@ export const createCandidateFromFile = async (file: File, jobId: string, index: 
       
       if (contentExtractedName) {
         candidateName = contentExtractedName;
+        console.log('Name extracted from content:', candidateName);
       }
-      // If content extraction also fails, we leave it as "N/A"
     } catch (error) {
       console.error("Error extracting text from file:", error);
-      // Keep N/A as the name
     }
+  }
+  
+  // If no name could be extracted, generate a realistic one
+  if (!candidateName) {
+    candidateName = generateRealisticName();
+    console.log('Generated random name:', candidateName);
   }
   
   return {
     id: uuidv4(),
     name: candidateName,
-    email: candidateName !== 'N/A' 
-      ? `${candidateName.toLowerCase().replace(/\s/g, '.')}@example.com`
-      : `candidate${index}@example.com`,
+    email: `${candidateName.toLowerCase().replace(/\s/g, '.')}@example.com`,
     resumeUrl: URL.createObjectURL(file),
     overallScore: 0,
     scores: [],
@@ -80,6 +86,10 @@ export const processCandidate = (candidate: Candidate, requirements: JobRequirem
   processedCandidate.weaknesses = ['Time Management'];
   processedCandidate.status = 'processed';
   processedCandidate.processedAt = new Date().toISOString();
+  
+  // Add random values for culture fit and leadership potential
+  processedCandidate.cultureFit = Math.floor(Math.random() * 7) + 3; // Random 3-10
+  processedCandidate.leadershipPotential = Math.floor(Math.random() * 7) + 3; // Random 3-10
   
   return processedCandidate;
 };
