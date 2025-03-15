@@ -1,15 +1,24 @@
 
 import { useState, useEffect } from 'react';
-import { Candidate } from '@/types/job.types';
+import { Candidate, Job } from '@/types/job.types';
 
 export function useCandidateFiltering(
-  candidates: Candidate[],
+  candidatesOrJob: Candidate[] | Job | null,
   searchTerm: string
 ) {
   const [filteredCandidates, setFilteredCandidates] = useState<Candidate[]>([]);
   const [filter, setFilter] = useState<'all' | 'starred' | 'processed' | 'unprocessed'>('all');
 
   useEffect(() => {
+    // Handle both array of candidates or Job object
+    let candidates: Candidate[] = [];
+    
+    if (Array.isArray(candidatesOrJob)) {
+      candidates = candidatesOrJob;
+    } else if (candidatesOrJob && 'candidates' in candidatesOrJob) {
+      candidates = candidatesOrJob.candidates;
+    }
+    
     if (!candidates || candidates.length === 0) {
       setFilteredCandidates([]);
       return;
@@ -47,7 +56,7 @@ export function useCandidateFiltering(
     });
     
     setFilteredCandidates(filtered);
-  }, [candidates, searchTerm, filter]);
+  }, [candidatesOrJob, searchTerm, filter]);
 
   return {
     searchQuery: searchTerm,

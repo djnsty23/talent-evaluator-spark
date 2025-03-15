@@ -88,10 +88,7 @@ const JobCandidatesList = ({
               unprocessedCount={unprocessedCount}
               isProcessingAll={isProcessingAll}
               processingCandidateIds={processingCandidateIds}
-              onProcessAll={() => {
-                handleProcessAllCandidatesClick();
-                return;
-              }}
+              onProcessAll={handleProcessAllCandidatesClick}
             />
           </div>
         </div>
@@ -113,6 +110,8 @@ const JobCandidatesList = ({
         <div className="mb-6">
           <PostProcessingCTA
             jobId={job.id}
+            processedCandidatesCount={job.candidates.filter(c => c.scores.length > 0).length}
+            show={showPostProcessCTA}
           />
         </div>
       )}
@@ -139,10 +138,7 @@ const JobCandidatesList = ({
                   candidate={candidate}
                   jobId={job.id}
                   onClick={() => handleAnalyzeCandidate(candidate.id)}
-                  onProcess={(e) => {
-                    handleProcessCandidate(candidate.id, e);
-                    return;
-                  }}
+                  onProcess={() => handleProcessCandidate(candidate.id)}
                   isProcessing={processingCandidateIds.includes(candidate.id)}
                 />
               ))}
