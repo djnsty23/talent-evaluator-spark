@@ -13,6 +13,7 @@ import ProcessingStatus from '@/components/ProcessingStatus';
 import ProcessAllCandidatesButton from '@/components/ProcessAllCandidatesButton';
 import PostProcessingCTA from '@/components/candidate/PostProcessingCTA';
 import ReportGenerationButton from '@/components/candidate/ReportGenerationButton';
+import { useJob } from '@/contexts/job';
 
 interface JobCandidatesListProps {
   job: Job;
@@ -26,6 +27,7 @@ const JobCandidatesList = ({
   handleAnalyzeCandidate,
 }: JobCandidatesListProps) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const { starCandidate, deleteCandidate } = useJob();
   
   // Filter candidates
   const { filteredCandidates, filter, setFilter } = 
@@ -47,6 +49,16 @@ const JobCandidatesList = ({
     cancelProcessing,
     setShowPostProcessCTA
   } = useCandidateProcessing(job.id, job);
+
+  // Handle star candidate
+  const handleStarCandidate = (candidateId: string, isStarred: boolean) => {
+    starCandidate(job.id, candidateId, isStarred);
+  };
+
+  // Handle delete candidate
+  const handleDeleteCandidate = (candidateId: string) => {
+    return deleteCandidate(job.id, candidateId);
+  };
   
   return (
     <div className="space-y-6">
@@ -137,9 +149,13 @@ const JobCandidatesList = ({
                   key={candidate.id}
                   candidate={candidate}
                   jobId={job.id}
+                  requirements={job.requirements}
+                  onStar={(isStarred) => handleStarCandidate(candidate.id, isStarred)}
+                  onDelete={() => handleDeleteCandidate(candidate.id)}
                   onViewDetails={() => handleAnalyzeCandidate(candidate.id)}
                   onProcess={() => handleProcessCandidate(candidate.id)}
                   isProcessing={processingCandidateIds.includes(candidate.id)}
+                  allCandidatesData={job.candidates}
                 />
               ))}
             </div>
