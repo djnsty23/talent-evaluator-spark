@@ -29,7 +29,7 @@ const JobCandidatesList = ({
   
   // Filter candidates
   const { filteredCandidates, filter, setFilter } = 
-    useCandidateFiltering(job.candidates, searchTerm);
+    useCandidateFiltering(job, searchTerm);
   
   // Candidate processing
   const {
@@ -137,7 +137,7 @@ const JobCandidatesList = ({
                   key={candidate.id}
                   candidate={candidate}
                   jobId={job.id}
-                  onClick={() => handleAnalyzeCandidate(candidate.id)}
+                  onViewDetails={() => handleAnalyzeCandidate(candidate.id)}
                   onProcess={() => handleProcessCandidate(candidate.id)}
                   isProcessing={processingCandidateIds.includes(candidate.id)}
                 />
