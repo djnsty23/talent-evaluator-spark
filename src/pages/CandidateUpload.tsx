@@ -127,8 +127,8 @@ const CandidateUpload = () => {
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p>The system will extract candidate names from resume content when possible. 
-                    If extraction fails, a realistic name will be generated.</p>
+                    <p>The system will attempt to extract candidate names from the resume filename
+                    or content. If extraction fails, "N/A" will be used.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

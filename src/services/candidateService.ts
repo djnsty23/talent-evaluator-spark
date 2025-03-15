@@ -1,34 +1,40 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { Candidate, JobRequirement } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
-import { extractCandidateName, generateRealisticName, extractNameFromContent } from '@/utils/candidateUtils';
+import { extractCandidateName, extractNameFromContent } from '@/utils/candidateUtils';
 import { extractTextFromFile } from '@/services/api';
 
 export const createCandidateFromFile = async (file: File, jobId: string, index: number): Promise<Candidate> => {
-  // First try to extract candidate name from filename
-  let finalName = extractCandidateName(file.name);
+  // Try to extract candidate name, with multiple fallback strategies
+  let candidateName = 'N/A';
   
-  // If filename-based extraction fails, try content-based extraction
-  if (!finalName) {
+  // First try to extract candidate name from filename
+  const filenameExtractedName = extractCandidateName(file.name);
+  if (filenameExtractedName) {
+    candidateName = filenameExtractedName;
+  } else {
+    // If filename-based extraction fails, try content-based extraction
     try {
       // Extract text content from the file
       const content = await extractTextFromFile(file);
-      finalName = await extractNameFromContent(content);
+      const contentExtractedName = await extractNameFromContent(content);
+      
+      if (contentExtractedName) {
+        candidateName = contentExtractedName;
+      }
+      // If content extraction also fails, we leave it as "N/A"
     } catch (error) {
       console.error("Error extracting text from file:", error);
+      // Keep N/A as the name
     }
-  }
-  
-  // If both methods fail, use a generated realistic name
-  if (!finalName) {
-    finalName = generateRealisticName();
   }
   
   return {
     id: uuidv4(),
-    name: finalName,
-    email: `${finalName.toLowerCase().replace(/\s/g, '.')}@example.com`,
+    name: candidateName,
+    email: candidateName !== 'N/A' 
+      ? `${candidateName.toLowerCase().replace(/\s/g, '.')}@example.com`
+      : `candidate${index}@example.com`,
     resumeUrl: URL.createObjectURL(file),
     overallScore: 0,
     scores: [],
