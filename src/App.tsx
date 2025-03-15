@@ -16,7 +16,10 @@ import CandidateAnalysis from './pages/CandidateAnalysis';
 import ReportGeneration from './pages/ReportGeneration';
 import ViewReport from './pages/ViewReport';
 import JobRequirementsEditor from './pages/JobRequirementsEditor';
+import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
+import ErrorPage from './components/ui/error-page';
 import './App.css';
 
 function App() {
@@ -89,7 +92,21 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
-                {/* Fallback routes */}
+                {/* User account pages */}
+                <Route path="/profile" element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/settings" element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Error pages */}
+                <Route path="/error" element={<ErrorPage />} />
                 <Route path="/404" element={<NotFound />} />
                 <Route path="*" element={<Navigate to="/404" replace />} />
               </Routes>

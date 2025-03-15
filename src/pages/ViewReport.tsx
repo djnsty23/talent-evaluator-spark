@@ -9,13 +9,17 @@ import ReportMetrics from '@/components/reports/ReportMetrics';
 import ReportScoreMatrix from '@/components/reports/ReportScoreMatrix';
 import ReportCandidates from '@/components/reports/ReportCandidates';
 import ReportContent from '@/components/reports/ReportContent';
-import ReportLoading from '@/components/reports/ReportLoading';
+import ReportShareWidget from '@/components/reports/ReportShareWidget';
+import { PageLoading } from '@/components/ui/page-loading';
+import ErrorPage from '@/components/ui/error-page';
 
 const ViewReport = () => {
   const { jobId, reportId } = useParams<{ jobId: string; reportId: string }>();
   const { jobs, reports } = useJob();
   const [job, setJob] = useState<Job | null>(null);
   const [report, setReport] = useState<Report | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,31 +28,40 @@ const ViewReport = () => {
       if (foundJob) {
         setJob(foundJob);
       } else {
-        // Job not found, redirect to dashboard
-        navigate('/dashboard');
+        setError("Job not found");
       }
     }
-  }, [jobId, jobs, navigate]);
 
-  useEffect(() => {
     if (reportId && reports) {
       const foundReport = reports.find(r => r.id === reportId);
       if (foundReport) {
         setReport(foundReport);
       } else {
-        // Report not found, redirect to job page
-        navigate(`/jobs/${jobId}`);
+        setError("Report not found");
       }
     }
-  }, [reportId, reports, jobId, navigate]);
+
+    setIsLoading(false);
+  }, [jobId, reportId, jobs, reports]);
 
   const handleExportCSV = () => {
     if (!report || !job) return;
     exportReportToCSV(job, report.candidateIds);
   };
 
-  if (!job || !report) {
-    return <ReportLoading />;
+  if (isLoading) {
+    return <PageLoading message="Loading report..." />;
+  }
+
+  if (error || !job || !report) {
+    return (
+      <ErrorPage 
+        title="Report Not Available"
+        message={error || "The requested report could not be found"}
+        showHomeButton={true}
+        showRefreshButton={false}
+      />
+    );
   }
 
   // Get candidates included in report
@@ -62,22 +75,35 @@ const ViewReport = () => {
         onExportCSV={handleExportCSV} 
       />
       
-      <ReportMetrics 
-        report={report} 
-        candidateCount={report.candidateIds.length} 
-      />
-      
-      <ReportScoreMatrix 
-        candidates={reportCandidates} 
-        requirements={job.requirements}
-      />
-      
-      <ReportCandidates 
-        job={job} 
-        candidateIds={report.candidateIds} 
-      />
-      
-      <ReportContent content={report.content} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          <ReportMetrics 
+            report={report} 
+            candidateCount={report.candidateIds.length} 
+          />
+          
+          <ReportScoreMatrix 
+            candidates={reportCandidates} 
+            requirements={job.requirements}
+          />
+          
+          <ReportCandidates 
+            job={job} 
+            candidateIds={report.candidateIds} 
+          />
+          
+          <ReportContent content={report.content} />
+        </div>
+        
+        <div className="space-y-6">
+          <ReportShareWidget 
+            reportId={report.id} 
+            jobId={job.id} 
+          />
+          
+          {/* Additional side widgets can be added here */}
+        </div>
+      </div>
     </div>
   );
 };

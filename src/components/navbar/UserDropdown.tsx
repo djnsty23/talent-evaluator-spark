@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { User, LogOut, Settings } from 'lucide-react';
+import { User, LogOut, Settings, FileText, LayoutDashboard, HelpCircle } from 'lucide-react';
 import { AuthUser } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { getInitials } from './utils';
@@ -36,14 +36,14 @@ const UserDropdown = ({ currentUser }: UserDropdownProps) => {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8 transition-all hover:opacity-80">
-            <AvatarImage src={currentUser.photoURL} />
+            <AvatarImage src={currentUser.photoURL} alt={currentUser.name} />
             <AvatarFallback className="bg-primary text-xs font-medium text-primary-foreground">
               {getInitials(currentUser.name)}
             </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 mt-1 glass-panel">
+      <DropdownMenuContent align="end" className="w-56 mt-1">
         <DropdownMenuLabel>
           <div className="flex flex-col">
             <span className="font-medium">{currentUser.name}</span>
@@ -51,6 +51,10 @@ const UserDropdown = ({ currentUser }: UserDropdownProps) => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer">
+          <LayoutDashboard className="mr-2 h-4 w-4" />
+          <span>Dashboard</span>
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
