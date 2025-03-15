@@ -19,6 +19,30 @@ export const saveReports = async (reports: Report[]): Promise<void> => {
         continue;
       }
       
+      // First, verify job exists and get user_id before attempting to insert report
+      const { data: jobData, error: jobError } = await supabase
+        .from('jobs')
+        .select('user_id')
+        .eq('id', report.jobId)
+        .single();
+      
+      if (jobError || !jobData) {
+        console.error('Failed to get job data for report:', jobError);
+        toast.error('Could not verify job ownership for report');
+        continue;
+      }
+      
+      // Get current user session
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUserId = sessionData?.session?.user?.id;
+      
+      // Verify current user owns the job
+      if (jobData.user_id !== currentUserId) {
+        console.error('User does not own this job, cannot save report');
+        toast.error('You do not have permission to create a report for this job');
+        continue;
+      }
+      
       const { error } = await supabase
         .from('reports')
         .upsert({ 
@@ -55,6 +79,30 @@ export const saveReportData = async (data: Report): Promise<void> => {
     if (!data.jobId) {
       console.error('Missing jobId for report:', data);
       toast.error('Missing job ID for report');
+      return;
+    }
+    
+    // First, verify job exists and get user_id before attempting to insert report
+    const { data: jobData, error: jobError } = await supabase
+      .from('jobs')
+      .select('user_id')
+      .eq('id', data.jobId)
+      .single();
+    
+    if (jobError || !jobData) {
+      console.error('Failed to get job data for report:', jobError);
+      toast.error('Could not verify job ownership for report');
+      return;
+    }
+    
+    // Get current user session
+    const { data: sessionData } = await supabase.auth.getSession();
+    const currentUserId = sessionData?.session?.user?.id;
+    
+    // Verify current user owns the job
+    if (jobData.user_id !== currentUserId) {
+      console.error('User does not own this job, cannot save report');
+      toast.error('You do not have permission to create a report for this job');
       return;
     }
     
