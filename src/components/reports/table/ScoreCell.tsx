@@ -17,6 +17,7 @@ const ScoreCell = ({ score, isHighest, weight = 1 }: ScoreCellProps) => {
     return 'bg-red-500 dark:bg-red-400';
   };
 
+  // Enhanced animation for the progress bar
   const scoreColor = getScoreColor(score);
   
   return (
@@ -30,17 +31,21 @@ const ScoreCell = ({ score, isHighest, weight = 1 }: ScoreCellProps) => {
               <div className="w-8 text-center font-medium">
                 {score || '-'}
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
                 <div 
-                  className={`h-2.5 rounded-full ${scoreColor}`}
-                  style={{ width: `${score * 10}%` }}
+                  className={`h-2.5 rounded-full ${scoreColor} transition-all duration-500 ease-out`}
+                  style={{ 
+                    width: `${score * 10}%`,
+                    boxShadow: isHighest ? '0 0 5px rgba(139, 92, 246, 0.5)' : 'none'
+                  }}
                 ></div>
               </div>
             </div>
           </TooltipTrigger>
           <TooltipContent>
             <p>Score: {score}/10</p>
-            {weight && <p>Requirement weight: {weight}</p>}
+            {weight && weight !== 1 && <p>Requirement weight: {weight}</p>}
+            {isHighest && <p className="text-green-500">Highest score</p>}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
