@@ -4,3 +4,4 @@ export * from './getStorageData';
 export * from './saveStorageData';
 export * from './saveJobs';
 export * from './saveReports';
+export * from './saveStorageItem';

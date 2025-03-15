@@ -2,7 +2,7 @@
 import { Job, Candidate } from '../types';
 import { createCandidateFromFile } from '@/services/candidateService';
 import { toast } from 'sonner';
-import { mockSaveData } from '@/utils/storage';
+import { saveStorageItem } from '@/utils/storage';
 
 /**
  * Hook for handling candidate file uploads
@@ -41,8 +41,8 @@ export function useUploadCandidates(
         updatedAt: new Date().toISOString()
       };
       
-      // Update backend (mocked)
-      await mockSaveData(updatedJob);
+      // Update backend
+      await saveStorageItem(updatedJob);
       
       // Update local state
       setJobs(prevJobs => 

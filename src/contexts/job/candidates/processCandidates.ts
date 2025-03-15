@@ -1,7 +1,7 @@
 
 import { Job, Candidate } from '@/types/job.types';
 import { processCandidate } from '@/services/candidateService';
-import { mockSaveData } from '@/utils/storage';
+import { saveStorageItem } from '@/utils/storage';
 import { toast } from 'sonner';
 
 /**
@@ -53,8 +53,8 @@ export function useProcessCandidate(
         updatedAt: new Date().toISOString(),
       };
       
-      // Simulate API delay
-      await mockSaveData(updatedJob);
+      // Save to storage
+      await saveStorageItem(updatedJob);
       
       console.log('Updated job after processing:', updatedJob.id);
       

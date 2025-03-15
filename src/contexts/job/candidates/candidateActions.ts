@@ -1,6 +1,5 @@
-
 import { Job } from '../types';
-import { mockSaveData } from '@/utils/storage';
+import { saveStorageItem } from '@/utils/storage';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -39,8 +38,8 @@ export function useStarCandidate(
         updatedAt: new Date().toISOString(),
       };
       
-      // Mock API call
-      await mockSaveData(updatedJob);
+      // Save to storage
+      await saveStorageItem(updatedJob);
       
       // Update local state
       setJobs(prevJobs => 
@@ -123,8 +122,8 @@ export function useDeleteCandidate(
         // Continue with local deletion even if Supabase deletion fails
       }
       
-      // Mock API call for local storage
-      await mockSaveData(updatedJob);
+      // Save to storage
+      await saveStorageItem(updatedJob);
       
       // Update local state
       setJobs(prevJobs => 
