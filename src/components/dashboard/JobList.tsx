@@ -46,7 +46,7 @@ const JobList = ({ jobs }: JobListProps) => {
       toast.success('Job deleted successfully');
     } catch (error) {
       console.error('Error deleting job:', error);
-      toast.error('Failed to delete job');
+      toast.error('Failed to delete job. Please try again later.');
     } finally {
       setIsDeleting(false);
       setJobToDelete(null); // Always reset jobToDelete to ensure dialog is closed

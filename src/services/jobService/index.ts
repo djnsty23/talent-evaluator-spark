@@ -3,6 +3,7 @@ import { Job } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { getUserId } from '@/utils/authUtils';
+import { cleanupRequirementMappings } from '@/utils/requirementUtils';
 
 /**
  * Job Service for CRUD operations on jobs
@@ -92,6 +93,17 @@ export class JobService {
     try {
       console.log('Deleting job from Supabase:', jobId);
       
+      // Get current user ID for Supabase RLS
+      const userId = await getUserId();
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+      
+      // First, cleanup requirement mappings to prevent foreign key constraint errors
+      await cleanupRequirementMappings(jobId);
+      console.log('Successfully cleaned up requirement mappings');
+      
+      // Now delete the job
       const { error } = await supabase
         .from('jobs')
         .delete()

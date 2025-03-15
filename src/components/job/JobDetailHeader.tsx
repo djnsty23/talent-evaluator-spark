@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -52,10 +51,9 @@ const JobDetailHeader = ({
       }, 100);
     } catch (error) {
       console.error('Error deleting job:', error);
-      toast.error('Failed to delete job');
-    } finally {
+      toast.error('Failed to delete job. Please try again later.');
       setIsDeleting(false);
-      setShowDeleteConfirm(false); // Always reset modal state
+      setShowDeleteConfirm(false); // Close dialog on error
     }
   };
 

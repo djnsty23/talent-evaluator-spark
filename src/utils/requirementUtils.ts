@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import { JobRequirement } from '@/types/job.types';
@@ -131,10 +130,13 @@ export async function areRequirementsSynced(jobId: string, requirements: JobRequ
 }
 
 /**
- * Cleans up requirement mappings when a job is deleted
+ * Cleans up requirement mappings and related data when a job is deleted
+ * Handles removal of all job-related data to prevent foreign key constraint errors
  */
 export async function cleanupRequirementMappings(jobId: string): Promise<void> {
   try {
+    console.log(`Starting cleanup for job ${jobId}`);
+    
     // Check authentication
     const userId = await getUserId();
     if (!userId) {
@@ -155,18 +157,31 @@ export async function cleanupRequirementMappings(jobId: string): Promise<void> {
       return;
     }
     
-    // Delete all mappings for this job
-    const { error } = await supabase
+    // Delete candidate scores that reference the requirements for this job
+    console.log(`Deleting candidate scores for job ${jobId}`);
+    const { error: scoreDeleteError } = await supabase
+      .rpc('delete_candidate_scores_for_job', { job_id: jobId });
+    
+    if (scoreDeleteError) {
+      console.error('Error deleting candidate scores:', scoreDeleteError);
+      // Continue with other deletions even if this fails
+    }
+    
+    // Delete requirement mappings for this job
+    console.log(`Deleting requirement mappings for job ${jobId}`);
+    const { error: mappingError } = await supabase
       .from('job_requirements_mapping')
       .delete()
       .eq('job_id', jobId);
     
-    if (error) {
-      console.error('Error cleaning up requirement mappings:', error);
-    } else {
-      console.log(`Successfully cleaned up requirement mappings for job ${jobId}`);
+    if (mappingError) {
+      console.error('Error cleaning up requirement mappings:', mappingError);
+      throw mappingError;
     }
+    
+    console.log(`Successfully cleaned up requirement mappings for job ${jobId}`);
   } catch (error) {
     console.error('Error cleaning up requirement mappings:', error);
+    throw error;
   }
 }
