@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Job, Candidate, Report } from './types';
@@ -203,15 +202,10 @@ export function useJobOperations() {
         throw new Error('No valid candidates selected');
       }
 
-      // Get the selected candidates
-      const selectedCandidates = jobData.candidates.filter(c => 
-        validCandidateIds.includes(c.id)
-      );
-
       // Generate the report
       const report = await ReportService.generateReport(
         jobData,
-        selectedCandidates,
+        validCandidateIds,
         additionalPrompt
       );
 
