@@ -3,21 +3,15 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  ArrowLeft, 
-  Plus, 
-  Save, 
-  Loader2, 
-  Sparkles, 
-  FileText 
-} from 'lucide-react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { JobRequirement } from '@/types/job.types';
 import { AIService } from '@/services/api';
-import OpenAIKeyInput from '@/components/OpenAIKeyInput';
 import RequirementsList from '@/components/job-requirements/RequirementsList';
 import ContextFilesUploader from '@/components/job-requirements/ContextFilesUploader';
+import RequirementsHeader from '@/components/job-requirements/RequirementsHeader';
+import RequirementsActions from '@/components/job-requirements/RequirementsActions';
 import { REQUIREMENT_CATEGORIES } from '@/components/job-requirements/JobRequirementForm';
 
 const JobRequirementsEditor = () => {
@@ -167,54 +161,15 @@ const JobRequirementsEditor = () => {
       </div>
       
       <Card className="mb-6">
-        <CardHeader className="flex flex-row items-center justify-between pb-4 space-y-0">
-          <div>
-            <CardTitle className="text-xl">Requirements for {job.title}</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {requirements.length > 0 
-                ? `${requirements.length} requirements defined` 
-                : 'No requirements defined yet'}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <OpenAIKeyInput />
-            
-            <Button 
-              variant="outline"
-              onClick={() => setShowContextUploader(!showContextUploader)}
-              className="flex items-center gap-2"
-            >
-              <FileText className="h-4 w-4" />
-              {showContextUploader ? 'Hide Files' : 'Add Context Files'}
-            </Button>
-            
-            <Button 
-              variant="outline"
-              onClick={handleGenerateRequirements}
-              disabled={isGenerating}
-              className="flex items-center gap-2"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  Generate with AI
-                </>
-              )}
-            </Button>
-            
-            <Button 
-              onClick={handleAddRequirement}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add Requirement
-            </Button>
-          </div>
+        <CardHeader className="pb-0">
+          <RequirementsHeader 
+            requirementsCount={requirements.length}
+            isGenerating={isGenerating}
+            showContextUploader={showContextUploader}
+            onAddRequirement={handleAddRequirement}
+            onGenerateRequirements={handleGenerateRequirements}
+            onToggleContextUploader={() => setShowContextUploader(!showContextUploader)}
+          />
         </CardHeader>
         
         {showContextUploader && (
@@ -233,31 +188,11 @@ const JobRequirementsEditor = () => {
               onRequirementChange={handleRequirementChange}
             />
             
-            <div className="flex justify-end space-x-4 mt-8">
-              <Button
-                variant="outline"
-                onClick={() => navigate(`/jobs/${jobId}`)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="min-w-[120px]"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Requirements
-                  </>
-                )}
-              </Button>
-            </div>
+            <RequirementsActions 
+              isSaving={isSaving}
+              onSave={handleSave}
+              onCancel={() => navigate(`/jobs/${jobId}`)}
+            />
           </div>
         </CardContent>
       </Card>
