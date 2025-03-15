@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 
 interface ProcessAllCandidatesButtonProps {
   unprocessedCount: number;
@@ -15,7 +15,7 @@ const ProcessAllCandidatesButton = ({
   processingCandidateIds,
   onProcessAll
 }: ProcessAllCandidatesButtonProps) => {
-  if (unprocessedCount === 0 || isProcessingAll) {
+  if (unprocessedCount === 0) {
     return null;
   }
   
@@ -24,9 +24,19 @@ const ProcessAllCandidatesButton = ({
       onClick={onProcessAll}
       disabled={isProcessingAll || processingCandidateIds.length > 0}
       className="w-full sm:w-auto"
+      variant={isProcessingAll ? "outline" : "default"}
     >
-      <CheckCircle2 className="h-4 w-4 mr-2" />
-      Process All Unprocessed ({unprocessedCount})
+      {isProcessingAll ? (
+        <>
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          Processing...
+        </>
+      ) : (
+        <>
+          <CheckCircle2 className="h-4 w-4 mr-2" />
+          Process All Candidates ({unprocessedCount})
+        </>
+      )}
     </Button>
   );
 };

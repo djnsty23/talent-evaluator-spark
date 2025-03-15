@@ -1,3 +1,4 @@
+
 // Define all types related to jobs and candidates here
 export interface JobRequirement {
   id: string;
@@ -38,6 +39,14 @@ export interface Candidate {
   preferredTools: string[];
 }
 
+// Define the custom ContextFile interface that's different from the browser's File
+export interface ContextFile {
+  id: string;
+  name: string;
+  content: string;
+  type: string;
+}
+
 export interface Job {
   id: string;
   title: string;
@@ -48,7 +57,7 @@ export interface Job {
   salary?: string;
   requirements: JobRequirement[];
   candidates: Candidate[];
-  contextFiles?: File[];
+  contextFiles?: ContextFile[]; // Updated to use ContextFile instead of File
   userId: string;
   createdAt: string;
   updatedAt: string;

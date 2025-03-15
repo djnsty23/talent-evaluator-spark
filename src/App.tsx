@@ -3,9 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ThemeProvider } from '@/components/theme-provider';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
-import { JobProvider } from './contexts/JobContext';
+import { JobProvider } from './contexts/job/JobContext';
 import { Toaster } from './components/ui/sonner';
-import Navbar from './components/Navbar';
+import Navbar from './components/navbar';
 import Index from './pages/Index';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';

@@ -1,43 +1,6 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@font-face {
-  font-family: 'SF Pro Display';
-  src: url('https://cdn.jsdelivr.net/gh/dtxprs/fonts@master/SFProDisplay-Bold.woff2') format('woff2'),
-       url('https://cdn.jsdelivr.net/gh/dtxprs/fonts@master/SFProDisplay-Bold.woff') format('woff');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'SF Pro Display';
-  src: url('https://cdn.jsdelivr.net/gh/dtxprs/fonts@master/SFProDisplay-Medium.woff2') format('woff2'),
-       url('https://cdn.jsdelivr.net/gh/dtxprs/fonts@master/SFProDisplay-Medium.woff') format('woff');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'SF Pro Display';
-  src: url('https://cdn.jsdelivr.net/gh/dtxprs/fonts@master/SFProDisplay-Regular.woff2') format('woff2'),
-       url('https://cdn.jsdelivr.net/gh/dtxprs/fonts@master/SFProDisplay-Regular.woff') format('woff');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'SF Pro Display';
-  src: url('https://cdn.jsdelivr.net/gh/dtxprs/fonts@master/SFProDisplay-Light.woff2') format('woff2'),
-       url('https://cdn.jsdelivr.net/gh/dtxprs/fonts@master/SFProDisplay-Light.woff') format('woff');
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
 
 @layer base {
   :root {

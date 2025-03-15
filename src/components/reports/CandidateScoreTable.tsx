@@ -30,7 +30,30 @@ const CandidateScoreTable = ({ candidates, requirements }: CandidateScoreTablePr
     setSortConfig({ key, direction });
   };
 
-  const sortedCandidates = [...candidates].sort((a, b) => {
+  // Check if we have candidates to display
+  if (candidates.length === 0) {
+    return (
+      <div className="text-center p-8 border rounded-md">
+        <p className="text-muted-foreground">No candidates available to display</p>
+      </div>
+    );
+  }
+
+  // Make sure we have processed candidates with scores
+  const processedCandidates = candidates.filter(c => c.scores && c.scores.length > 0);
+  
+  if (processedCandidates.length === 0) {
+    return (
+      <div className="text-center p-8 border rounded-md">
+        <p className="text-muted-foreground">No processed candidates available</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Process candidates to view their scores
+        </p>
+      </div>
+    );
+  }
+
+  const sortedCandidates = [...processedCandidates].sort((a, b) => {
     if (!sortConfig) return 0;
     
     if (sortConfig.key === 'name') {
@@ -56,11 +79,14 @@ const CandidateScoreTable = ({ candidates, requirements }: CandidateScoreTablePr
   });
 
   // Find max score for each requirement
-  const maxScores = calculateMaxScores(candidates, requirements);
+  const maxScores = calculateMaxScores(processedCandidates, requirements);
 
   return (
-    <div className="border rounded-md">
+    <div className="border rounded-md overflow-x-auto">
       <Table>
+        <TableCaption>
+          Scores of each candidate against job requirements (scale: 1-10)
+        </TableCaption>
         <TableHeader className="bg-muted/50">
           <TableRow>
             <SortableTableHeader
@@ -89,7 +115,7 @@ const CandidateScoreTable = ({ candidates, requirements }: CandidateScoreTablePr
               sortKey="overallScore"
               currentSort={sortConfig}
               onSort={requestSort}
-              className="text-right"
+              className="text-right w-[120px]"
             />
           </TableRow>
         </TableHeader>

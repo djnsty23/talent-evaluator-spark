@@ -2,7 +2,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { CardFooter } from '@/components/ui/card';
-import { ArrowUpRight, Activity } from 'lucide-react';
+import { ArrowUpRight, Activity, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface CandidateCardFooterProps {
   isProcessed: boolean;
@@ -35,15 +36,16 @@ const CandidateCardFooter = ({
         )}
         
         {jobId && isProcessed && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => window.location.href = `/jobs/${jobId}/analysis`}
-            className="text-xs h-8"
-          >
-            <Activity className="h-3 w-3 mr-1" />
-            Candidate Analysis
-          </Button>
+          <Link to={`/jobs/${jobId}/analysis`}>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="text-xs h-8"
+            >
+              <Activity className="h-3 w-3 mr-1" />
+              Candidate Analysis
+            </Button>
+          </Link>
         )}
       </div>
       
@@ -55,7 +57,14 @@ const CandidateCardFooter = ({
           disabled={isProcessing}
           className="text-xs h-8"
         >
-          {isProcessing ? 'Processing...' : 'Process CV'}
+          {isProcessing ? (
+            <>
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            'Process CV'
+          )}
         </Button>
       )}
     </CardFooter>

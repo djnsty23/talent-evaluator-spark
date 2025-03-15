@@ -8,11 +8,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Plus, Upload, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Upload, Check, Loader2, X } from 'lucide-react';
 import FileUploader from '@/components/FileUploader';
 import { extractTextFromFile, AIService } from '@/services/api';
 import { toast } from 'sonner';
 import OpenAIKeyInput from '@/components/OpenAIKeyInput';
+import { ContextFile } from '@/types/job.types';
 
 const CreateJob = () => {
   const navigate = useNavigate();
@@ -61,13 +62,32 @@ const CreateJob = () => {
     }
   };
   
+  const handleRemoveContextFile = (index: number) => {
+    const newFiles = [...contextFiles];
+    newFiles.splice(index, 1);
+    setContextFiles(newFiles);
+    
+    const newExtractedContexts = [...extractedContexts];
+    newExtractedContexts.splice(index, 1);
+    setExtractedContexts(newExtractedContexts);
+  };
+  
   const handleCreateJob = async () => {
     setLoading(true);
     
     try {
+      // Convert browser File objects to ContextFile objects that our Job type expects
+      const contextFileObjects: ContextFile[] = contextFiles.map((file, index) => ({
+        id: `context-${index}`,
+        name: file.name,
+        content: extractedContexts[index] || '',
+        type: file.type
+      }));
+      
       // Create a new job with initial data
       const newJob = await createJob({
         ...formData,
+        contextFiles: contextFileObjects,
       });
       
       toast.success('Job created successfully!');
@@ -212,6 +232,8 @@ const CreateJob = () => {
                     onFilesSelected={handleContextFilesSelected}
                     accept=".pdf,.doc,.docx,.txt,.csv,.xlsx"
                     multiple={true}
+                    selectedFiles={contextFiles}
+                    onFileRemove={handleRemoveContextFile}
                   />
                 </div>
                 
@@ -219,19 +241,6 @@ const CreateJob = () => {
                   <div className="flex items-center justify-center p-4">
                     <Loader2 className="h-6 w-6 animate-spin mr-2" />
                     <span>Extracting content from files...</span>
-                  </div>
-                )}
-                
-                {contextFiles.length > 0 && (
-                  <div className="border rounded-md p-4">
-                    <h4 className="font-medium mb-2">Selected Files ({contextFiles.length})</h4>
-                    <ul className="space-y-1">
-                      {contextFiles.map((file, index) => (
-                        <li key={index} className="text-sm">
-                          {file.name}
-                        </li>
-                      ))}
-                    </ul>
                   </div>
                 )}
                 
