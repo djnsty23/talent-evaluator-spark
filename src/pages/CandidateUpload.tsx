@@ -3,11 +3,12 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Upload, FileText, AlertCircle, Check, X } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ArrowLeft, Upload, FileText, AlertCircle, Check, X, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import FileUploader from '@/components/FileUploader';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const CandidateUpload = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -92,6 +93,9 @@ const CandidateUpload = () => {
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Upload Candidates for {job.title}</CardTitle>
+          <CardDescription>
+            Upload candidate resumes to automatically process and analyze them
+          </CardDescription>
         </CardHeader>
         
         <CardContent className="space-y-6">
@@ -112,7 +116,24 @@ const CandidateUpload = () => {
           )}
           
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Upload candidate resumes and documents</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium">Upload candidate resumes and documents</h3>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Info className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>The system will extract candidate names from resume content when possible. 
+                    If extraction fails, a realistic name will be generated.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            
             <FileUploader 
               onFilesSelected={handleFilesSelected}
               accept=".pdf,.doc,.docx,.txt,.csv,.xlsx"

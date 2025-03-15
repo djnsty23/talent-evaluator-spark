@@ -1,4 +1,3 @@
-
 import { Candidate } from '@/types/job.types';
 
 // Improved function to extract candidate name from resume filename
@@ -30,7 +29,13 @@ export const extractCandidateName = (fileName: string): string => {
     .filter(Boolean) // Remove empty parts
     .join(' ');
   
-  return candidateName || 'Unnamed Candidate';
+  // Check if the name looks like a generic filename
+  const genericFilenames = ['untitled', 'document', 'scan', 'img', 'image', 'file', 'pdf', 'doc'];
+  if (genericFilenames.includes(candidateName.toLowerCase()) || candidateName.length < 3) {
+    return '';
+  }
+  
+  return candidateName || '';
 };
 
 // Helper function to generate evaluation comments
@@ -167,4 +172,32 @@ export const generateMockReportContent = (job: any, candidateIds: string[], addi
   content += `Based on the analysis, we recommend proceeding with interviews for the top 3 candidates.\n`;
   
   return content;
+};
+
+// New function to try extracting name from CV content
+export const extractNameFromContent = async (content: string): Promise<string> => {
+  // In a real implementation, this would use NLP or AI to extract the name from the CV content
+  // For now, just implement a simple heuristic
+  
+  // Look for common patterns of names in resumes
+  const lines = content.split('\n').slice(0, 10); // Check first 10 lines
+  
+  for (const line of lines) {
+    // A line with just 2-3 words is likely a name
+    const trimmedLine = line.trim();
+    const words = trimmedLine.split(/\s+/).filter(Boolean);
+    
+    if (words.length >= 2 && words.length <= 3 && 
+        words.every(word => word.length > 1) &&
+        !/\d/.test(trimmedLine) && // No numbers
+        !/[@:\/]/.test(trimmedLine) && // No email or URLs
+        trimmedLine.length < 30) { // Not too long
+      
+      return words.map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+      ).join(' ');
+    }
+  }
+  
+  return '';
 };

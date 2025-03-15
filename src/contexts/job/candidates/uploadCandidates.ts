@@ -29,9 +29,11 @@ export function useUploadCandidates(
       if (!job) throw new Error('Job not found');
       
       // Process each file and create a candidate entry
-      const newCandidates: Candidate[] = files.map((file, index) => 
+      const candidatePromises = files.map((file, index) => 
         createCandidateFromFile(file, jobId, index)
       );
+      
+      const newCandidates: Candidate[] = await Promise.all(candidatePromises);
       
       const updatedJob = {
         ...job,

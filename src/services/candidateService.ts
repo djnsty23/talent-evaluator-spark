@@ -1,16 +1,29 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import { Candidate, JobRequirement } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
-import { extractCandidateName, generateRealisticName } from '@/utils/candidateUtils';
+import { extractCandidateName, generateRealisticName, extractNameFromContent } from '@/utils/candidateUtils';
+import { extractTextFromFile } from '@/services/api';
 
-export const createCandidateFromFile = (file: File, jobId: string, index: number): Candidate => {
-  // Use the improved utility function to extract candidate name from filename
-  const candidateName = extractCandidateName(file.name);
+export const createCandidateFromFile = async (file: File, jobId: string, index: number): Promise<Candidate> => {
+  // First try to extract candidate name from filename
+  let finalName = extractCandidateName(file.name);
   
-  // If the extracted name looks like a filename (contains dots, underscores, numbers) 
-  // use a generated realistic name instead
-  const hasFilenameLikeChars = /[._\-0-9]/.test(candidateName);
-  const finalName = hasFilenameLikeChars ? generateRealisticName() : candidateName;
+  // If filename-based extraction fails, try content-based extraction
+  if (!finalName) {
+    try {
+      // Extract text content from the file
+      const content = await extractTextFromFile(file);
+      finalName = await extractNameFromContent(content);
+    } catch (error) {
+      console.error("Error extracting text from file:", error);
+    }
+  }
+  
+  // If both methods fail, use a generated realistic name
+  if (!finalName) {
+    finalName = generateRealisticName();
+  }
   
   return {
     id: uuidv4(),
