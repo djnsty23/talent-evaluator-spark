@@ -1,11 +1,11 @@
 
 import React from 'react';
-import { JobRequirement } from '@/types/job.types';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Trash2 } from 'lucide-react';
+import { JobRequirement } from '@/types/job.types';
 
 interface JobRequirementFormProps {
   requirement: JobRequirement;
@@ -13,24 +13,32 @@ interface JobRequirementFormProps {
   onChange: (id: string, field: keyof JobRequirement, value: any) => void;
 }
 
-// List of available categories for job requirements
-export const REQUIREMENT_CATEGORIES = [
-  "Technical Skills",
-  "Soft Skills",
-  "Education",
-  "Experience",
-  "Certifications",
-  "Language",
-  "Other"
+// Predefined categories for job requirements
+const REQUIREMENT_CATEGORIES = [
+  'Skills',
+  'Experience',
+  'Education',
+  'Technical',
+  'Soft Skills',
+  'Language',
+  'Certification',
+  'Tools',
+  'Knowledge',
+  'Attitude',
+  'Other'
 ];
 
 const JobRequirementForm = ({ requirement, onRemove, onChange }: JobRequirementFormProps) => {
+  const handleInputChange = (field: keyof JobRequirement, value: any) => {
+    onChange(requirement.id, field, value);
+  };
+
   return (
-    <div className="grid grid-cols-12 gap-4 p-4 border rounded-md hover:bg-muted/5 transition-colors">
+    <div className="grid grid-cols-12 gap-4 p-3 border rounded-md bg-white dark:bg-gray-950">
       <div className="col-span-3">
         <Select
           value={requirement.category}
-          onValueChange={(value) => onChange(requirement.id, 'category', value)}
+          onValueChange={(value) => handleInputChange('category', value)}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select category" />
@@ -46,44 +54,37 @@ const JobRequirementForm = ({ requirement, onRemove, onChange }: JobRequirementF
       </div>
       
       <div className="col-span-5">
-        <Textarea
+        <Input
           value={requirement.description}
-          onChange={(e) => onChange(requirement.id, 'description', e.target.value)}
+          onChange={(e) => handleInputChange('description', e.target.value)}
           placeholder="Requirement description"
-          className="min-h-[60px] resize-none"
+          className="w-full"
         />
       </div>
       
       <div className="col-span-2">
-        <Select
-          value={requirement.weight.toString()}
-          onValueChange={(value) => onChange(requirement.id, 'weight', parseInt(value))}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Weight" />
-          </SelectTrigger>
-          <SelectContent>
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(value => (
-              <SelectItem key={value} value={value.toString()}>
-                {value}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <div className="col-span-1 flex items-center justify-center">
-        <Switch
-          checked={requirement.isRequired}
-          onCheckedChange={(checked) => onChange(requirement.id, 'isRequired', checked)}
-          id={`required-${requirement.id}`}
+        <Input
+          type="number"
+          min="1"
+          max="10"
+          value={requirement.weight}
+          onChange={(e) => handleInputChange('weight', parseInt(e.target.value))}
+          placeholder="Weight"
+          className="w-full"
         />
       </div>
       
-      <div className="col-span-1 flex items-center justify-center">
+      <div className="col-span-1 flex justify-center items-center">
+        <Switch
+          checked={requirement.isRequired}
+          onCheckedChange={(checked) => handleInputChange('isRequired', checked)}
+        />
+      </div>
+      
+      <div className="col-span-1 flex justify-center items-center">
         <Button
           variant="ghost"
-          size="icon"
+          size="sm"
           onClick={() => onRemove(requirement.id)}
           className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
         >

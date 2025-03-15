@@ -10,7 +10,8 @@ interface CandidateCardFooterProps {
   isProcessing: boolean;
   onProcess: () => void;
   onViewDetails?: () => void;
-  jobId?: string; // Added jobId for navigation
+  jobId?: string;
+  candidateId?: string;
 }
 
 const CandidateCardFooter = ({ 
@@ -18,8 +19,16 @@ const CandidateCardFooter = ({
   isProcessing, 
   onProcess, 
   onViewDetails,
-  jobId
+  jobId,
+  candidateId
 }: CandidateCardFooterProps) => {
+  // Handle process click without page navigation
+  const handleProcessClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onProcess();
+  };
+
   return (
     <CardFooter className="p-3 flex justify-between items-center bg-muted/20 border-t">
       <div className="flex gap-2">
@@ -35,8 +44,8 @@ const CandidateCardFooter = ({
           </Button>
         )}
         
-        {jobId && isProcessed && (
-          <Link to={`/jobs/${jobId}/analysis`}>
+        {jobId && candidateId && isProcessed && (
+          <Link to={`/jobs/${jobId}/analysis/${candidateId}`}>
             <Button
               variant="secondary"
               size="sm"
@@ -53,7 +62,7 @@ const CandidateCardFooter = ({
         <Button
           variant="default"
           size="sm"
-          onClick={onProcess}
+          onClick={handleProcessClick}
           disabled={isProcessing}
           className="text-xs h-8"
         >

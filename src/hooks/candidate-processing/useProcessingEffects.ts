@@ -6,18 +6,20 @@ export function useProcessingEffects(
   job: Job | null,
   setShowPostProcessCTA: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-  // Check if all candidates are processed when the job changes
+  // Effect to check if all candidates are processed
   useEffect(() => {
-    if (job && job.candidates.length > 0) {
+    if (job) {
       const unprocessedCount = job.candidates.filter(c => c.scores.length === 0).length;
       const processedCount = job.candidates.filter(c => c.scores.length > 0).length;
       
-      // If all candidates are processed, show the CTA
-      if (processedCount > 0 && unprocessedCount === 0) {
+      // Only show CTA if we have at least one processed candidate and no unprocessed ones
+      if (unprocessedCount === 0 && processedCount > 0) {
         setShowPostProcessCTA(true);
       } else {
         setShowPostProcessCTA(false);
       }
     }
   }, [job, setShowPostProcessCTA]);
+  
+  return null;
 }

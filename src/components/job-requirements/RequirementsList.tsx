@@ -10,7 +10,7 @@ interface RequirementsListProps {
 }
 
 const RequirementsList = ({ requirements, onRemoveRequirement, onRequirementChange }: RequirementsListProps) => {
-  if (requirements.length === 0) {
+  if (!requirements || requirements.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground border rounded-md bg-muted/10">
         <p className="text-lg mb-2">No requirements yet</p>

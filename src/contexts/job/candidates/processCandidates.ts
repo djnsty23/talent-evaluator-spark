@@ -1,5 +1,5 @@
 
-import { Job, Candidate } from '../types';
+import { Job, Candidate } from '@/types/job.types';
 import { processCandidate } from '@/services/candidateService';
 import { mockSaveData } from '@/utils/storage';
 import { toast } from 'sonner';
@@ -21,15 +21,26 @@ export function useProcessCandidate(
   const processCandidateAction = async (jobId: string, candidateId: string): Promise<void> => {
     setIsLoading(true);
     try {
+      console.log(`Processing candidate ${candidateId} for job ${jobId}`);
+      
       // Find the job and candidate
       const job = jobs.find(j => j.id === jobId);
-      if (!job) throw new Error('Job not found');
+      if (!job) {
+        console.error('Job not found:', jobId);
+        throw new Error('Job not found');
+      }
       
       const candidateIndex = job.candidates.findIndex(c => c.id === candidateId);
-      if (candidateIndex === -1) throw new Error('Candidate not found');
+      if (candidateIndex === -1) {
+        console.error('Candidate not found:', candidateId);
+        throw new Error('Candidate not found');
+      }
       
       // Get the candidate and process it
-      const processedCandidate = processCandidate(job.candidates[candidateIndex], job.requirements);
+      const candidate = job.candidates[candidateIndex];
+      console.log('Processing candidate:', candidate.name);
+      
+      const processedCandidate = processCandidate(candidate, job.requirements);
       
       // Create updated job with processed candidate
       const updatedCandidates = [...job.candidates];
@@ -44,6 +55,8 @@ export function useProcessCandidate(
       // Simulate API delay
       await mockSaveData(updatedJob);
       
+      console.log('Updated job after processing:', updatedJob.id);
+      
       // Update local state immediately
       setJobs(prevJobs => 
         prevJobs.map(j => j.id === jobId ? updatedJob : j)
@@ -54,12 +67,15 @@ export function useProcessCandidate(
       }
       
       console.log(`Successfully processed candidate: ${processedCandidate.name}`);
+      toast.success(`Successfully processed ${processedCandidate.name}`);
+      
       return Promise.resolve();
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error processing candidate';
       setError(errorMessage);
       console.error(`Error processing candidate: ${errorMessage}`);
+      toast.error('Failed to process candidate');
       return Promise.reject(errorMessage);
     } finally {
       setIsLoading(false);
@@ -103,7 +119,6 @@ export function useProcessAllCandidates(
       // Track processed candidates and errors
       let successCount = 0;
       let errorCount = 0;
-      const processingErrors: string[] = [];
       
       // Process each candidate sequentially to avoid race conditions
       for (const candidate of unprocessedCandidates) {
@@ -113,14 +128,9 @@ export function useProcessAllCandidates(
           successCount++;
         } catch (error) {
           errorCount++;
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          processingErrors.push(`Failed to process ${candidate.name}: ${errorMessage}`);
           console.error(`Error processing candidate ${candidate.name}:`, error);
         }
       }
-      
-      // Fetch the updated job to ensure we have the latest state
-      const updatedJob = jobs.find(j => j.id === jobId);
       
       // Log processing results
       console.log(`Processing completed. Success: ${successCount}, Errors: ${errorCount}`);
@@ -132,11 +142,6 @@ export function useProcessAllCandidates(
         toast.warning(`Processed ${successCount} candidates with ${errorCount} errors`);
       } else if (successCount === 0 && errorCount > 0) {
         toast.error(`Failed to process any candidates. Check console for details.`);
-      }
-      
-      // If we had any errors, log them to console
-      if (processingErrors.length > 0) {
-        console.error('Processing errors:', processingErrors);
       }
       
       return Promise.resolve();

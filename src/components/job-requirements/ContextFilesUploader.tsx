@@ -20,33 +20,40 @@ const ContextFilesUploader = ({
   const [isExtractingContext, setIsExtractingContext] = useState(false);
 
   const handleContextFilesSelected = async (files: File[]) => {
-    setContextFiles(files);
-    
-    if (files.length > 0) {
-      setIsExtractingContext(true);
+    try {
+      // First update the file list to ensure UI is responsive
+      setContextFiles(files);
       
-      try {
+      if (files.length > 0) {
+        setIsExtractingContext(true);
+        
         const extractedTexts = await Promise.all(
-          files.map(file => extractTextFromFile(file))
+          files.map(file => extractTextFromFile(file).catch(error => {
+            console.error('Error extracting text from file:', error);
+            return `Failed to extract content from ${file.name}`;
+          }))
         );
         
         setExtractedContexts(extractedTexts);
         toast.success(`Successfully extracted content from ${files.length} file(s)`);
-      } catch (error) {
-        console.error('Error extracting text from files:', error);
-        toast.error('Failed to extract text from some files');
-      } finally {
-        setIsExtractingContext(false);
+      } else {
+        setExtractedContexts([]);
       }
-    } else {
-      setExtractedContexts([]);
+    } catch (error) {
+      console.error('Error extracting text from files:', error);
+      toast.error('Failed to extract text from files');
+    } finally {
+      setIsExtractingContext(false);
     }
   };
   
   const handleRemoveContextFile = (index: number) => {
-    const newFiles = [...contextFiles];
-    newFiles.splice(index, 1);
-    setContextFiles(newFiles);
+    // Prevent any form submission
+    setContextFiles(prev => {
+      const newFiles = [...prev];
+      newFiles.splice(index, 1);
+      return newFiles;
+    });
     
     setExtractedContexts(prev => {
       const newContexts = [...prev];
