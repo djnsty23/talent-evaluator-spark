@@ -5,8 +5,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { generateReportContent } from './generateReportContent';
 import { linkCandidatesToReport } from './reportLinking';
-import { AIService } from '@/services/api';
 import { formatCandidatesForAI, formatJobForAI } from './formatters';
+
+// Import AIService directly from api.ts to avoid circular dependencies
+import { AIService as ApiAIService } from '@/services/api';
 
 /**
  * Generate a new report for the given job and candidates
@@ -69,8 +71,9 @@ export const generateReport = async (
         
         console.log('Formatted data for AI:', { formattedJob, formattedCandidates });
         
-        // Call the AI service with the existing method
-        const aiResult = await AIService.generateReport(
+        // Call the AI service
+        // Use ApiAIService to prevent circular dependency
+        const aiResult = await ApiAIService.generateReport(
           formattedJob,
           formattedCandidates,
           additionalPrompt

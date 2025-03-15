@@ -1,8 +1,10 @@
+
 import { JobRequirement, Job, Candidate, Report } from '@/types/job.types';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { generateMockAnalysis } from './candidateService/mockDataGenerator';
+import { getUserId } from '@/utils/authUtils';
 
 /**
  * Job Service for CRUD operations on jobs
@@ -15,6 +17,12 @@ export class JobService {
     try {
       console.log('Creating job in Supabase:', job);
       
+      // Get current user ID for Supabase RLS
+      const userId = await getUserId();
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+      
       const { error } = await supabase
         .from('jobs')
         .insert({
@@ -24,6 +32,7 @@ export class JobService {
           description: job.description,
           location: job.location || '',
           department: job.department || '',
+          user_id: userId // Add the user_id field required by Supabase
         });
       
       if (error) {
@@ -47,6 +56,12 @@ export class JobService {
     try {
       console.log('Updating job in Supabase:', job);
       
+      // Get current user ID for Supabase RLS
+      const userId = await getUserId();
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+      
       const { error } = await supabase
         .from('jobs')
         .update({
@@ -55,6 +70,7 @@ export class JobService {
           description: job.description,
           location: job.location || '',
           department: job.department || '',
+          // Don't update user_id on update operations
         })
         .eq('id', job.id);
       
