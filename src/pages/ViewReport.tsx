@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
 import { Job, Report } from '@/types/job.types';
 import { exportReportToCSV } from '@/components/reports/ReportCSVExporter';
@@ -12,6 +12,9 @@ import ReportContent from '@/components/reports/ReportContent';
 import ReportShareWidget from '@/components/reports/ReportShareWidget';
 import { PageLoading } from '@/components/ui/page-loading';
 import ErrorPage from '@/components/ui/error-page';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 
 const ViewReport = () => {
   const { jobId, reportId } = useParams<{ jobId: string; reportId: string }>();
@@ -70,8 +73,17 @@ const ViewReport = () => {
   }, [jobId, reportId, jobs, reports]);
 
   const handleExportCSV = () => {
-    if (!report || !job) return;
-    exportReportToCSV(job, report.candidateIds);
+    if (!report || !job) {
+      toast.error("Cannot export: Report or job data missing");
+      return;
+    }
+    try {
+      exportReportToCSV(job, report.candidateIds);
+      toast.success("Report exported to CSV successfully");
+    } catch (error) {
+      console.error("Error exporting to CSV:", error);
+      toast.error("Failed to export report to CSV");
+    }
   };
 
   if (isLoading) {
@@ -89,13 +101,27 @@ const ViewReport = () => {
     );
   }
 
+  // Safety check for candidateIds - ensure it's an array
+  const candidateIds = Array.isArray(report.candidateIds) ? report.candidateIds : [];
+  
   // Get candidates included in report
   const reportCandidates = job.candidates.filter(c => 
-    report.candidateIds && report.candidateIds.includes(c.id)
+    candidateIds.includes(c.id)
   );
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8">
+      <Button 
+        variant="ghost" 
+        asChild 
+        className="mb-6"
+      >
+        <Link to={`/jobs/${jobId}`} className="flex items-center gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Job Details
+        </Link>
+      </Button>
+      
       <ReportHeader 
         job={job} 
         report={report} 
@@ -106,7 +132,7 @@ const ViewReport = () => {
         <div className="lg:col-span-2">
           <ReportMetrics 
             report={report} 
-            candidateCount={report.candidateIds?.length || 0} 
+            candidateCount={candidateIds.length || 0} 
           />
           
           <ReportScoreMatrix 
@@ -116,7 +142,7 @@ const ViewReport = () => {
           
           <ReportCandidates 
             job={job} 
-            candidateIds={report.candidateIds || []} 
+            candidateIds={candidateIds} 
           />
           
           <ReportContent content={report.content || ''} />

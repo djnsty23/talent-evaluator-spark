@@ -13,7 +13,7 @@ export const generateCandidateRankingsContent = (job: Job, rankedCandidates: Can
   rankedCandidates.forEach((candidate, index) => {
     content += `### ${index + 1}. ${candidate.name} - ${candidate.overallScore.toFixed(1)}/10\n\n`;
     
-    if (candidate.strengths.length > 0) {
+    if (candidate.strengths && candidate.strengths.length > 0) {
       content += `**Strengths:**\n`;
       candidate.strengths.forEach(strength => {
         content += `- ${strength}\n`;
@@ -21,7 +21,7 @@ export const generateCandidateRankingsContent = (job: Job, rankedCandidates: Can
       content += `\n`;
     }
     
-    if (candidate.weaknesses.length > 0) {
+    if (candidate.weaknesses && candidate.weaknesses.length > 0) {
       content += `**Areas for Development:**\n`;
       candidate.weaknesses.forEach(weakness => {
         content += `- ${weakness}\n`;
@@ -29,7 +29,7 @@ export const generateCandidateRankingsContent = (job: Job, rankedCandidates: Can
       content += `\n`;
     }
     
-    // Add specific information about the candidate
+    // Add specific information about the candidate if available
     if (candidate.yearsOfExperience) {
       content += `**Experience:** ${candidate.yearsOfExperience} years\n`;
     }
@@ -64,10 +64,18 @@ export const generateCandidateRankingsContent = (job: Job, rankedCandidates: Can
  */
 export const generateJobOverviewContent = (job: Job) => {
   let content = `## Job Overview\n\n`;
-  content += `**Title:** ${job.title}\n`;
-  content += `**Company:** ${job.company}\n`;
-  content += `**Department:** ${job.department}\n`;
-  content += `**Location:** ${job.location}\n\n`;
+  content += `**Title:** ${job.title || 'Untitled Position'}\n`;
+  content += `**Company:** ${job.company || 'Company'}\n`;
+  
+  if (job.department) {
+    content += `**Department:** ${job.department}\n`;
+  }
+  
+  if (job.location) {
+    content += `**Location:** ${job.location}\n`;
+  }
+  
+  content += `\n`;
   
   if (job.description) {
     content += `**Description:**\n${job.description}\n\n`;
@@ -77,9 +85,14 @@ export const generateJobOverviewContent = (job: Job) => {
   content += `## Job Requirements\n\n`;
   content += `The following requirements were used to evaluate candidates:\n\n`;
   
-  job.requirements.forEach(req => {
-    content += `- **${req.description}** (Weight: ${req.weight}) - ${req.category}\n`;
-  });
+  if (job.requirements && job.requirements.length > 0) {
+    job.requirements.forEach(req => {
+      const category = req.category || 'General';
+      content += `- **${req.description}** (Weight: ${req.weight}) - ${category}\n`;
+    });
+  } else {
+    content += `No specific requirements defined for this position.\n`;
+  }
   
   return content;
 };
@@ -90,7 +103,7 @@ export const generateJobOverviewContent = (job: Job) => {
 export const generateComparisonSummaryContent = (rankedCandidates: Candidate[]) => {
   let content = `## Comparison Summary\n\n`;
   
-  if (rankedCandidates.length > 0) {
+  if (rankedCandidates && rankedCandidates.length > 0) {
     const topCandidate = rankedCandidates[0];
     content += `**Top candidate:** ${topCandidate.name} with an overall score of ${topCandidate.overallScore.toFixed(1)}/10\n\n`;
     
@@ -106,7 +119,7 @@ export const generateComparisonSummaryContent = (rankedCandidates: Candidate[]) 
         topCandidates.forEach((candidate, index) => {
           content += `${index + 1}. **${candidate.name}** (${candidate.overallScore.toFixed(1)}/10) - `;
           
-          if (candidate.strengths.length > 0) {
+          if (candidate.strengths && candidate.strengths.length > 0) {
             content += `Strongest in ${candidate.strengths[0].toLowerCase()}\n`;
           } else {
             content += `No specific strengths identified\n`;
@@ -129,7 +142,7 @@ export const generateComparisonSummaryContent = (rankedCandidates: Candidate[]) 
 export const generateRecommendationsContent = (rankedCandidates: Candidate[]) => {
   let content = `## Recommendations\n\n`;
   
-  if (rankedCandidates.length > 0) {
+  if (rankedCandidates && rankedCandidates.length > 0) {
     content += `Based on the analysis of the candidates' profiles and their match with the job requirements, the following recommendations are provided:\n\n`;
     
     // Recommend top candidate

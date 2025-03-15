@@ -10,6 +10,7 @@ import AdditionalPromptInput from '@/components/report/AdditionalPromptInput';
 import ReportPreview from '@/components/report/ReportPreview';
 import NoCandidatesMessage from '@/components/report/NoCandidatesMessage';
 import { Job } from '@/types/job.types';
+import { toast } from 'sonner';
 
 const ReportGeneration = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -71,21 +72,29 @@ const ReportGeneration = () => {
   };
 
   const handleGenerateReport = async () => {
-    if (!jobId || !job || selectedCandidates.size === 0) return;
+    if (!jobId || !job || selectedCandidates.size === 0) {
+      toast.error("Cannot generate report: Make sure job and candidates are selected");
+      return;
+    }
     
     setIsGenerating(true);
     
     try {
+      console.log('Generating report for candidates:', Array.from(selectedCandidates));
+      
       const report = await generateReport(
         jobId, 
         Array.from(selectedCandidates),
         additionalPrompt || undefined
       );
       
+      console.log('Report generated:', report);
+      
       // Navigate to the report view page
       navigate(`/jobs/${jobId}/report/${report.id}`);
     } catch (error) {
       console.error('Error generating report:', error);
+      toast.error('Failed to generate report. Please try again.');
     } finally {
       setIsGenerating(false);
     }

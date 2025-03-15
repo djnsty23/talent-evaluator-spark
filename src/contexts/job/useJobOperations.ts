@@ -1,7 +1,8 @@
+
 import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
-import { Job, Report, ContextFile } from '@/types/job.types';
+import { Job, Report } from '@/types/job.types';
 import { mockSaveData } from '@/utils/storage';
 import { generateReport } from '@/services/reportService';
 import { getUserId } from '@/utils/authUtils';
@@ -181,16 +182,23 @@ export function useJobOperations() {
     try {
       // Find the job
       const job = jobs.find(j => j.id === jobId);
-      if (!job) throw new Error('Job not found');
+      if (!job) {
+        throw new Error('Job not found');
+      }
+      
+      console.log('Generating report for job:', job.title);
+      console.log('Selected candidates:', candidateIds);
       
       // Create a report
       const report = await generateReport(job, candidateIds, additionalPrompt);
+      console.log('Report generated:', report);
       
       // Update local state
       setReports(prevReports => [...prevReports, report]);
       
       return report;
     } catch (err) {
+      console.error('Error in generateReportAction:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error generating report';
       setError(errorMessage);
       throw new Error(errorMessage);

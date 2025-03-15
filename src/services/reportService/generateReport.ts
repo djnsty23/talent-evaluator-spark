@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { generateReportContent } from './generateReportContent';
 import { linkCandidatesToReport } from './reportLinking';
+import { AIService } from '@/services/api';
 
 /**
  * Generate a new report for the given job and candidates
@@ -36,8 +37,51 @@ export const generateReport = async (
     // Log for debugging
     console.log(`Generating report for job: ${job.title}, with ${validCandidateIds.length} candidates`);
     
-    // Generate the report content
-    const reportContent = generateReportContent(job, validCandidateIds, additionalPrompt);
+    // Get selected candidates with their details
+    const selectedCandidates = validCandidateIds.map(id => {
+      const candidate = job.candidates.find(c => c.id === id);
+      if (!candidate) return null;
+      
+      return {
+        id: candidate.id,
+        name: candidate.name,
+        overallScore: candidate.overallScore,
+        strengths: candidate.strengths || [],
+        weaknesses: candidate.weaknesses || []
+      };
+    }).filter(Boolean);
+    
+    // Generate report content
+    let reportContent: string;
+    
+    try {
+      // Try to use the AI service first
+      console.log('Attempting to generate report using AI service');
+      
+      if (window.openAIKey) {
+        const aiResult = await AIService.generateReport(
+          {
+            title: job.title, 
+            company: job.company, 
+            description: job.description,
+            requirements: job.requirements
+          },
+          selectedCandidates as any[],
+          additionalPrompt
+        );
+        
+        reportContent = aiResult.content;
+        console.log('AI service generated report successfully');
+      } else {
+        // Fall back to local generation if no API key
+        console.log('No OpenAI key available, using local report generation');
+        reportContent = generateReportContent(job, validCandidateIds, additionalPrompt);
+      }
+    } catch (error) {
+      console.error('Error using AI service for report generation:', error);
+      // Fall back to local generation on error
+      reportContent = generateReportContent(job, validCandidateIds, additionalPrompt);
+    }
     
     // Create a report object
     const report: Report = {
@@ -50,6 +94,8 @@ export const generateReport = async (
       jobId: job.id,
       createdAt: new Date().toISOString(),
     };
+    
+    console.log('Report object created:', report);
     
     // Try to save to Supabase, but don't block if it fails
     try {
