@@ -1,11 +1,12 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { Job, Report } from '@/types/job.types';
+import { Job, Report, Candidate } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { generateReportContent } from './generateReportContent';
 import { linkCandidatesToReport } from './reportLinking';
 import { AIService } from '@/services/api';
+import { formatCandidatesForAI, formatJobForAI } from './formatters';
 
 /**
  * Generate a new report for the given job and candidates
@@ -25,9 +26,12 @@ export const generateReport = async (
       throw new Error('No candidates selected for report generation');
     }
     
+    // Create a deep copy of the job to avoid modifying the original
+    const jobCopy = JSON.parse(JSON.stringify(job));
+    
     // Ensure all selected candidates exist in the job
     const validCandidateIds = candidateIds.filter(id => 
-      job.candidates.some(c => c.id === id)
+      jobCopy.candidates.some(c => c.id === id)
     );
     
     if (validCandidateIds.length === 0) {
@@ -35,70 +39,81 @@ export const generateReport = async (
     }
     
     // Log for debugging
-    console.log(`Generating report for job: ${job.title}, with ${validCandidateIds.length} candidates`);
+    console.log(`Generating report for job: ${jobCopy.title}, with ${validCandidateIds.length} candidates`);
     
     // Get selected candidates with their details
     const selectedCandidates = validCandidateIds.map(id => {
-      const candidate = job.candidates.find(c => c.id === id);
-      if (!candidate) return null;
-      
-      return {
-        id: candidate.id,
-        name: candidate.name,
-        overallScore: candidate.overallScore,
-        strengths: candidate.strengths || [],
-        weaknesses: candidate.weaknesses || []
-      };
-    }).filter(Boolean);
+      return jobCopy.candidates.find(c => c.id === id) || null;
+    }).filter(Boolean) as Candidate[];
+    
+    if (selectedCandidates.length === 0) {
+      throw new Error('Failed to retrieve candidate data');
+    }
     
     // Generate report content
     let reportContent: string;
+    let reportData: any = null;
     
     try {
       // Try to use the AI service first
       console.log('Attempting to generate report using AI service');
       
       if (window.openAIKey) {
+        // Format job and candidates for the AI
+        const formattedJob = formatJobForAI(jobCopy);
+        const formattedCandidates = formatCandidatesForAI(selectedCandidates);
+        
+        if (!formattedJob) {
+          throw new Error('Failed to format job data for AI');
+        }
+        
+        console.log('Formatted data for AI:', { formattedJob, formattedCandidates });
+        
+        // Call the AI service
         const aiResult = await AIService.generateReport(
-          {
-            title: job.title, 
-            company: job.company, 
-            description: job.description,
-            requirements: job.requirements
-          },
-          selectedCandidates as any[],
+          formattedJob,
+          formattedCandidates,
           additionalPrompt
         );
         
         reportContent = aiResult.content;
+        reportData = {
+          candidateRankings: aiResult.candidateRankings,
+          topCandidates: aiResult.topCandidates,
+          comparisonMatrix: aiResult.comparisonMatrix
+        };
+        
         console.log('AI service generated report successfully');
       } else {
         // Fall back to local generation if no API key
         console.log('No OpenAI key available, using local report generation');
-        reportContent = generateReportContent(job, validCandidateIds, additionalPrompt);
+        reportContent = generateReportContent(jobCopy, validCandidateIds, additionalPrompt);
       }
     } catch (error) {
       console.error('Error using AI service for report generation:', error);
       // Fall back to local generation on error
-      reportContent = generateReportContent(job, validCandidateIds, additionalPrompt);
+      reportContent = generateReportContent(jobCopy, validCandidateIds, additionalPrompt);
     }
     
     // Create a report object
     const report: Report = {
       id: uuidv4(),
-      title: `Candidate Ranking Report for ${job.title}`,
-      summary: `Analysis of ${validCandidateIds.length} candidates for ${job.title} at ${job.company}`,
+      title: `Candidate Ranking Report for ${jobCopy.title}`,
+      summary: `Analysis of ${validCandidateIds.length} candidates for ${jobCopy.title} at ${jobCopy.company}`,
       content: reportContent,
       candidateIds: validCandidateIds,
       additionalPrompt,
-      jobId: job.id,
+      jobId: jobCopy.id,
       createdAt: new Date().toISOString(),
+      metadata: reportData
     };
     
     console.log('Report object created:', report);
     
-    // Try to save to Supabase, but don't block if it fails
+    // Try to save to Supabase
     try {
+      console.log('Saving report to Supabase:', report.id);
+      
       const { error } = await supabase.from('reports').insert({
         id: report.id,
         title: report.title,
@@ -111,11 +126,16 @@ export const generateReport = async (
         toast.error('Could not save report to database');
         // Continue execution - we'll at least return the report object even if DB save fails
       } else {
+        console.log('Report saved successfully to Supabase');
+        
         // Only try to link candidates if report was saved successfully
         await linkCandidatesToReport(report.id, validCandidateIds);
+        
+        toast.success('Report generated and saved successfully');
       }
     } catch (error) {
       console.error('Exception saving report to Supabase:', error);
+      toast.error('Failed to save report to database');
       // Continue execution
     }
     

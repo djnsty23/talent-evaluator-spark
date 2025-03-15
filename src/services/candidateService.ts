@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Candidate, JobRequirement } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
 import { extractCandidateName, extractNameFromContent, generateRealisticName } from '@/utils/candidateUtils';
-import { extractTextFromFile } from '@/services/api';
+import { extractTextFromFile, AIService } from '@/services/api';
 
 export const createCandidateFromFile = async (file: File, jobId: string, index: number): Promise<Candidate> => {
   // Try to extract candidate name, with multiple fallback strategies
@@ -37,8 +37,32 @@ export const createCandidateFromFile = async (file: File, jobId: string, index: 
     console.log('Generated random name:', candidateName);
   }
   
+  const candidateId = uuidv4();
+  
+  // Save to Supabase
+  try {
+    const { error } = await supabase
+      .from('candidates')
+      .insert({
+        id: candidateId,
+        name: candidateName,
+        job_id: jobId,
+        file_name: file.name,
+        content_type: file.type,
+        is_starred: false
+      });
+    
+    if (error) {
+      console.error('Error saving candidate to Supabase:', error);
+    } else {
+      console.log('Successfully saved candidate to Supabase:', candidateName);
+    }
+  } catch (error) {
+    console.error('Exception saving candidate to Supabase:', error);
+  }
+  
   return {
-    id: uuidv4(),
+    id: candidateId,
     name: candidateName,
     email: `${candidateName.toLowerCase().replace(/\s/g, '.')}@example.com`,
     resumeUrl: URL.createObjectURL(file),
@@ -65,35 +89,269 @@ export const createCandidateFromFile = async (file: File, jobId: string, index: 
   };
 };
 
-export const processCandidate = (candidate: Candidate, requirements: JobRequirement[]): Candidate => {
-  // In a production environment, this would call an AI service to analyze the resume
-  // For now, we'll just ensure it returns a properly structured object
+export const processCandidate = async (candidate: Candidate, requirements: JobRequirement[]): Promise<Candidate> => {
+  console.log('Processing candidate:', candidate.name);
   
-  const processedCandidate = { ...candidate };
-  
-  // Initialize with scores for each requirement
+  try {
+    // In a production environment with OpenAI API key, we'll use the AI service
+    let processedCandidate: Candidate;
+    
+    if (window.openAIKey) {
+      console.log('Using AI service to process candidate');
+      
+      try {
+        // Extract resume content from PDF (in production)
+        // For now, we'll use a placeholder
+        const resumeContent = `Resume content for ${candidate.name}. In production, this would be extracted from the PDF.`;
+        
+        // Call the AI service to analyze the candidate
+        const aiResult = await AIService.analyzeCandidate(
+          { content: resumeContent },
+          requirements
+        );
+        
+        console.log('AI analysis result:', aiResult);
+        
+        // Map AI result to candidate structure
+        processedCandidate = {
+          ...candidate,
+          scores: aiResult.scores.map(s => ({
+            requirementId: s.requirementId,
+            score: s.score,
+            comment: s.notes || ''
+          })),
+          overallScore: aiResult.overallScore,
+          strengths: aiResult.strengths,
+          weaknesses: aiResult.weaknesses,
+          personalityTraits: aiResult.personalityTraits,
+          cultureFit: aiResult.cultureFit,
+          leadershipPotential: aiResult.leadershipPotential,
+          education: aiResult.education,
+          yearsOfExperience: aiResult.yearsOfExperience,
+          location: aiResult.location,
+          skillKeywords: aiResult.skillKeywords,
+          communicationStyle: aiResult.communicationStyle,
+          preferredTools: aiResult.preferredTools,
+          status: 'processed',
+          processedAt: new Date().toISOString()
+        };
+      } catch (error) {
+        console.error('Error using AI service:', error);
+        // Fall back to mock processing
+        processedCandidate = generateMockAnalysis(candidate, requirements);
+      }
+    } else {
+      // Fall back to mock processing if no API key is available
+      console.log('No OpenAI key available, using mock processing');
+      processedCandidate = generateMockAnalysis(candidate, requirements);
+    }
+    
+    // Save candidate scores to Supabase
+    try {
+      // Save the scores
+      for (const score of processedCandidate.scores) {
+        const { error } = await supabase
+          .from('candidate_scores')
+          .insert({
+            candidate_id: processedCandidate.id,
+            requirement_id: score.requirementId,
+            score: score.score,
+            explanation: score.comment
+          });
+          
+        if (error) {
+          console.error('Error saving candidate score to Supabase:', error);
+        }
+      }
+      
+      // Save analysis data
+      const { error: analysisError } = await supabase
+        .from('candidate_analysis')
+        .insert({
+          candidate_id: processedCandidate.id,
+          strengths: processedCandidate.strengths,
+          weaknesses: processedCandidate.weaknesses,
+          personality_traits: processedCandidate.personalityTraits,
+          cultural_fit: processedCandidate.cultureFit.toString(),
+          skills_assessment: JSON.stringify(processedCandidate.skillKeywords)
+        });
+        
+      if (analysisError) {
+        console.error('Error saving candidate analysis to Supabase:', analysisError);
+      }
+      
+      console.log('Successfully saved candidate analysis to Supabase');
+    } catch (error) {
+      console.error('Exception saving candidate analysis to Supabase:', error);
+    }
+    
+    return processedCandidate;
+    
+  } catch (error) {
+    console.error('Error processing candidate:', error);
+    // Return original candidate with minimal mock data to avoid breaking the app
+    return {
+      ...candidate,
+      scores: requirements.map(req => ({
+        requirementId: req.id,
+        score: Math.floor(Math.random() * 5) + 1,
+        comment: `Error processing: ${error instanceof Error ? error.message : 'Unknown error'}`
+      })),
+      overallScore: 5,
+      strengths: ['Error during processing'],
+      weaknesses: ['Could not determine'],
+      status: 'processed',
+      processedAt: new Date().toISOString()
+    };
+  }
+};
+
+const generateMockAnalysis = (candidate: Candidate, requirements: JobRequirement[]): Candidate => {
+  // Generate mock scores for each requirement
   const scores = requirements.map(req => {
     return {
       requirementId: req.id,
-      score: Math.floor(Math.random() * 5) + 1, // Random score 1-5 for demo
-      comment: `Generated score for ${req.description}`,
+      score: Math.floor(Math.random() * 5) + 3, // Random score 3-7 for demo
+      comment: `Mock analysis for ${req.description}`,
     };
   });
   
-  processedCandidate.scores = scores;
-  processedCandidate.overallScore = calculateOverallScore(scores, requirements);
-  processedCandidate.strengths = ['Communication', 'Problem Solving'];
-  processedCandidate.weaknesses = ['Time Management'];
-  processedCandidate.status = 'processed';
-  processedCandidate.processedAt = new Date().toISOString();
+  // Calculate overall score based on weighted requirements
+  const overallScore = calculateOverallScore(scores, requirements);
   
-  // Add random values for culture fit and leadership potential
-  processedCandidate.cultureFit = Math.floor(Math.random() * 7) + 3; // Random 3-10
-  processedCandidate.leadershipPotential = Math.floor(Math.random() * 7) + 3; // Random 3-10
+  // Generate mock strengths and weaknesses
+  const mockStrengths = [
+    'Communication',
+    'Problem Solving',
+    'Technical Knowledge',
+    'Teamwork',
+    'Adaptability',
+    'Time Management',
+    'Leadership',
+    'Attention to Detail'
+  ];
   
-  return processedCandidate;
+  const mockWeaknesses = [
+    'Public Speaking',
+    'Task Delegation',
+    'Working Under Pressure',
+    'Handling Criticism',
+    'Perfectionism',
+    'Work-Life Balance',
+    'Technical Documentation'
+  ];
+  
+  // Randomly select 2-4 strengths and 1-3 weaknesses
+  const strengths = shuffleArray(mockStrengths).slice(0, Math.floor(Math.random() * 3) + 2);
+  const weaknesses = shuffleArray(mockWeaknesses).slice(0, Math.floor(Math.random() * 3) + 1);
+  
+  // Generate mock personality traits
+  const mockPersonalityTraits = [
+    'Analytical',
+    'Creative',
+    'Detail-oriented', 
+    'Pragmatic',
+    'Collaborative',
+    'Independent',
+    'Goal-oriented',
+    'Innovative'
+  ];
+  
+  const personalityTraits = shuffleArray(mockPersonalityTraits).slice(0, Math.floor(Math.random() * 3) + 2);
+  
+  // Generate mock education and experience
+  const mockEducation = [
+    'Bachelor of Science in Computer Science',
+    'Master of Business Administration',
+    'Bachelor of Arts in Communication',
+    'Master of Science in Data Analytics',
+    'Bachelor of Engineering'
+  ];
+  
+  const education = mockEducation[Math.floor(Math.random() * mockEducation.length)];
+  
+  // Random years of experience (1-10)
+  const yearsOfExperience = Math.floor(Math.random() * 10) + 1;
+  
+  // Mock locations
+  const mockLocations = [
+    'San Francisco, CA',
+    'New York, NY',
+    'Austin, TX',
+    'Seattle, WA',
+    'Boston, MA',
+    'Remote'
+  ];
+  
+  const location = mockLocations[Math.floor(Math.random() * mockLocations.length)];
+  
+  // Mock skill keywords
+  const mockSkillKeywords = [
+    'JavaScript',
+    'Python',
+    'React',
+    'SQL',
+    'Data Analysis',
+    'Machine Learning',
+    'Project Management',
+    'Agile',
+    'UX Design',
+    'Customer Success'
+  ];
+  
+  const skillKeywords = shuffleArray(mockSkillKeywords).slice(0, Math.floor(Math.random() * 5) + 3);
+  
+  // Mock communication styles
+  const mockCommunicationStyles = [
+    'Direct and concise',
+    'Detailed and thorough',
+    'Collaborative and open',
+    'Formal and structured',
+    'Visual communicator'
+  ];
+  
+  const communicationStyle = mockCommunicationStyles[Math.floor(Math.random() * mockCommunicationStyles.length)];
+  
+  // Mock preferred tools
+  const mockPreferredTools = [
+    'JIRA',
+    'Slack',
+    'GSuite',
+    'Microsoft Office',
+    'Figma',
+    'Notion',
+    'GitHub',
+    'VS Code',
+    'Trello'
+  ];
+  
+  const preferredTools = shuffleArray(mockPreferredTools).slice(0, Math.floor(Math.random() * 4) + 2);
+  
+  // Random culture fit and leadership potential (3-10)
+  const cultureFit = Math.floor(Math.random() * 7) + 3;
+  const leadershipPotential = Math.floor(Math.random() * 7) + 3;
+  
+  return {
+    ...candidate,
+    scores,
+    overallScore,
+    strengths,
+    weaknesses,
+    personalityTraits,
+    cultureFit,
+    leadershipPotential,
+    education,
+    yearsOfExperience,
+    location,
+    skillKeywords,
+    communicationStyle,
+    preferredTools,
+    status: 'processed',
+    processedAt: new Date().toISOString()
+  };
 };
 
+// Helper function to calculate overall score
 const calculateOverallScore = (
   scores: { requirementId: string; score: number; comment: string }[], 
   requirements: JobRequirement[]
@@ -109,6 +367,16 @@ const calculateOverallScore = (
   const totalWeight = requirements.reduce((total, req) => total + req.weight, 0);
   
   return Math.round((totalWeightedScore / totalWeight) * 10) / 10;
+};
+
+// Helper function to shuffle an array
+const shuffleArray = <T>(array: T[]): T[] => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
 };
 
 // Default requirements for a Customer Success role

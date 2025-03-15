@@ -33,10 +33,39 @@ interface AICandidateAnalysisResponse {
   strengths: string[];
   weaknesses: string[];
   notes: string;
+  personalityTraits: string[];
+  cultureFit: number;
+  leadershipPotential: number;
+  education: string;
+  yearsOfExperience: number;
+  location: string;
+  skillKeywords: string[];
+  communicationStyle: string;
+  preferredTools: string[];
 }
 
 interface AIReportGenerationResponse {
   content: string;
+  candidateRankings: {
+    id: string;
+    name: string;
+    overallScore: number;
+    rank: number;
+    keyStrengths: string[];
+    developmentAreas: string[];
+    fitAssessment: string;
+    recommendation: string;
+  }[];
+  topCandidates: string[];
+  comparisonMatrix: {
+    requirementId: string;
+    description: string;
+    candidateScores: {
+      candidateId: string;
+      candidateName: string;
+      score: number;
+    }[];
+  }[];
 }
 
 export class AIService {
@@ -175,7 +204,7 @@ export class AIService {
           messages: [
             {
               role: 'system',
-              content: `You are an AI specialized in HR and recruitment. Your task is to analyze a resume against job requirements.`
+              content: `You are an AI specialized in HR and recruitment. Your task is to analyze a resume against job requirements. You must return a complete JSON object with ALL fields filled out.`
             },
             {
               role: 'user',
@@ -199,10 +228,19 @@ export class AIService {
                 "overallScore": number from 1-10,
                 "strengths": ["Strength 1", "Strength 2", ...],
                 "weaknesses": ["Weakness 1", "Weakness 2", ...],
-                "notes": "Overall analysis notes"
+                "notes": "Overall analysis notes",
+                "personalityTraits": ["Trait 1", "Trait 2", ...],
+                "cultureFit": number from 1-10, 
+                "leadershipPotential": number from 1-10,
+                "education": "Education details",
+                "yearsOfExperience": number,
+                "location": "Location",
+                "skillKeywords": ["Skill 1", "Skill 2", ...],
+                "communicationStyle": "Description of communication style",
+                "preferredTools": ["Tool 1", "Tool 2", ...]
               }
               
-              Return ONLY the JSON object with no explanation or additional text.`
+              ALL fields are mandatory and must be filled with appropriate values. Return ONLY the JSON object with no explanation or additional text.`
             }
           ],
           temperature: 0.7,
@@ -234,13 +272,22 @@ export class AIService {
         }
       }
       
-      // Ensure the result has the expected structure
+      // Ensure the result has the expected structure with default values for missing fields
       const result: AICandidateAnalysisResponse = {
         scores: analysisResult.scores || [],
         overallScore: analysisResult.overallScore || 0,
         strengths: analysisResult.strengths || [],
         weaknesses: analysisResult.weaknesses || [],
         notes: analysisResult.notes || '',
+        personalityTraits: analysisResult.personalityTraits || [],
+        cultureFit: analysisResult.cultureFit || 5,
+        leadershipPotential: analysisResult.leadershipPotential || 5,
+        education: analysisResult.education || 'Not specified',
+        yearsOfExperience: analysisResult.yearsOfExperience || 0,
+        location: analysisResult.location || 'Not specified',
+        skillKeywords: analysisResult.skillKeywords || [],
+        communicationStyle: analysisResult.communicationStyle || 'Not specified',
+        preferredTools: analysisResult.preferredTools || []
       };
       
       return result;
@@ -270,6 +317,13 @@ export class AIService {
       overallScore: number;
       strengths: string[];
       weaknesses: string[];
+      scores: Array<{
+        requirementId: string;
+        score: number;
+        comment?: string;
+      }>;
+      cultureFit?: number;
+      leadershipPotential?: number;
     }>,
     additionalPrompt?: string
   ): Promise<AIReportGenerationResponse> {
@@ -298,7 +352,7 @@ export class AIService {
           messages: [
             {
               role: 'system',
-              content: `You are an AI specialized in HR and recruitment. Your task is to generate a candidate ranking report.`
+              content: `You are an AI specialized in HR and recruitment. Your task is to generate a detailed candidate ranking report with specific JSON structure.`
             },
             {
               role: 'user',
@@ -308,16 +362,59 @@ export class AIService {
               Company: ${jobInfo.company}
               Description: ${jobInfo.description}
               
+              Requirements:
+              ${jobInfo.requirements.map(r => `- ${r.description} (Weight: ${r.weight}, Required: ${r.isRequired ? 'Yes' : 'No'})`).join('\n')}
+              
               Candidates:
               ${sortedCandidates.map((c, i) => `
               ${i + 1}. ${c.name} (Score: ${c.overallScore}/10)
               Strengths: ${c.strengths.join(', ')}
               Weaknesses: ${c.weaknesses.join(', ')}
+              Culture Fit: ${c.cultureFit || 'N/A'}/10
+              Leadership: ${c.leadershipPotential || 'N/A'}/10
+              Requirement Scores: ${c.scores.map(s => {
+                const req = jobInfo.requirements.find(r => r.id === s.requirementId);
+                return req ? `${req.description}: ${s.score}/10` : '';
+              }).filter(Boolean).join(', ')}
               `).join('\n')}
               
               ${additionalPrompt ? `Additional context: ${additionalPrompt}` : ''}
               
-              Generate a detailed report in Markdown format that ranks the candidates, explains their strengths and weaknesses, and provides recommendations.`
+              Return a JSON response with the following structure:
+              {
+                "content": "Full markdown report content with detailed analysis",
+                "candidateRankings": [
+                  {
+                    "id": "candidate_id",
+                    "name": "Candidate Name",
+                    "overallScore": number,
+                    "rank": number,
+                    "keyStrengths": ["Strength 1", "Strength 2", ...],
+                    "developmentAreas": ["Area 1", "Area 2", ...],
+                    "fitAssessment": "Brief assessment of overall fit",
+                    "recommendation": "Hire/Consider/Reject recommendation with rationale"
+                  },
+                  ...
+                ],
+                "topCandidates": ["candidate_id1", "candidate_id2", "candidate_id3"],
+                "comparisonMatrix": [
+                  {
+                    "requirementId": "requirement_id",
+                    "description": "Requirement description",
+                    "candidateScores": [
+                      {
+                        "candidateId": "candidate_id",
+                        "candidateName": "Candidate Name",
+                        "score": number
+                      },
+                      ...
+                    ]
+                  },
+                  ...
+                ]
+              }
+              
+              ALL fields must be completed with appropriate values. Your response should ONLY contain valid JSON with no additional text.`
             }
           ],
           temperature: 0.7,
@@ -336,7 +433,31 @@ export class AIService {
         throw new Error('No content returned from API');
       }
       
-      return { content };
+      // Parse JSON response
+      let reportData: AIReportGenerationResponse;
+      try {
+        reportData = JSON.parse(content);
+      } catch (e) {
+        // Try to extract JSON if parsing fails
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          reportData = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('Could not parse report data from API response');
+        }
+      }
+      
+      // Ensure all expected properties exist
+      if (!reportData.content) {
+        throw new Error('Missing report content in API response');
+      }
+      
+      return {
+        content: reportData.content,
+        candidateRankings: reportData.candidateRankings || [],
+        topCandidates: reportData.topCandidates || [],
+        comparisonMatrix: reportData.comparisonMatrix || []
+      };
     } catch (error) {
       console.error('Error generating report:', error);
       throw new Error('Failed to generate candidate ranking report');

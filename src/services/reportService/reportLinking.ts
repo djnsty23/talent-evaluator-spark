@@ -11,6 +11,19 @@ export const linkCandidatesToReport = async (reportId: string, candidateIds: str
   }
   
   try {
+    console.log(`Linking ${candidateIds.length} candidates to report ${reportId}`);
+    
+    // First, clear any existing links to avoid duplicates
+    const { error: deleteError } = await supabase
+      .from('report_candidates')
+      .delete()
+      .eq('report_id', reportId);
+    
+    if (deleteError) {
+      console.error('Error clearing existing candidate links:', deleteError);
+      // Continue anyway to try the new links
+    }
+    
     // Create an array of objects for batch insert
     const candidateLinks = candidateIds.map(candidateId => ({
       report_id: reportId,
@@ -27,7 +40,7 @@ export const linkCandidatesToReport = async (reportId: string, candidateIds: str
       throw new Error(`Failed to link candidates to report: ${error.message}`);
     }
     
-    console.log(`Linked ${candidateIds.length}/${candidateIds.length} candidates to report ${reportId}`);
+    console.log(`Successfully linked ${candidateIds.length}/${candidateIds.length} candidates to report ${reportId}`);
   } catch (error) {
     console.error('Exception linking candidates to report:', error);
     // We don't throw here to prevent blocking the report generation flow
@@ -43,6 +56,8 @@ export const getCandidateIdsForReport = async (reportId: string): Promise<string
   }
   
   try {
+    console.log(`Fetching candidate IDs for report ${reportId}`);
+    
     const { data, error } = await supabase
       .from('report_candidates')
       .select('candidate_id')
@@ -52,6 +67,8 @@ export const getCandidateIdsForReport = async (reportId: string): Promise<string
       console.error('Error fetching candidate IDs for report:', error);
       return [];
     }
+    
+    console.log(`Found ${data.length} candidates linked to report ${reportId}`);
     
     return data.map(row => row.candidate_id);
   } catch (error) {

@@ -26,20 +26,31 @@ export const formatCandidateScores = (candidate: Candidate, job: Job) => {
  */
 export const formatCandidatesForAI = (candidates: Candidate[]) => {
   if (!candidates || !Array.isArray(candidates)) {
+    console.warn('Invalid candidates data for AI formatting');
     return [];
   }
   
-  return candidates.map(candidate => ({
-    id: candidate.id,
-    name: candidate.name,
-    overallScore: candidate.overallScore || 0,
-    strengths: candidate.strengths || [],
-    weaknesses: candidate.weaknesses || [],
-    education: candidate.education || '',
-    yearsOfExperience: candidate.yearsOfExperience || 0,
-    location: candidate.location || '',
-    scores: candidate.scores || [],
-  }));
+  console.log('Formatting candidates for AI:', candidates);
+  
+  return candidates.map(candidate => {
+    // Ensure all fields have valid values, with defaults when needed
+    return {
+      id: candidate.id,
+      name: candidate.name || 'Unnamed Candidate',
+      overallScore: candidate.overallScore || 0,
+      strengths: candidate.strengths || [],
+      weaknesses: candidate.weaknesses || [],
+      education: candidate.education || '',
+      yearsOfExperience: candidate.yearsOfExperience || 0,
+      location: candidate.location || '',
+      scores: candidate.scores || [],
+      cultureFit: candidate.cultureFit || 0,
+      leadershipPotential: candidate.leadershipPotential || 0,
+      skillKeywords: candidate.skillKeywords || [],
+      personalityTraits: candidate.personalityTraits || [],
+      communicationStyle: candidate.communicationStyle || ''
+    };
+  });
 };
 
 /**
@@ -47,8 +58,11 @@ export const formatCandidatesForAI = (candidates: Candidate[]) => {
  */
 export const formatJobForAI = (job: Job) => {
   if (!job) {
+    console.warn('Invalid job data for AI formatting');
     return null;
   }
+  
+  console.log('Formatting job for AI:', job);
   
   return {
     id: job.id,

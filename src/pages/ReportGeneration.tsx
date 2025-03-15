@@ -30,7 +30,7 @@ const ReportGeneration = () => {
         
         // Initially select all processed candidates
         const processedCandidates = foundJob.candidates
-          .filter(c => c.scores.length > 0)
+          .filter(c => c.scores && c.scores.length > 0)
           .map(c => c.id);
         setSelectedCandidates(new Set(processedCandidates));
       } else {
@@ -45,12 +45,12 @@ const ReportGeneration = () => {
       // Update selected candidates based on selection mode
       if (selectionMode === 'all') {
         const processedCandidates = job.candidates
-          .filter(c => c.scores.length > 0)
+          .filter(c => c.scores && c.scores.length > 0)
           .map(c => c.id);
         setSelectedCandidates(new Set(processedCandidates));
       } else if (selectionMode === 'starred') {
         const starredCandidates = job.candidates
-          .filter(c => c.isStarred && c.scores.length > 0)
+          .filter(c => c.isStarred && c.scores && c.scores.length > 0)
           .map(c => c.id);
         setSelectedCandidates(new Set(starredCandidates));
       }
@@ -82,8 +82,11 @@ const ReportGeneration = () => {
     try {
       console.log('Generating report for candidates:', Array.from(selectedCandidates));
       
+      // Use a deep clone of job to prevent any issues with modifying the original
+      const jobClone = JSON.parse(JSON.stringify(job));
+      
       const report = await generateReport(
-        jobId, 
+        jobClone, 
         Array.from(selectedCandidates),
         additionalPrompt || undefined
       );
@@ -113,7 +116,7 @@ const ReportGeneration = () => {
     );
   }
 
-  const processedCandidates = job.candidates.filter(c => c.scores.length > 0);
+  const processedCandidates = job.candidates.filter(c => c.scores && c.scores.length > 0);
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
