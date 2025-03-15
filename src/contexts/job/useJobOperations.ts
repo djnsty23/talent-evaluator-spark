@@ -37,9 +37,13 @@ export function useJobOperations() {
         requirements: jobData.requirements || [],
         candidates: [],
         contextFiles: jobData.contextFiles || [],
-        userId: currentUserId, // Use the actual user ID from auth
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        user: {  // Changed from userId to user object as per Job type
+          id: currentUserId,
+          name: '',
+          email: ''
+        }
       };
 
       // Save to Supabase

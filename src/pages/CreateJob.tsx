@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
@@ -76,7 +75,6 @@ const CreateJob = () => {
     setLoading(true);
     
     try {
-      // Convert browser File objects to ContextFile objects that our Job type expects
       const contextFileObjects: ContextFile[] = contextFiles.map((file, index) => ({
         id: `context-${index}`,
         name: file.name,
@@ -84,9 +82,33 @@ const CreateJob = () => {
         type: file.type
       }));
       
-      // Create a new job with initial data
+      let salaryObject;
+      if (formData.salary) {
+        salaryObject = {
+          min: 0,
+          max: 0,
+          currency: 'USD'
+        };
+        
+        const salaryMatch = formData.salary.match(/(\d[,\d]*\.?\d*)\s*-\s*(\d[,\d]*\.?\d*)/);
+        if (salaryMatch) {
+          const min = Number(salaryMatch[1].replace(/,/g, ''));
+          const max = Number(salaryMatch[2].replace(/,/g, ''));
+          
+          const currencyMatch = formData.salary.match(/([^\s\d,]+)/);
+          const currency = currencyMatch ? currencyMatch[1] : 'USD';
+          
+          salaryObject = {
+            min,
+            max,
+            currency
+          };
+        }
+      }
+      
       const newJob = await createJob({
         ...formData,
+        salary: salaryObject,
         contextFiles: contextFileObjects,
       });
       
@@ -273,7 +295,6 @@ const CreateJob = () => {
                     after creating the job.
                   </p>
                   
-                  {/* Placeholder for AI-generated requirements */}
                   <div className="border rounded-md p-6 bg-muted/20">
                     <div className="flex justify-between items-center mb-4">
                       <p className="text-sm text-muted-foreground italic">
