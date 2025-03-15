@@ -13,6 +13,7 @@ import FileUploader from '@/components/FileUploader';
 import { extractTextFromFile, AIService } from '@/services/api';
 import { toast } from 'sonner';
 import OpenAIKeyInput from '@/components/OpenAIKeyInput';
+import { ContextFile } from '@/types/job.types';
 
 const CreateJob = () => {
   const navigate = useNavigate();
@@ -75,15 +76,18 @@ const CreateJob = () => {
     setLoading(true);
     
     try {
+      // Convert browser File objects to ContextFile objects that our Job type expects
+      const contextFileObjects: ContextFile[] = contextFiles.map((file, index) => ({
+        id: `context-${index}`,
+        name: file.name,
+        content: extractedContexts[index] || '',
+        type: file.type
+      }));
+      
       // Create a new job with initial data
       const newJob = await createJob({
         ...formData,
-        contextFiles: contextFiles.map((file, index) => ({
-          id: `context-${index}`,
-          name: file.name,
-          content: extractedContexts[index] || '',
-          type: file.type
-        })),
+        contextFiles: contextFileObjects,
       });
       
       toast.success('Job created successfully!');

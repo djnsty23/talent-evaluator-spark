@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
-import { Job, Report } from './types';
+import { Job, Report, ContextFile } from '@/types/job.types';
 import { mockSaveData } from '@/utils/storage';
 import { generateReport } from '@/services/reportService';
 import { getUserId } from '@/utils/authUtils';
