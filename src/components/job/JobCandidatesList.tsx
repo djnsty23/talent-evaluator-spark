@@ -1,10 +1,14 @@
 
+import { useState } from 'react';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Upload, Star, FileText } from 'lucide-react';
+import { Upload, Star, FileText, Trash2 } from 'lucide-react';
 import { Job } from '@/types/job.types';
+import { useJob } from '@/contexts/job/JobContext';
+import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface JobCandidatesListProps {
   job: Job;
@@ -17,6 +21,25 @@ const JobCandidatesList = ({
   handleUploadCandidates,
   handleAnalyzeCandidate
 }: JobCandidatesListProps) => {
+  const { deleteCandidate } = useJob();
+  const [candidateToDelete, setCandidateToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteCandidate = async (candidateId: string) => {
+    setIsDeleting(true);
+    
+    try {
+      await deleteCandidate(job.id, candidateId);
+      toast.success('Candidate deleted successfully');
+    } catch (error) {
+      console.error('Error deleting candidate:', error);
+      toast.error('Failed to delete candidate');
+    } finally {
+      setIsDeleting(false);
+      setCandidateToDelete(null);
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -96,12 +119,22 @@ const JobCandidatesList = ({
                       </div>
                     </div>
                     
-                    <Button
-                      onClick={() => handleAnalyzeCandidate(candidate.id)}
-                      className="w-full"
-                    >
-                      View Detailed Analysis
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleAnalyzeCandidate(candidate.id)}
+                        className="flex-1"
+                      >
+                        View Detailed Analysis
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon" 
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => setCandidateToDelete(candidate.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -121,6 +154,16 @@ const JobCandidatesList = ({
           </div>
         )}
       </CardContent>
+
+      <ConfirmDialog 
+        isOpen={!!candidateToDelete}
+        title="Delete Candidate"
+        description="Are you sure you want to delete this candidate? This action cannot be undone."
+        onConfirm={() => candidateToDelete && handleDeleteCandidate(candidateToDelete)}
+        onCancel={() => setCandidateToDelete(null)}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </Card>
   );
 };
