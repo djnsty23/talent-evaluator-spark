@@ -380,7 +380,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_candidate_scores_for_job: {
+        Args: {
+          job_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
