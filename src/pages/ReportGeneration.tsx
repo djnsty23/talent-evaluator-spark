@@ -9,11 +9,12 @@ import CandidateSelection from '@/components/report/CandidateSelection';
 import AdditionalPromptInput from '@/components/report/AdditionalPromptInput';
 import ReportPreview from '@/components/report/ReportPreview';
 import NoCandidatesMessage from '@/components/report/NoCandidatesMessage';
+import { Job } from '@/types/job.types';
 
 const ReportGeneration = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const { jobs, isLoading, generateReport } = useJob();
-  const [job, setJob] = useState<null>(null);
+  const [job, setJob] = useState<Job | null>(null);
   const [selectedCandidates, setSelectedCandidates] = useState<Set<string>>(new Set());
   const [selectionMode, setSelectionMode] = useState<'all' | 'starred' | 'custom'>('all');
   const [additionalPrompt, setAdditionalPrompt] = useState('');
