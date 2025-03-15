@@ -1,6 +1,8 @@
-
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { v4 as uuidv4 } from 'uuid';
+import { JobRequirement } from '@/types/job.types';
+import { getUserId } from '@/utils/authUtils';
 
 interface AIAnalysisRequest {
   content?: string;
@@ -33,6 +35,13 @@ interface AICandidateAnalysisResponse {
   strengths: string[];
   weaknesses: string[];
   notes: string;
+  cultureFit: number;
+  cultureFitNotes: string;
+  leadershipPotential: number;
+  leadershipNotes: string;
+  technicalSkills: string[];
+  softSkills: string[];
+  experienceEvaluation: string;
 }
 
 interface AIReportGenerationResponse {
@@ -48,6 +57,13 @@ export class AIService {
       if (!window.openAIKey) {
         toast.error('Please set your OpenAI API key first');
         throw new Error('OpenAI API key not set');
+      }
+      
+      // Get current user ID for RLS compliance
+      const currentUserId = await getUserId();
+      if (!currentUserId) {
+        toast.error('You must be logged in to generate requirements');
+        throw new Error('User not authenticated');
       }
       
       const description = jobInfo.jobInfo?.description || '';
@@ -128,12 +144,14 @@ export class AIService {
       }
       
       // Validate and format the requirements
-      const requirements = requirementsArray.map((req: any, index: number) => ({
-        id: `req_${Date.now()}_${index}`,
+      const requirements = requirementsArray.map((req: any) => ({
+        id: uuidv4(),
+        original_id: uuidv4(),
         category: req.category || 'Technical Skills',
         description: req.description || 'Requirement',
         weight: typeof req.weight === 'number' ? req.weight : 7,
         isRequired: typeof req.isRequired === 'boolean' ? req.isRequired : true,
+        user_id: currentUserId,
       }));
       
       return { requirements };
@@ -175,38 +193,63 @@ export class AIService {
           messages: [
             {
               role: 'system',
-              content: `You are an AI specialized in HR and recruitment. Your task is to analyze a resume against job requirements.`
+              content: `You are an AI specialized in HR and recruitment evaluation. Your task is to perform a comprehensive analysis of a candidate's resume against specific job requirements.
+
+Your analysis should be thorough and standardized across all candidates, focusing on:
+
+1. Scoring each requirement on a scale of 1-10, with clear explanations
+2. Determining overall candidate fit with a weighted score
+3. Identifying key strengths and weaknesses with specific examples from the resume
+4. Evaluating culture fit based on past experiences and achievements
+5. Assessing leadership potential based on role progression and responsibilities
+6. Structured evaluation of technical skills, soft skills, and experience
+
+Ensure that similar skills are evaluated consistently across all candidates for fair comparison.`
             },
             {
               role: 'user',
               content: `Analyze the following resume against these job requirements:
               
-              Resume: ${candidateData.content || 'No resume content provided'}
-              
-              Requirements:
-              ${requirements.map(req => `- ${req.description} (Weight: ${req.weight}, Required: ${req.isRequired})`).join('\n')}
-              
-              Format your response ONLY as a JSON object with EXACTLY this structure:
-              {
-                "scores": [
-                  {
-                    "requirementId": "req_id",
-                    "score": number from 1-10,
-                    "notes": "Explanation of score"
-                  },
-                  ...
-                ],
-                "overallScore": number from 1-10,
-                "strengths": ["Strength 1", "Strength 2", ...],
-                "weaknesses": ["Weakness 1", "Weakness 2", ...],
-                "notes": "Overall analysis notes"
-              }
-              
-              Return ONLY the JSON object with no explanation or additional text.`
+Resume:
+${candidateData.content || 'No resume content provided'}
+
+Job Requirements:
+${requirements.map(req => `- ${req.description} (Weight: ${req.weight}, Required: ${req.isRequired}, Category: ${req.category})`).join('\n')}
+
+Provide a detailed analysis with the following structure (return as JSON):
+{
+  "scores": [
+    {
+      "requirementId": "req_id",
+      "score": number from 1-10,
+      "notes": "Detailed explanation of the score with specific examples from the resume"
+    },
+    ...
+  ],
+  "overallScore": number from 1-10,
+  "strengths": ["Specific strength 1", "Specific strength 2", ...],
+  "weaknesses": ["Specific weakness 1", "Specific weakness 2", ...],
+  "cultureFit": {
+    "score": number from 1-10,
+    "notes": "Analysis of cultural fit based on past experiences"
+  },
+  "leadershipPotential": {
+    "score": number from 1-10,
+    "notes": "Analysis of leadership potential"
+  },
+  "skillAssessment": {
+    "technicalSkills": ["Skill 1", "Skill 2", ...],
+    "softSkills": ["Skill 1", "Skill 2", ...],
+    "experienceEvaluation": "Evaluation of relevant experience"
+  },
+  "notes": "Overall comprehensive analysis"
+}
+
+Return ONLY the JSON object with no explanation or additional text.`
             }
           ],
           temperature: 0.7,
-          max_tokens: 2000
+          max_tokens: 2500
         })
       });
       
@@ -234,13 +277,20 @@ export class AIService {
         }
       }
       
-      // Ensure the result has the expected structure
+      // Ensure the result has the expected structure and handle new fields
       const result: AICandidateAnalysisResponse = {
         scores: analysisResult.scores || [],
         overallScore: analysisResult.overallScore || 0,
         strengths: analysisResult.strengths || [],
         weaknesses: analysisResult.weaknesses || [],
         notes: analysisResult.notes || '',
+        cultureFit: analysisResult.cultureFit?.score || 0,
+        cultureFitNotes: analysisResult.cultureFit?.notes || '',
+        leadershipPotential: analysisResult.leadershipPotential?.score || 0,
+        leadershipNotes: analysisResult.leadershipPotential?.notes || '',
+        technicalSkills: analysisResult.skillAssessment?.technicalSkills || [],
+        softSkills: analysisResult.skillAssessment?.softSkills || [],
+        experienceEvaluation: analysisResult.skillAssessment?.experienceEvaluation || ''
       };
       
       return result;
