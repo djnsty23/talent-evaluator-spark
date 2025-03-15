@@ -3,11 +3,12 @@ import { v4 as uuidv4 } from 'uuid';
 import { Candidate } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
 import { createCandidateFromFile } from './createCandidate';
+import { toast } from 'sonner'; // Add import for toast
 
 /**
  * Upload candidate files for a job
  */
-export const uploadCandidateFiles = async (jobId: string, files: File[]): Promise<Candidate[]> {
+export const uploadCandidateFiles = async (jobId: string, files: File[]): Promise<Candidate[]> => {
   try {
     console.log(`Uploading ${files.length} candidates for job ${jobId}`);
     
@@ -31,7 +32,7 @@ export const uploadCandidateFiles = async (jobId: string, files: File[]): Promis
 /**
  * Star a candidate
  */
-export const starCandidate = async (jobId: string, candidateId: string, isStarred: boolean): Promise<void> {
+export const starCandidate = async (jobId: string, candidateId: string, isStarred: boolean): Promise<void> => {
   try {
     console.log(`Starring candidate ${candidateId} for job ${jobId}: ${isStarred}`);
     
@@ -55,7 +56,7 @@ export const starCandidate = async (jobId: string, candidateId: string, isStarre
 /**
  * Delete a candidate
  */
-export const deleteCandidate = async (jobId: string, candidateId: string): Promise<void> {
+export const deleteCandidate = async (jobId: string, candidateId: string): Promise<void> => {
   try {
     console.log(`Deleting candidate ${candidateId} from job ${jobId}`);
     
