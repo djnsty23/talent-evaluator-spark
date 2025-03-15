@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Job, Report } from './types';
 import { mockSaveData } from '@/utils/storage';
 import { generateReport } from '@/services/reportService';
+import { getUserId } from '@/utils/authUtils';
 
 export function useJobOperations() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -17,6 +18,13 @@ export function useJobOperations() {
   const createJob = useCallback(async (jobData: Partial<Job>): Promise<Job> => {
     setIsLoading(true);
     try {
+      // Get the authenticated user ID
+      const currentUserId = await getUserId();
+      
+      if (!currentUserId) {
+        throw new Error('You must be logged in to create a job');
+      }
+
       const newJob: Job = {
         id: uuidv4(),
         title: jobData.title || 'Untitled Job',
@@ -28,7 +36,7 @@ export function useJobOperations() {
         requirements: jobData.requirements || [],
         candidates: [],
         contextFiles: jobData.contextFiles || [],
-        userId: 'user_1', // This will be replaced with the actual user ID if available
+        userId: currentUserId, // Use the actual user ID from auth
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

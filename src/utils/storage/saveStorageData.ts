@@ -2,6 +2,7 @@
 import { Job, Report } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getUserId } from '@/utils/authUtils';
 
 /**
  * Save data to Supabase
@@ -29,23 +30,28 @@ export const saveStorageData = async (data: { jobs?: Job[], reports?: Report[] }
  * Save jobs to Supabase
  */
 const saveJobs = async (jobs: Job[]): Promise<void> => {
+  const currentUserId = await getUserId();
+  if (!currentUserId) {
+    console.error('No authenticated user found when saving jobs');
+    toast.error('You must be logged in to save jobs');
+    return;
+  }
+
   for (const job of jobs) {
-    // Check if userId exists and if it's in UUID format
-    const userId = job.userId && job.userId !== 'user_1' 
-      ? job.userId 
-      : null; // Use null if userId is not a valid UUID
+    // Always use the current user's ID from auth, not the one stored in the job
+    // This ensures we comply with RLS policies
     
     const { error } = await supabase
       .from('jobs')
       .upsert({ 
         id: job.id,
-        title: job.title,
-        company: job.company,
-        description: job.description,
-        location: job.location,
-        department: job.department,
-        salary: job.salary, // Supabase can handle string to jsonb conversion
-        user_id: userId // Use null if userId is not a valid UUID
+        title: job.title || 'Untitled Job',
+        company: job.company || '',
+        description: job.description || '',
+        location: job.location || '',
+        department: job.department || '',
+        salary: job.salary || null,
+        user_id: currentUserId
       });
     
     if (error) {

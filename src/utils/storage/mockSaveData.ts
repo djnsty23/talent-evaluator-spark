@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { getUserId } from '@/utils/authUtils';
 
 /**
  * Save a single entity to Supabase
@@ -37,21 +38,25 @@ export const mockSaveData = async (data: any): Promise<void> => {
  * Save job data to Supabase
  */
 const saveJobData = async (data: any): Promise<void> => {
-  // Check if userId exists and if it's in UUID format  
-  const userId = data.userId && data.userId !== 'user_1' 
-    ? data.userId 
-    : null; // Use null if userId is not a valid UUID
+  // Get the current authenticated user ID
+  const currentUserId = await getUserId();
+  
+  if (!currentUserId) {
+    console.error('No authenticated user found when saving job');
+    throw new Error('You must be logged in to save jobs');
+  }
 
   const { error } = await supabase
     .from('jobs')
     .upsert({ 
       id: data.id,
-      title: data.title,
-      company: data.company,
-      description: data.description,
-      location: data.location,
-      department: data.department,
-      user_id: userId // Use null instead of 'user_1'
+      title: data.title || 'Untitled Job',
+      company: data.company || '',
+      description: data.description || '',
+      location: data.location || '',
+      department: data.department || '',
+      salary: data.salary || null,
+      user_id: currentUserId // Use the current user ID from auth
     });
   
   if (error) {

@@ -78,6 +78,12 @@ const CreateJob = () => {
       // Create a new job with initial data
       const newJob = await createJob({
         ...formData,
+        contextFiles: contextFiles.map((file, index) => ({
+          id: `context-${index}`,
+          name: file.name,
+          content: extractedContexts[index] || '',
+          type: file.type
+        })),
       });
       
       toast.success('Job created successfully!');
