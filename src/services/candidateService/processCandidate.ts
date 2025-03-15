@@ -3,6 +3,7 @@ import { Candidate, JobRequirement, RequirementScore } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
 import { AIService } from '@/services/api';
 import { generateMockAnalysis } from './mockDataGenerator';
+import { v4 as uuidv4 } from 'uuid';
 
 // Helper function to check if a string is a valid UUID
 export function isValidUUID(id: string): boolean {
@@ -36,14 +37,53 @@ export const processCandidate = async (candidate: Candidate, requirements: JobRe
         
         console.log('AI analysis result:', aiResult);
         
-        // Map AI result to candidate structure
+        // Create a map of requirement IDs for quick lookup
+        const requirementMap = new Map<string | number, JobRequirement>();
+        requirements.forEach(req => {
+          requirementMap.set(req.id, req);
+        });
+        
+        // Map AI result to candidate structure, ensuring we use valid UUID requirement IDs
+        const validScores: RequirementScore[] = [];
+        
+        if (aiResult.scores && Array.isArray(aiResult.scores)) {
+          // Try to map the AI results to our requirements
+          aiResult.scores.forEach((score, index) => {
+            // Find the matching requirement for this score
+            // The AI might return scores with IDs like "req_1", "req1", or just "1"
+            // Try different potential mappings
+            let requirementId: string | undefined;
+            
+            if (score.requirementId && requirementMap.has(score.requirementId)) {
+              // Direct match (ideal scenario)
+              requirementId = score.requirementId as string;
+            } else if (index < requirements.length) {
+              // Fall back to index-based mapping
+              requirementId = requirements[index].id;
+            }
+            
+            if (requirementId && isValidUUID(requirementId)) {
+              validScores.push({
+                requirementId,
+                score: score.score,
+                comment: score.notes || ''
+              });
+            } else {
+              console.log(`Invalid requirement ID format: ${score.requirementId} - using index-based mapping`);
+              if (index < requirements.length) {
+                validScores.push({
+                  requirementId: requirements[index].id,
+                  score: score.score,
+                  comment: score.notes || ''
+                });
+              }
+            }
+          });
+        }
+        
         processedCandidate = {
           ...candidate,
-          scores: aiResult.scores.map(s => ({
-            requirementId: s.requirementId,
-            score: s.score,
-            comment: s.notes || ''
-          })),
+          scores: validScores,
           overallScore: aiResult.overallScore,
           strengths: aiResult.strengths,
           weaknesses: aiResult.weaknesses,
@@ -72,12 +112,63 @@ export const processCandidate = async (candidate: Candidate, requirements: JobRe
     
     // Save candidate scores to Supabase
     try {
+      // First check if analysis already exists for this candidate
+      const { data: existingAnalysis } = await supabase
+        .from('candidate_analysis')
+        .select('candidate_id')
+        .eq('candidate_id', processedCandidate.id)
+        .single();
+      
+      if (!existingAnalysis) {
+        // Save analysis data if it doesn't exist yet
+        const { error: analysisError } = await supabase
+          .from('candidate_analysis')
+          .insert({
+            candidate_id: processedCandidate.id,
+            strengths: processedCandidate.strengths,
+            weaknesses: processedCandidate.weaknesses,
+            personality_traits: processedCandidate.personalityTraits,
+            cultural_fit: processedCandidate.cultureFit.toString(),
+            skills_assessment: JSON.stringify(processedCandidate.skillKeywords)
+          });
+          
+        if (analysisError) {
+          console.error('Error saving candidate analysis to Supabase:', analysisError);
+        } else {
+          console.log('Successfully saved candidate analysis to Supabase');
+        }
+      } else {
+        // Update analysis if it already exists
+        const { error: updateError } = await supabase
+          .from('candidate_analysis')
+          .update({
+            strengths: processedCandidate.strengths,
+            weaknesses: processedCandidate.weaknesses,
+            personality_traits: processedCandidate.personalityTraits,
+            cultural_fit: processedCandidate.cultureFit.toString(),
+            skills_assessment: JSON.stringify(processedCandidate.skillKeywords),
+            updated_at: new Date().toISOString()
+          })
+          .eq('candidate_id', processedCandidate.id);
+          
+        if (updateError) {
+          console.error('Error updating candidate analysis in Supabase:', updateError);
+        } else {
+          console.log('Successfully updated candidate analysis in Supabase');
+        }
+      }
+      
+      // Delete previous scores for this candidate to avoid duplicates
+      await supabase
+        .from('candidate_scores')
+        .delete()
+        .eq('candidate_id', processedCandidate.id);
+      
       // Save the scores
       for (const score of processedCandidate.scores) {
-        // Fix for the UUID error - ensure we're using proper UUIDs
-        // If requirementId doesn't look like a UUID, skip saving to DB or generate a proper UUID
+        // Skip saving if requirementId isn't a valid UUID
         if (!isValidUUID(score.requirementId)) {
-          console.error(`Invalid requirement ID format: ${score.requirementId} - skipping DB save`);
+          console.log(`Invalid requirement ID format: ${score.requirementId} - skipping DB save`);
           continue;
         }
         
@@ -95,23 +186,6 @@ export const processCandidate = async (candidate: Candidate, requirements: JobRe
         }
       }
       
-      // Save analysis data
-      const { error: analysisError } = await supabase
-        .from('candidate_analysis')
-        .insert({
-          candidate_id: processedCandidate.id,
-          strengths: processedCandidate.strengths,
-          weaknesses: processedCandidate.weaknesses,
-          personality_traits: processedCandidate.personalityTraits,
-          cultural_fit: processedCandidate.cultureFit.toString(),
-          skills_assessment: JSON.stringify(processedCandidate.skillKeywords)
-        });
-        
-      if (analysisError) {
-        console.error('Error saving candidate analysis to Supabase:', analysisError);
-      }
-      
-      console.log('Successfully saved candidate analysis to Supabase');
     } catch (error) {
       console.error('Exception saving candidate analysis to Supabase:', error);
     }

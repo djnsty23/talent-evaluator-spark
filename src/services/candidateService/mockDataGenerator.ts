@@ -1,182 +1,131 @@
 
-import { Candidate, JobRequirement, RequirementScore } from '@/types/job.types';
+import { v4 as uuidv4 } from 'uuid';
+import { Candidate, JobRequirement } from '@/types/job.types';
 
 /**
- * Generate mock analysis data for a candidate
+ * Generate mock data for candidate analysis
  */
-export const generateMockAnalysis = (candidate: Candidate, requirements: JobRequirement[]): Candidate => {
-  // Generate mock scores for each requirement
-  const scores = requirements.map(req => {
-    return {
-      requirementId: req.id, // Ensure this is a proper UUID
-      score: Math.floor(Math.random() * 5) + 3, // Random score 3-7 for demo
-      comment: `Mock analysis for ${req.description}`,
-    };
-  });
-  
-  // Calculate overall score based on weighted requirements
-  const overallScore = calculateOverallScore(scores, requirements);
-  
-  // Generate mock strengths and weaknesses
+export const generateMockAnalysis = (
+  candidate: Candidate,
+  requirements: JobRequirement[]
+): Candidate => {
+  console.log(`Generating mock analysis for ${candidate.name}`);
+
+  // Mock strengths based on the candidate's name
   const mockStrengths = [
-    'Communication',
-    'Problem Solving',
-    'Technical Knowledge',
-    'Teamwork',
-    'Adaptability',
-    'Time Management',
-    'Leadership',
-    'Attention to Detail'
+    'Excellent communication skills',
+    'Strong problem-solving abilities',
+    'Customer-focused mindset',
+    'Experience with SaaS products',
+    'Good team collaboration'
   ];
-  
+
+  // Mock weaknesses based on the candidate's name
   const mockWeaknesses = [
-    'Public Speaking',
-    'Task Delegation',
-    'Working Under Pressure',
-    'Handling Criticism',
-    'Perfectionism',
-    'Work-Life Balance',
-    'Technical Documentation'
+    'Limited experience with advanced analytics',
+    'Could improve technical knowledge',
+    'May need additional training in specific tools',
+    'Relatively new to the industry'
+  ];
+
+  // Generate random scores for each requirement (1-10)
+  const scores = requirements.map(req => ({
+    requirementId: req.id, // Use the existing requirement ID
+    score: Math.floor(Math.random() * 5) + 3, // Random score between 3-7
+    comment: `Mock evaluation for "${req.description}"`
+  }));
+
+  // Calculate overall score as average of individual scores
+  const totalScore = scores.reduce((sum, score) => sum + score.score, 0);
+  const overallScore = Math.round(totalScore / (scores.length || 1));
+
+  // Select random strengths and weaknesses
+  const selectedStrengths = [];
+  const selectedWeaknesses = [];
+
+  // Add 2-3 random strengths
+  for (let i = 0; i < Math.floor(Math.random() * 2) + 2; i++) {
+    const randomStrength = mockStrengths[Math.floor(Math.random() * mockStrengths.length)];
+    if (!selectedStrengths.includes(randomStrength)) {
+      selectedStrengths.push(randomStrength);
+    }
+  }
+
+  // Add 1-2 random weaknesses
+  for (let i = 0; i < Math.floor(Math.random() * 2) + 1; i++) {
+    const randomWeakness = mockWeaknesses[Math.floor(Math.random() * mockWeaknesses.length)];
+    if (!selectedWeaknesses.includes(randomWeakness)) {
+      selectedWeaknesses.push(randomWeakness);
+    }
+  }
+
+  // Generate random personality traits
+  const personalities = [
+    'Analytical', 'Collaborative', 'Detail-oriented', 'Proactive',
+    'Results-driven', 'Creative', 'Team player', 'Customer-focused'
   ];
   
-  // Randomly select 2-4 strengths and 1-3 weaknesses
-  const strengths = shuffleArray(mockStrengths).slice(0, Math.floor(Math.random() * 3) + 2);
-  const weaknesses = shuffleArray(mockWeaknesses).slice(0, Math.floor(Math.random() * 3) + 1);
-  
-  // Generate mock personality traits
-  const mockPersonalityTraits = [
-    'Analytical',
-    'Creative',
-    'Detail-oriented', 
-    'Pragmatic',
-    'Collaborative',
-    'Independent',
-    'Goal-oriented',
-    'Innovative'
+  const selectedTraits = [];
+  for (let i = 0; i < 3; i++) {
+    const trait = personalities[Math.floor(Math.random() * personalities.length)];
+    if (!selectedTraits.includes(trait)) {
+      selectedTraits.push(trait);
+    }
+  }
+
+  // Random preferred tools
+  const tools = [
+    'Hubspot', 'Google Analytics', 'Salesforce', 'Jira',
+    'Zendesk', 'Intercom', 'Looker', 'Microsoft Office'
   ];
   
-  const personalityTraits = shuffleArray(mockPersonalityTraits).slice(0, Math.floor(Math.random() * 3) + 2);
-  
-  // Generate mock education and experience
-  const mockEducation = [
-    'Bachelor of Science in Computer Science',
-    'Master of Business Administration',
-    'Bachelor of Arts in Communication',
-    'Master of Science in Data Analytics',
-    'Bachelor of Engineering'
+  const selectedTools = [];
+  for (let i = 0; i < 3; i++) {
+    const tool = tools[Math.floor(Math.random() * tools.length)];
+    if (!selectedTools.includes(tool)) {
+      selectedTools.push(tool);
+    }
+  }
+
+  // Random skill keywords
+  const skills = [
+    'Customer success', 'Account management', 'Technical support',
+    'Data analysis', 'Client relations', 'Project management',
+    'SaaS', 'Communication', 'Problem-solving'
   ];
   
-  const education = mockEducation[Math.floor(Math.random() * mockEducation.length)];
-  
-  // Random years of experience (1-10)
-  const yearsOfExperience = Math.floor(Math.random() * 10) + 1;
-  
-  // Mock locations
-  const mockLocations = [
-    'San Francisco, CA',
-    'New York, NY',
-    'Austin, TX',
-    'Seattle, WA',
-    'Boston, MA',
-    'Remote'
+  const selectedSkills = [];
+  for (let i = 0; i < 4; i++) {
+    const skill = skills[Math.floor(Math.random() * skills.length)];
+    if (!selectedSkills.includes(skill)) {
+      selectedSkills.push(skill);
+    }
+  }
+
+  // Communication styles
+  const commStyles = [
+    'Clear and direct', 'Analytical and detailed', 
+    'Empathetic and supportive', 'Persuasive and engaging'
   ];
-  
-  const location = mockLocations[Math.floor(Math.random() * mockLocations.length)];
-  
-  // Mock skill keywords
-  const mockSkillKeywords = [
-    'JavaScript',
-    'Python',
-    'React',
-    'SQL',
-    'Data Analysis',
-    'Machine Learning',
-    'Project Management',
-    'Agile',
-    'UX Design',
-    'Customer Success'
-  ];
-  
-  const skillKeywords = shuffleArray(mockSkillKeywords).slice(0, Math.floor(Math.random() * 5) + 3);
-  
-  // Mock communication styles
-  const mockCommunicationStyles = [
-    'Direct and concise',
-    'Detailed and thorough',
-    'Collaborative and open',
-    'Formal and structured',
-    'Visual communicator'
-  ];
-  
-  const communicationStyle = mockCommunicationStyles[Math.floor(Math.random() * mockCommunicationStyles.length)];
-  
-  // Mock preferred tools
-  const mockPreferredTools = [
-    'JIRA',
-    'Slack',
-    'GSuite',
-    'Microsoft Office',
-    'Figma',
-    'Notion',
-    'GitHub',
-    'VS Code',
-    'Trello'
-  ];
-  
-  const preferredTools = shuffleArray(mockPreferredTools).slice(0, Math.floor(Math.random() * 4) + 2);
-  
-  // Random culture fit and leadership potential (3-10)
-  const cultureFit = Math.floor(Math.random() * 7) + 3;
-  const leadershipPotential = Math.floor(Math.random() * 7) + 3;
   
   return {
     ...candidate,
     scores,
     overallScore,
-    strengths,
-    weaknesses,
-    personalityTraits,
-    cultureFit,
-    leadershipPotential,
-    education,
-    yearsOfExperience,
-    location,
-    skillKeywords,
-    communicationStyle,
-    preferredTools,
+    strengths: selectedStrengths,
+    weaknesses: selectedWeaknesses,
+    personalityTraits: selectedTraits,
+    zodiacSign: ['Aries', 'Taurus', 'Gemini', 'Cancer'][Math.floor(Math.random() * 4)],
+    workStyle: ['Remote', 'Hybrid', 'Office-based'][Math.floor(Math.random() * 3)],
+    cultureFit: Math.floor(Math.random() * 3) + 7, // 7-9
+    leadershipPotential: Math.floor(Math.random() * 3) + 6, // 6-8
+    education: ['Bachelor\'s', 'Master\'s', 'MBA'][Math.floor(Math.random() * 3)],
+    yearsOfExperience: Math.floor(Math.random() * 7) + 2, // 2-8 years
+    location: ['New York', 'San Francisco', 'London', 'Remote'][Math.floor(Math.random() * 4)],
+    skillKeywords: selectedSkills,
+    communicationStyle: commStyles[Math.floor(Math.random() * commStyles.length)],
+    preferredTools: selectedTools,
     status: 'processed',
     processedAt: new Date().toISOString()
   };
-};
-
-/**
- * Helper function to calculate overall score based on weighted requirements
- */
-export const calculateOverallScore = (
-  scores: RequirementScore[], 
-  requirements: JobRequirement[]
-): number => {
-  if (scores.length === 0) return 0;
-  
-  const totalWeightedScore = scores.reduce((total, score) => {
-    const req = requirements.find(r => r.id === score.requirementId);
-    const weight = req ? req.weight : 1;
-    return total + (score.score * weight);
-  }, 0);
-  
-  const totalWeight = requirements.reduce((total, req) => total + req.weight, 0);
-  
-  return Math.round((totalWeightedScore / totalWeight) * 10) / 10;
-};
-
-/**
- * Helper function to shuffle an array
- */
-export const shuffleArray = <T>(array: T[]): T[] => {
-  const newArray = [...array];
-  for (let i = newArray.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-  }
-  return newArray;
 };

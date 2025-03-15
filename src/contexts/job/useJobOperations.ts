@@ -1,12 +1,8 @@
-
 import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { toast } from 'sonner';
-import { Job, Report } from '@/types/job.types';
-import { mockSaveData } from '@/utils/storage';
-import { generateReport } from '@/services/reportService';
-import { getUserId } from '@/utils/authUtils';
-import { supabase } from '@/integrations/supabase/client';
+import { Job, Candidate, Report } from './types';
+import { JobService, ReportService } from '@/services/api';
+import { saveJobs, saveReports } from '@/utils/storage';
 
 export function useJobOperations() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -16,201 +12,223 @@ export function useJobOperations() {
   const [error, setError] = useState<string | null>(null);
 
   // Create a new job
-  const createJob = useCallback(async (jobData: Partial<Job>): Promise<Job> => {
+  const createJob = async (jobData: Partial<Job>): Promise<Job> => {
     setIsLoading(true);
-    try {
-      // Get the authenticated user ID
-      const currentUserId = await getUserId();
-      
-      if (!currentUserId) {
-        throw new Error('You must be logged in to create a job');
-      }
+    setError(null);
 
+    try {
       const newJob: Job = {
         id: uuidv4(),
         title: jobData.title || 'Untitled Job',
-        company: jobData.company || '',
+        company: jobData.company || 'Unknown Company',
         description: jobData.description || '',
-        location: jobData.location || '',
-        department: jobData.department || '',
-        salary: jobData.salary,
-        requirements: jobData.requirements || [],
+        requirements: [],
         candidates: [],
-        contextFiles: jobData.contextFiles || [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        user: {  // Changed from userId to user object as per Job type
-          id: currentUserId,
-          name: '',
-          email: ''
-        }
+        ...jobData,
       };
 
-      // Save to Supabase
-      await mockSaveData(newJob);
-
-      // Update local state
-      setJobs(prevJobs => [...prevJobs, newJob]);
-      
-      // Log the current jobs state after update
-      console.log('Jobs after create:', [...jobs, newJob]);
-      
+      // Save to storage
+      await JobService.createJob(newJob);
+      setJobs(prev => [...prev, newJob]);
+      setIsLoading(false);
       return newJob;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error creating job';
       setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
       setIsLoading(false);
+      throw new Error(errorMessage);
     }
-  }, [jobs]);
+  };
 
   // Update an existing job
-  const updateJob = useCallback(async (jobData: Job): Promise<Job> => {
+  const updateJob = async (jobData: Job): Promise<Job> => {
     setIsLoading(true);
+    setError(null);
+
     try {
-      const updatedJob = {
-        ...jobData,
-        updatedAt: new Date().toISOString(),
-      };
-
-      // Mock API call
-      await mockSaveData(updatedJob);
-
-      // Update local state
-      setJobs(prevJobs => 
-        prevJobs.map(j => j.id === jobData.id ? updatedJob : j)
+      // Save to storage
+      await JobService.updateJob(jobData);
+      setJobs(prev =>
+        prev.map(job => (job.id === jobData.id ? { ...job, ...jobData } : job))
       );
-
-      if (currentJob && currentJob.id === jobData.id) {
-        setCurrentJob(updatedJob);
-      }
-      
-      // Log the current jobs state after update
-      console.log('Jobs after update:', jobs.map(j => j.id === jobData.id ? updatedJob : j));
-
-      return updatedJob;
+      setIsLoading(false);
+      return jobData;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error updating job';
       setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
       setIsLoading(false);
+      throw new Error(errorMessage);
     }
-  }, [currentJob, jobs]);
+  };
 
   // Delete a job
-  const deleteJob = useCallback(async (jobId: string): Promise<void> => {
+  const deleteJob = async (jobId: string): Promise<void> => {
     setIsLoading(true);
+    setError(null);
+
     try {
-      // First, check if there are any reports for this job
-      try {
-        const { data: reports } = await supabase
-          .from('reports')
-          .select('id')
-          .eq('job_id', jobId);
-        
-        // If there are reports, delete them first
-        if (reports && reports.length > 0) {
-          // Delete report_candidates links
-          for (const report of reports) {
-            await supabase
-              .from('report_candidates')
-              .delete()
-              .eq('report_id', report.id);
-          }
-          
-          // Delete the reports
-          await supabase
-            .from('reports')
-            .delete()
-            .eq('job_id', jobId);
-        }
-      } catch (error) {
-        console.error('Error cleaning up reports:', error);
-        // Continue with job deletion even if report cleanup fails
-      }
-      
-      // Try to delete candidates from Supabase
-      try {
-        await supabase
-          .from('candidates')
-          .delete()
-          .eq('job_id', jobId);
-      } catch (error) {
-        console.error('Error deleting candidates from Supabase:', error);
-        // Continue with job deletion even if candidate deletion fails
-      }
-      
-      // Delete the job from Supabase
-      try {
-        await supabase
-          .from('jobs')
-          .delete()
-          .eq('id', jobId);
-      } catch (error) {
-        console.error('Error deleting job from Supabase:', error);
-        // Continue with local deletion even if Supabase deletion fails
-      }
-      
-      // Mock API call for local storage
-      await mockSaveData({ id: jobId, deleted: true });
-
-      // Update local state
-      setJobs(prevJobs => prevJobs.filter(j => j.id !== jobId));
-
-      if (currentJob && currentJob.id === jobId) {
-        setCurrentJob(null);
-      }
-      
-      // Log the current jobs state after delete
-      console.log('Jobs after delete:', jobs.filter(j => j.id !== jobId));
-      
+      // Delete from storage
+      await JobService.deleteJob(jobId);
+      setJobs(prev => prev.filter(job => job.id !== jobId));
+      setIsLoading(false);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error deleting job';
       setError(errorMessage);
-      toast.error(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
       setIsLoading(false);
+      throw new Error(errorMessage);
     }
-  }, [currentJob, jobs, setCurrentJob, setError, setJobs]);
+  };
 
-  // Generate a report
-  const generateReportAction = useCallback(async (
-    jobId: string, 
-    candidateIds: string[], 
+  // Upload candidate files for a job
+  const uploadCandidateFiles = async (jobId: string, files: File[]): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Upload files and create candidates
+      const newCandidates = await JobService.uploadCandidateFiles(jobId, files);
+
+      setJobs(prev =>
+        prev.map(job =>
+          job.id === jobId
+            ? {
+                ...job,
+                candidates: [...job.candidates, ...newCandidates],
+                updatedAt: new Date().toISOString(),
+              }
+            : job
+        )
+      );
+      setIsLoading(false);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error uploading candidates';
+      setError(errorMessage);
+      setIsLoading(false);
+      throw new Error(errorMessage);
+    }
+  };
+
+  // Star a candidate
+  const starCandidate = async (jobId: string, candidateId: string, isStarred: boolean): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Update candidate's isStarred status
+      await JobService.starCandidate(jobId, candidateId, isStarred);
+
+      setJobs(prev =>
+        prev.map(job =>
+          job.id === jobId
+            ? {
+                ...job,
+                candidates: job.candidates.map(candidate =>
+                  candidate.id === candidateId ? { ...candidate, isStarred } : candidate
+                ),
+                updatedAt: new Date().toISOString(),
+              }
+            : job
+        )
+      );
+      setIsLoading(false);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error starring candidate';
+      setError(errorMessage);
+      setIsLoading(false);
+      throw new Error(errorMessage);
+    }
+  };
+
+  // Delete a candidate
+  const deleteCandidate = async (jobId: string, candidateId: string): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Delete candidate
+      await JobService.deleteCandidate(jobId, candidateId);
+
+      setJobs(prev =>
+        prev.map(job =>
+          job.id === jobId
+            ? {
+                ...job,
+                candidates: job.candidates.filter(candidate => candidate.id !== candidateId),
+                updatedAt: new Date().toISOString(),
+              }
+            : job
+        )
+      );
+      setIsLoading(false);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error deleting candidate';
+      setError(errorMessage);
+      setIsLoading(false);
+      throw new Error(errorMessage);
+    }
+  };
+
+  // Generate a report for candidates in a job
+  const generateReport = async (
+    job: Job | string,
+    candidateIds: string[],
     additionalPrompt?: string
   ): Promise<Report> => {
     setIsLoading(true);
+
     try {
-      // Find the job
-      const job = jobs.find(j => j.id === jobId);
-      if (!job) {
-        console.error(`Job with ID ${jobId} not found. Available jobs:`, jobs.map(j => ({ id: j.id, title: j.title })));
-        throw new Error('Job not found');
+      // Handle if job is passed as an ID instead of a Job object
+      let jobData: Job;
+      if (typeof job === 'string') {
+        const foundJob = jobs.find(j => j.id === job);
+        if (!foundJob) {
+          console.log(`Job with ID ${job} not found. Available jobs:`, jobs);
+          throw new Error('Job not found');
+        }
+        jobData = foundJob;
+      } else {
+        jobData = job;
       }
-      
-      console.log('Generating report for job:', job.title);
-      console.log('Selected candidates:', candidateIds);
-      
-      // Create a report
-      const report = await generateReport(job, candidateIds, additionalPrompt);
-      console.log('Report generated:', report);
-      
-      // Update local state
-      setReports(prevReports => [...prevReports, report]);
-      
+
+      // Validate the job has the selected candidates
+      const validCandidateIds = candidateIds.filter(id => 
+        jobData.candidates.some(c => c.id === id)
+      );
+
+      if (validCandidateIds.length === 0) {
+        throw new Error('No valid candidates selected');
+      }
+
+      // Get the selected candidates
+      const selectedCandidates = jobData.candidates.filter(c => 
+        validCandidateIds.includes(c.id)
+      );
+
+      // Generate the report
+      const report = await ReportService.generateReport(
+        jobData,
+        selectedCandidates,
+        additionalPrompt
+      );
+
+      // Add the report to the state
+      setReports(prev => [...prev, report]);
+
+      // Save to storage
+      await saveReports([...reports, report]);
+
+      setIsLoading(false);
       return report;
     } catch (err) {
-      console.error('Error in generateReportAction:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error generating report';
+      console.error('Error in generateReportAction:', err);
       setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
       setIsLoading(false);
+      throw err;
     }
-  }, [jobs]);
+  };
 
   return {
     jobs,
@@ -226,6 +244,9 @@ export function useJobOperations() {
     createJob,
     updateJob,
     deleteJob,
-    generateReport: generateReportAction,
+    uploadCandidateFiles,
+    starCandidate,
+    deleteCandidate,
+    generateReport,
   };
 }
