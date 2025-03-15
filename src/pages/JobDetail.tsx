@@ -47,8 +47,9 @@ const JobDetail = () => {
     navigate(`/jobs/${jobId}/report`);
   };
 
+  // Fix this function to navigate to the correct path
   const handleEditRequirements = () => {
-    navigate(`/jobs/${jobId}/requirements/edit`);
+    navigate(`/jobs/${jobId}/requirements`);
   };
 
   const handleGenerateRequirements = async () => {

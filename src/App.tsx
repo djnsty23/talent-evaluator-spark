@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
 import { JobProvider } from './contexts/job/JobContext';
 import { Toaster } from './components/ui/sonner';
+import ErrorBoundary from './components/ui/error-boundary';
 import Navbar from './components/navbar';
 import Index from './pages/Index';
 import Login from './pages/Login';
@@ -25,96 +26,95 @@ import './App.css';
 function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="ui-theme">
-      <Router>
-        <AuthProvider>
-          <JobProvider>
-            <Navbar />
-            <main className="min-h-screen bg-background pt-16 pb-12">
-              <Routes>
-                {/* Public routes */}
-                <Route path="/" element={<Index />} />
-                <Route path="/login" element={<Login />} />
-                
-                {/* Protected routes */}
-                <Route path="/dashboard" element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/jobs/create" element={
-                  <ProtectedRoute>
-                    <CreateJob />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/jobs/:jobId" element={
-                  <ProtectedRoute>
-                    <JobDetail />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/jobs/:jobId/requirements" element={
-                  <ProtectedRoute>
-                    <JobRequirementsEditor />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/jobs/:jobId/upload" element={
-                  <ProtectedRoute>
-                    <CandidateUpload />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/jobs/:jobId/analysis" element={
-                  <ProtectedRoute>
-                    <CandidateAnalysis />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Ensure this route comes before the candidate-specific route */}
-                <Route path="/jobs/:jobId/report" element={
-                  <ProtectedRoute>
-                    <ReportGeneration />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/jobs/:jobId/report/:reportId" element={
-                  <ProtectedRoute>
-                    <ViewReport />
-                  </ProtectedRoute>
-                } />
+      <ErrorBoundary>
+        <Router>
+          <AuthProvider>
+            <JobProvider>
+              <Navbar />
+              <main className="min-h-screen bg-background pt-16 pb-12">
+                <Routes>
+                  {/* Public routes */}
+                  <Route path="/" element={<Index />} />
+                  <Route path="/login" element={<Login />} />
+                  
+                  {/* Protected routes */}
+                  <Route path="/dashboard" element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } />
+                  
+                  <Route path="/jobs/create" element={
+                    <ProtectedRoute>
+                      <CreateJob />
+                    </ProtectedRoute>
+                  } />
+                  
+                  <Route path="/jobs/:jobId" element={
+                    <ProtectedRoute>
+                      <JobDetail />
+                    </ProtectedRoute>
+                  } />
+                  
+                  <Route path="/jobs/:jobId/requirements" element={
+                    <ProtectedRoute>
+                      <JobRequirementsEditor />
+                    </ProtectedRoute>
+                  } />
+                  
+                  <Route path="/jobs/:jobId/upload" element={
+                    <ProtectedRoute>
+                      <CandidateUpload />
+                    </ProtectedRoute>
+                  } />
+                  
+                  <Route path="/jobs/:jobId/analysis" element={
+                    <ProtectedRoute>
+                      <CandidateAnalysis />
+                    </ProtectedRoute>
+                  } />
+                  
+                  <Route path="/jobs/:jobId/report" element={
+                    <ProtectedRoute>
+                      <ReportGeneration />
+                    </ProtectedRoute>
+                  } />
+                  
+                  <Route path="/jobs/:jobId/report/:reportId" element={
+                    <ProtectedRoute>
+                      <ViewReport />
+                    </ProtectedRoute>
+                  } />
 
-                {/* Individual candidate view - make this route more specific */}
-                <Route path="/jobs/:jobId/candidates/:candidateId" element={
-                  <ProtectedRoute>
-                    <CandidateAnalysis />
-                  </ProtectedRoute>
-                } />
-                
-                {/* User account pages */}
-                <Route path="/profile" element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/settings" element={
-                  <ProtectedRoute>
-                    <Settings />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Error pages */}
-                <Route path="/error" element={<ErrorPage />} />
-                <Route path="/404" element={<NotFound />} />
-                <Route path="*" element={<Navigate to="/404" replace />} />
-              </Routes>
-            </main>
-            <Toaster />
-          </JobProvider>
-        </AuthProvider>
-      </Router>
+                  <Route path="/jobs/:jobId/candidates/:candidateId" element={
+                    <ProtectedRoute>
+                      <CandidateAnalysis />
+                    </ProtectedRoute>
+                  } />
+                  
+                  <Route path="/profile" element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  } />
+                  
+                  <Route path="/settings" element={
+                    <ProtectedRoute>
+                      <Settings />
+                    </ProtectedRoute>
+                  } />
+                  
+                  {/* Error pages */}
+                  <Route path="/error" element={<ErrorPage />} />
+                  <Route path="/404" element={<NotFound />} />
+                  <Route path="*" element={<Navigate to="/404" replace />} />
+                </Routes>
+              </main>
+              <Toaster />
+            </JobProvider>
+          </AuthProvider>
+        </Router>
+      </ErrorBoundary>
     </ThemeProvider>
   );
 }

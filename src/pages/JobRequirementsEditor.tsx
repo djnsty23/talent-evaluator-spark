@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useJob } from '@/contexts/JobContext';
@@ -39,9 +38,29 @@ const JobRequirementsEditor = () => {
   const [isExtractingContext, setIsExtractingContext] = useState(false);
   const [showContextUploader, setShowContextUploader] = useState(false);
   
+  useEffect(() => {
+    if (jobId && jobs.length > 0) {
+      const currentJob = jobs.find(j => j.id === jobId);
+      if (currentJob) {
+        setRequirements(currentJob.requirements || []);
+      } else {
+        console.error('Job not found, redirecting to dashboard');
+        navigate('/dashboard');
+      }
+    }
+  }, [jobId, jobs, navigate]);
+  
   if (!job) {
-    navigate('/dashboard');
-    return null;
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <h3 className="text-lg font-medium mb-2">Loading job data...</h3>
+            <p className="text-muted-foreground">Please wait while we retrieve the job information.</p>
+          </div>
+        </div>
+      </div>
+    );
   }
   
   const handleAddRequirement = () => {
@@ -118,7 +137,6 @@ const JobRequirementsEditor = () => {
         contextFiles: extractedContexts
       });
       
-      // If we already have requirements, confirm before replacing
       if (requirements.length > 0) {
         const confirmed = window.confirm(
           'This will replace your existing requirements. Continue?'

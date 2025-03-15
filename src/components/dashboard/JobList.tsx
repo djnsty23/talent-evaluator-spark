@@ -1,158 +1,79 @@
 
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Job } from '@/types/job.types';
-import { Card, CardContent } from '@/components/ui/card';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Search, 
-  Plus, 
-  Building, 
-  User, 
-  Calendar, 
-  ArrowUp, 
-  ArrowDown,
-  FilePlus2
-} from 'lucide-react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Job } from '@/types/job.types';
+import { Building, Calendar, Users, Eye, PlusCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface JobListProps {
   jobs: Job[];
 }
 
-type SortOption = 'newest' | 'oldest' | 'candidates' | 'company';
-
 const JobList = ({ jobs }: JobListProps) => {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<SortOption>('newest');
   
-  // Handle job filtering by search term
-  const filteredJobs = jobs.filter(job => 
-    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  
-  // Handle job sorting
-  const sortedJobs = [...filteredJobs].sort((a, b) => {
-    switch (sortBy) {
-      case 'newest':
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      case 'oldest':
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      case 'candidates':
-        return b.candidates.length - a.candidates.length;
-      case 'company':
-        return a.company.localeCompare(b.company);
-      default:
-        return 0;
-    }
-  });
-  
-  return (
-    <div>
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search jobs..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        
-        <div className="flex gap-2">
-          <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">Newest First</SelectItem>
-              <SelectItem value="oldest">Oldest First</SelectItem>
-              <SelectItem value="candidates">Most Candidates</SelectItem>
-              <SelectItem value="company">Company Name</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Button onClick={() => navigate('/jobs/create')} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            New Job
-          </Button>
-        </div>
+  if (jobs.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-lg font-medium mb-2">No jobs found</h3>
+        <p className="text-muted-foreground mb-6">Create your first job to get started.</p>
+        <Button 
+          onClick={() => navigate('/jobs/create')}
+          className="flex items-center gap-2"
+        >
+          <PlusCircle className="h-4 w-4" />
+          Create Job
+        </Button>
       </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {jobs.map((job) => (
+        <Card key={job.id} className="transition-shadow hover:shadow-md">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xl truncate">{job.title}</CardTitle>
+            <CardDescription className="flex items-center">
+              <Building className="h-3.5 w-3.5 mr-1 text-muted-foreground/70" />
+              <span className="truncate">{job.company}</span>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pb-3">
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center text-muted-foreground">
+                <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                <span>Created {format(new Date(job.createdAt), 'MMM d, yyyy')}</span>
+              </div>
+              <div className="flex items-center text-muted-foreground">
+                <Users className="h-3.5 w-3.5 mr-1.5" />
+                <span>{job.candidates.length} candidates</span>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              variant="secondary" 
+              className="w-full flex items-center justify-center gap-1.5"
+              onClick={() => navigate(`/jobs/${job.id}`)} // Use navigate instead of href
+            >
+              <Eye className="h-4 w-4" />
+              View Details
+            </Button>
+          </CardFooter>
+        </Card>
+      ))}
       
-      {sortedJobs.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4">
-          {sortedJobs.map(job => (
-            <Link to={`/jobs/${job.id}`} key={job.id} className="block group">
-              <Card className="transition-all hover:shadow-md hover:border-primary/20">
-                <CardContent className="p-5">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                      <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
-                        {job.title}
-                      </h3>
-                      <div className="flex items-center mt-1 text-muted-foreground">
-                        <Building className="h-3.5 w-3.5 mr-1" />
-                        <span className="text-sm">{job.company}</span>
-                      </div>
-                      <div className="flex items-center mt-1 text-xs text-muted-foreground">
-                        <Calendar className="h-3.5 w-3.5 mr-1" />
-                        <span>Created {format(new Date(job.createdAt), 'MMM d, yyyy')}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center">
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          <User className="h-3 w-3" />
-                          {job.candidates.length} candidates
-                        </Badge>
-                      </div>
-                      
-                      {job.candidates.length === 0 && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            navigate(`/jobs/${job.id}/upload`);
-                          }}
-                          className="flex items-center gap-1"
-                        >
-                          <FilePlus2 className="h-3.5 w-3.5" />
-                          Upload Candidates
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12 border rounded-lg">
-          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-            <Search className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-lg font-medium mb-2">No jobs found</h3>
-          <p className="text-muted-foreground mb-6">
-            {searchTerm 
-              ? `No jobs matching "${searchTerm}"` 
-              : "You haven't created any jobs yet"}
-          </p>
-          <Button onClick={() => navigate('/jobs/create')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Your First Job
-          </Button>
-        </div>
-      )}
+      <Card className="border-dashed bg-muted/40 hover:bg-muted/60 transition-colors cursor-pointer flex flex-col items-center justify-center p-6"
+        onClick={() => navigate('/jobs/create')} // Use navigate instead of href
+      >
+        <PlusCircle className="h-8 w-8 text-muted-foreground mb-2" />
+        <h3 className="text-lg font-medium">Create New Job</h3>
+        <p className="text-sm text-muted-foreground text-center mt-1">
+          Add a new job to your dashboard
+        </p>
+      </Card>
     </div>
   );
 };
