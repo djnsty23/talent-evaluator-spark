@@ -1,4 +1,3 @@
-
 import { Job, Candidate } from '@/types/job.types';
 import { formatCandidateScores } from './formatters';
 
@@ -40,10 +39,6 @@ export const generateCandidateRankingsContent = (job: Job, rankedCandidates: Can
     
     if (candidate.location) {
       content += `**Location:** ${candidate.location}\n`;
-    }
-    
-    if (candidate.availabilityDate) {
-      content += `**Availability:** ${candidate.availabilityDate}\n`;
     }
     
     content += `\n**Detailed Score Analysis:**\n\n`;

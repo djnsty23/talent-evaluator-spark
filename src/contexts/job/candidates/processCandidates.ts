@@ -40,7 +40,8 @@ export function useProcessCandidate(
       const candidate = job.candidates[candidateIndex];
       console.log('Processing candidate:', candidate.name);
       
-      const processedCandidate = processCandidate(candidate, job.requirements);
+      // Call processCandidate function and await its result
+      const processedCandidate = await processCandidate(candidate, job.requirements);
       
       // Create updated job with processed candidate
       const updatedCandidates = [...job.candidates];

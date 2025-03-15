@@ -41,6 +41,13 @@ export interface Candidate {
   preferredTools?: string[];
 }
 
+export interface ContextFile {
+  id: string;
+  name: string;
+  content: string;
+  type: string;
+}
+
 export interface Job {
   id: string;
   title: string;
@@ -57,6 +64,7 @@ export interface Job {
   };
   createdAt: string;
   updatedAt: string;
+  contextFiles?: ContextFile[];
   user?: {
     id: string;
     name: string;
