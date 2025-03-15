@@ -1,41 +1,22 @@
 
 import { Job, Report } from '@/types/job.types';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { transformJobData, transformReportData } from './transformers';
+import { fetchJobsData, fetchReportsData } from './supabase/dataFetchers';
 
 /**
- * Get jobs data from Supabase
+ * Get jobs and reports data from Supabase
  */
 export const getStorageData = async (): Promise<{ jobs: Job[]; reports: Report[] }> => {
   try {
     console.log('Fetching data from Supabase');
     
-    // Fetch jobs
-    const { data: jobsData, error: jobsError } = await supabase
-      .from('jobs')
-      .select('*');
+    // Fetch jobs and reports in parallel for better performance
+    const [jobs, reports] = await Promise.all([
+      fetchJobsData(),
+      fetchReportsData()
+    ]);
     
-    if (jobsError) {
-      console.error('Error loading jobs from Supabase:', jobsError);
-      throw jobsError;
-    }
-    
-    // Fetch reports
-    const { data: reportsData, error: reportsError } = await supabase
-      .from('reports')
-      .select('*');
-    
-    if (reportsError) {
-      console.error('Error loading reports from Supabase:', reportsError);
-      throw reportsError;
-    }
-    
-    // Transform data to match our application model
-    const jobs = transformJobData(jobsData || []);
-    const reports = transformReportData(reportsData || []);
-    
-    console.log('Data loaded from Supabase:', { jobCount: jobs.length, reportCount: reports.length });
+    console.log('All data loaded from Supabase:', { jobCount: jobs.length, reportCount: reports.length });
     
     return { jobs, reports };
   } catch (err) {

@@ -1,6 +1,6 @@
 
 import { Job, Report, JobRequirement, Candidate } from '@/types/job.types';
-import { SupabaseJob, SupabaseReport } from './types';
+import { SupabaseJob, SupabaseReport, SupabaseJobRequirement, SupabaseCandidate } from './types';
 
 /**
  * Transforms Supabase job data to our application model
@@ -41,12 +41,12 @@ export function transformReportData(reportData: SupabaseReport[]): Report[] {
 /**
  * Transforms Supabase job requirements to our application model
  */
-export function transformRequirementsData(requirementsData: any[]): JobRequirement[] {
+export function transformRequirementsData(requirementsData: SupabaseJobRequirement[]): JobRequirement[] {
   return Array.isArray(requirementsData) ? requirementsData.map(req => ({
     id: req.id,
     description: req.description || '',
     weight: req.weight || 1,
-    isRequired: req.weight > 5, // Consider high weight requirements as required
+    isRequired: req.weight ? req.weight > 5 : false, // Consider high weight requirements as required
     category: req.title || 'General'
   })) : [];
 }
@@ -54,12 +54,12 @@ export function transformRequirementsData(requirementsData: any[]): JobRequireme
 /**
  * Transforms Supabase candidate data to our application model
  */
-export function transformCandidateData(candidateData: any[]): Candidate[] {
+export function transformCandidateData(candidateData: SupabaseCandidate[]): Candidate[] {
   return Array.isArray(candidateData) ? candidateData.map(candidate => ({
     id: candidate.id,
     name: candidate.name,
     email: `${candidate.name.toLowerCase().replace(/\s/g, '.')}@example.com`, // Generate email from name
-    resumeUrl: candidate.resume_url || '',
+    resumeUrl: candidate.resume_text || '',
     overallScore: 0, // Will calculate this from scores
     scores: [],
     strengths: [],
