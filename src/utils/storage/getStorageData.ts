@@ -9,6 +9,8 @@ import { transformJobData, transformReportData } from './transformers';
  */
 export const getStorageData = async (): Promise<{ jobs: Job[]; reports: Report[] }> => {
   try {
+    console.log('Fetching data from Supabase');
+    
     // Fetch jobs
     const { data: jobsData, error: jobsError } = await supabase
       .from('jobs')
@@ -33,7 +35,7 @@ export const getStorageData = async (): Promise<{ jobs: Job[]; reports: Report[]
     const jobs = transformJobData(jobsData || []);
     const reports = transformReportData(reportsData || []);
     
-    console.log('Data loaded from Supabase:', { jobs, reports });
+    console.log('Data loaded from Supabase:', { jobCount: jobs.length, reportCount: reports.length });
     
     return { jobs, reports };
   } catch (err) {

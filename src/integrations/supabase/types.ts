@@ -90,7 +90,7 @@ export type Database = {
             foreignKeyName: "candidate_scores_requirement_id_fkey"
             columns: ["requirement_id"]
             isOneToOne: false
-            referencedRelation: "job_requirements"
+            referencedRelation: "job_requirements_mapping"
             referencedColumns: ["id"]
           },
         ]
@@ -202,6 +202,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "job_requirements_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_requirements_mapping: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          job_id: string
+          original_id: string
+          updated_at: string
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id: string
+          job_id: string
+          original_id: string
+          updated_at?: string
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          job_id?: string
+          original_id?: string
+          updated_at?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_requirements_mapping_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
             referencedRelation: "jobs"
@@ -342,7 +380,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_candidate_scores_for_job: {
+        Args: {
+          job_id: string
+        }
+        Returns: undefined
+      }
+      delete_job_cascade: {
+        Args: {
+          p_job_id: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

@@ -15,7 +15,12 @@ export const mockSaveData = async (data: any): Promise<void> => {
       
       // Save candidates if they exist
       if (data.candidates && data.candidates.length > 0) {
-        await saveCandidates(data.candidates, data.id);
+        await saveCandidatesData(data.candidates, data.id);
+      }
+      
+      // Save requirements if they exist
+      if (data.requirements && data.requirements.length > 0) {
+        await saveRequirementsData(data.requirements, data.id);
       }
     }
     
@@ -68,7 +73,7 @@ const saveJobData = async (data: any): Promise<void> => {
 /**
  * Save candidates to Supabase
  */
-const saveCandidates = async (candidates: any[], jobId: string): Promise<void> => {
+const saveCandidatesData = async (candidates: any[], jobId: string): Promise<void> => {
   for (const candidate of candidates) {
     const { error: candidateError } = await supabase
       .from('candidates')
@@ -76,12 +81,61 @@ const saveCandidates = async (candidates: any[], jobId: string): Promise<void> =
         id: candidate.id,
         name: candidate.name,
         is_starred: candidate.isStarred,
-        job_id: jobId
-        // Add other fields as needed
+        job_id: jobId,
+        resume_text: candidate.resumeText || null,
+        file_name: candidate.fileName || null,
+        content_type: candidate.contentType || null
       });
     
     if (candidateError) {
       console.error('Error saving candidate to Supabase:', candidateError);
+    }
+    
+    // Save candidate scores if they exist
+    if (candidate.scores && candidate.scores.length > 0) {
+      await saveCandidateScoresData(candidate.id, candidate.scores);
+    }
+  }
+};
+
+/**
+ * Save candidate scores to Supabase
+ */
+const saveCandidateScoresData = async (candidateId: string, scores: any[]): Promise<void> => {
+  for (const score of scores) {
+    const { error } = await supabase
+      .from('candidate_scores')
+      .upsert({ 
+        id: score.id || `${score.requirementId}_${candidateId}`,
+        candidate_id: candidateId,
+        requirement_id: score.requirementId,
+        score: score.score,
+        explanation: score.comment || ''
+      });
+    
+    if (error) {
+      console.error('Error saving candidate score to Supabase:', error);
+    }
+  }
+};
+
+/**
+ * Save requirements to Supabase
+ */
+const saveRequirementsData = async (requirements: any[], jobId: string): Promise<void> => {
+  for (const req of requirements) {
+    const { error } = await supabase
+      .from('job_requirements')
+      .upsert({ 
+        id: req.id,
+        job_id: jobId,
+        title: req.category || 'Requirement',
+        description: req.description,
+        weight: req.weight || 1
+      });
+    
+    if (error) {
+      console.error('Error saving job requirement to Supabase:', error);
     }
   }
 };
@@ -130,13 +184,37 @@ const linkCandidatesToReport = async (reportId: string, candidateIds: string[]):
  * Delete a job from Supabase
  */
 const deleteJob = async (jobId: string): Promise<void> => {
-  const { error } = await supabase
-    .from('jobs')
-    .delete()
-    .eq('id', jobId);
+  const userId = await getUserId();
   
-  if (error) {
-    console.error('Error deleting job from Supabase:', error);
-    throw error;
+  if (!userId) {
+    throw new Error('You must be logged in to delete a job');
+  }
+  
+  try {
+    // Use the secure function to delete the job and all related data
+    const { error } = await supabase
+      .rpc('delete_job_cascade', { 
+        p_job_id: jobId,
+        p_user_id: userId
+      });
+      
+    if (error) {
+      console.error('Error deleting job from Supabase:', error);
+      throw error;
+    }
+  } catch (err) {
+    console.error('Error with delete_job_cascade function:', err);
+    
+    // Fallback: delete the job directly if the RPC function fails
+    const { error } = await supabase
+      .from('jobs')
+      .delete()
+      .eq('id', jobId)
+      .eq('user_id', userId);
+    
+    if (error) {
+      console.error('Error with fallback job deletion:', error);
+      throw error;
+    }
   }
 };
