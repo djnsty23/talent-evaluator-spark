@@ -1,17 +1,21 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { Candidate, JobRequirement } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
+import { extractCandidateName, generateRealisticName } from '@/utils/candidateUtils';
 
 export const createCandidateFromFile = (file: File, jobId: string, index: number): Candidate => {
-  // Extract candidate name from filename, removing extension
-  const fileName = file.name;
-  const candidateName = fileName.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+  // Use the improved utility function to extract candidate name from filename
+  const candidateName = extractCandidateName(file.name);
+  
+  // If the extracted name looks like a filename (contains dots, underscores, numbers) 
+  // use a generated realistic name instead
+  const hasFilenameLikeChars = /[._\-0-9]/.test(candidateName);
+  const finalName = hasFilenameLikeChars ? generateRealisticName() : candidateName;
   
   return {
     id: uuidv4(),
-    name: candidateName,
-    email: `${candidateName.toLowerCase().replace(/\s/g, '.')}@example.com`,
+    name: finalName,
+    email: `${finalName.toLowerCase().replace(/\s/g, '.')}@example.com`,
     resumeUrl: URL.createObjectURL(file),
     overallScore: 0,
     scores: [],
