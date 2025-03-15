@@ -4,6 +4,7 @@ import { Job, Report } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { generateReportContent } from './generateReportContent';
+import { getReportById, getReportsForJob } from './reportRetrieval';
 
 export const generateReport = async (
   job: Job,
@@ -71,4 +72,4 @@ export const linkCandidatesToReport = async (reportId: string, candidateIds: str
 };
 
 // Export the helper function for reuse elsewhere
-export { generateReportContent };
+export { generateReportContent, getReportById, getReportsForJob };

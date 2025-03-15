@@ -74,5 +74,4 @@ export const getReportById = async (reportId: string): Promise<Report | null> =>
   }
 };
 
-// Export helper functions
-export { getReportById, getReportsForJob };
+// No redundant export at the end of the file
