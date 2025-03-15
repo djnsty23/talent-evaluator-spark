@@ -54,7 +54,11 @@ export const generateReport = async (
     
     // Generate report content
     let reportContent: string;
-    let reportData: any = null;
+    let reportData: any = {
+      candidateRankings: [],
+      topCandidates: [],
+      comparisonMatrix: []
+    };
     
     try {
       // Try to use the AI service first

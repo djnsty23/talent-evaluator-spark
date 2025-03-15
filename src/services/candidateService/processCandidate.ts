@@ -2,7 +2,6 @@
 import { Candidate, JobRequirement, RequirementScore } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
 import { AIService } from '@/services/api';
-import { generateMockAnalysis } from './mockDataGenerator';
 import { v4 as uuidv4 } from 'uuid';
 
 // Helper function to check if a string is a valid UUID
@@ -66,7 +65,7 @@ export const processCandidate = async (candidate: Candidate, requirements: JobRe
               validScores.push({
                 requirementId,
                 score: score.score,
-                comment: score.notes || ''
+                comment: score.notes || 'N/A'
               });
             } else {
               console.log(`Invalid requirement ID format: ${score.requirementId} - using index-based mapping`);
@@ -74,7 +73,7 @@ export const processCandidate = async (candidate: Candidate, requirements: JobRe
                 validScores.push({
                   requirementId: requirements[index].id,
                   score: score.score,
-                  comment: score.notes || ''
+                  comment: score.notes || 'N/A'
                 });
               }
             }
@@ -85,29 +84,29 @@ export const processCandidate = async (candidate: Candidate, requirements: JobRe
           ...candidate,
           scores: validScores,
           overallScore: aiResult.overallScore,
-          strengths: aiResult.strengths,
-          weaknesses: aiResult.weaknesses,
-          personalityTraits: aiResult.personalityTraits,
-          cultureFit: aiResult.cultureFit,
-          leadershipPotential: aiResult.leadershipPotential,
-          education: aiResult.education,
-          yearsOfExperience: aiResult.yearsOfExperience,
-          location: aiResult.location,
-          skillKeywords: aiResult.skillKeywords,
-          communicationStyle: aiResult.communicationStyle,
-          preferredTools: aiResult.preferredTools,
+          strengths: aiResult.strengths || ['N/A'],
+          weaknesses: aiResult.weaknesses || ['N/A'],
+          personalityTraits: aiResult.personalityTraits || ['N/A'],
+          cultureFit: aiResult.cultureFit || 0,
+          leadershipPotential: aiResult.leadershipPotential || 0,
+          education: aiResult.education || 'N/A',
+          yearsOfExperience: aiResult.yearsOfExperience || 0,
+          location: aiResult.location || 'N/A',
+          skillKeywords: aiResult.skillKeywords || ['N/A'],
+          communicationStyle: aiResult.communicationStyle || 'N/A',
+          preferredTools: aiResult.preferredTools || ['N/A'],
           status: 'processed',
           processedAt: new Date().toISOString()
         };
       } catch (error) {
         console.error('Error using AI service:', error);
-        // Fall back to mock processing
-        processedCandidate = generateMockAnalysis(candidate, requirements);
+        // Fall back to N/A values
+        processedCandidate = createEmptyCandidate(candidate, requirements);
       }
     } else {
-      // Fall back to mock processing if no API key is available
-      console.log('No OpenAI key available, using mock processing');
-      processedCandidate = generateMockAnalysis(candidate, requirements);
+      // Fall back to N/A values if no API key is available
+      console.log('No OpenAI key available, using N/A values');
+      processedCandidate = createEmptyCandidate(candidate, requirements);
     }
     
     // Save candidate scores to Supabase
@@ -194,19 +193,35 @@ export const processCandidate = async (candidate: Candidate, requirements: JobRe
     
   } catch (error) {
     console.error('Error processing candidate:', error);
-    // Return original candidate with minimal mock data to avoid breaking the app
-    return {
-      ...candidate,
-      scores: requirements.map(req => ({
-        requirementId: req.id,
-        score: Math.floor(Math.random() * 5) + 1,
-        comment: `Error processing: ${error instanceof Error ? error.message : 'Unknown error'}`
-      })),
-      overallScore: 5,
-      strengths: ['Error during processing'],
-      weaknesses: ['Could not determine'],
-      status: 'processed',
-      processedAt: new Date().toISOString()
-    };
+    // Return original candidate with N/A values to avoid breaking the app
+    return createEmptyCandidate(candidate, requirements);
   }
+};
+
+/**
+ * Create a candidate with N/A values for all fields
+ */
+const createEmptyCandidate = (candidate: Candidate, requirements: JobRequirement[]): Candidate => {
+  return {
+    ...candidate,
+    scores: requirements.map(req => ({
+      requirementId: req.id,
+      score: 0,
+      comment: 'N/A'
+    })),
+    overallScore: 0,
+    strengths: ['N/A'],
+    weaknesses: ['N/A'],
+    personalityTraits: ['N/A'],
+    cultureFit: 0,
+    leadershipPotential: 0,
+    education: 'N/A',
+    yearsOfExperience: 0,
+    location: 'N/A',
+    skillKeywords: ['N/A'],
+    communicationStyle: 'N/A',
+    preferredTools: ['N/A'],
+    status: 'processed',
+    processedAt: new Date().toISOString()
+  };
 };

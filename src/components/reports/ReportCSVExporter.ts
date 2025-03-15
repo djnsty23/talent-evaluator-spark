@@ -20,11 +20,11 @@ export const exportReportToCSV = (job: Job, candidateIds: string[]) => {
     // Add scores for each requirement
     job.requirements.forEach(req => {
       const score = candidate.scores.find(s => s.requirementId === req.id);
-      csvContent += `${score ? score.score : "N/A"},`;
+      csvContent += `${score && score.score > 0 ? score.score : "N/A"},`;
     });
     
     // Add overall score
-    csvContent += `${candidate.overallScore}\n`;
+    csvContent += `${candidate.overallScore > 0 ? candidate.overallScore : "N/A"}\n`;
   });
   
   // Create and download the CSV file

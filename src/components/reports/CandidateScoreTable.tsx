@@ -40,7 +40,7 @@ const CandidateScoreTable = ({ candidates, requirements }: CandidateScoreTablePr
   }
 
   // Make sure we have processed candidates with scores
-  const processedCandidates = candidates.filter(c => c.scores && c.scores.length > 0);
+  const processedCandidates = candidates.filter(c => c.status === 'processed');
   
   if (processedCandidates.length === 0) {
     return (
@@ -63,6 +63,11 @@ const CandidateScoreTable = ({ candidates, requirements }: CandidateScoreTablePr
     }
     
     if (sortConfig.key === 'overallScore') {
+      // Handle cases where one or both scores are 0 (N/A)
+      if (a.overallScore === 0 && b.overallScore === 0) return 0;
+      if (a.overallScore === 0) return sortConfig.direction === 'ascending' ? -1 : 1;
+      if (b.overallScore === 0) return sortConfig.direction === 'ascending' ? 1 : -1;
+      
       return sortConfig.direction === 'ascending'
         ? a.overallScore - b.overallScore
         : b.overallScore - a.overallScore;
@@ -72,6 +77,11 @@ const CandidateScoreTable = ({ candidates, requirements }: CandidateScoreTablePr
     const reqId = sortConfig.key;
     const scoreA = a.scores.find(s => s.requirementId === reqId)?.score || 0;
     const scoreB = b.scores.find(s => s.requirementId === reqId)?.score || 0;
+    
+    // Handle cases where one or both scores are 0 (N/A)
+    if (scoreA === 0 && scoreB === 0) return 0;
+    if (scoreA === 0) return sortConfig.direction === 'ascending' ? -1 : 1;
+    if (scoreB === 0) return sortConfig.direction === 'ascending' ? 1 : -1;
     
     return sortConfig.direction === 'ascending'
       ? scoreA - scoreB
@@ -85,7 +95,7 @@ const CandidateScoreTable = ({ candidates, requirements }: CandidateScoreTablePr
     <div className="border rounded-md overflow-x-auto">
       <Table>
         <TableCaption>
-          Scores of each candidate against job requirements (scale: 1-10)
+          Scores of each candidate against job requirements (scale: 1-10, or N/A if not evaluated)
         </TableCaption>
         <TableHeader className="bg-muted/50">
           <TableRow>

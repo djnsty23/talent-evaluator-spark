@@ -1,9 +1,7 @@
-
 import { JobRequirement, Job, Candidate, Report } from '@/types/job.types';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { generateMockAnalysis } from './candidateService/mockDataGenerator';
 import { getUserId } from '@/utils/authUtils';
 
 /**
@@ -138,8 +136,8 @@ export class JobService {
           jobId,
           scores: [],
           overallScore: 0,
-          strengths: [],
-          weaknesses: [],
+          strengths: ['N/A'],
+          weaknesses: ['N/A'],
           status: 'pending',
           processedAt: new Date().toISOString()
         };
@@ -259,7 +257,7 @@ export class ReportService {
       for (let i = 0; i < Math.min(3, sortedCandidates.length); i++) {
         const candidate = sortedCandidates[i];
         content += `### ${i + 1}. ${candidate.name}\n`;
-        content += `Overall Score: ${candidate.overallScore}/10\n\n`;
+        content += `Overall Score: ${candidate.overallScore > 0 ? candidate.overallScore + '/10' : 'N/A'}\n\n`;
         content += `Strengths:\n`;
         for (const strength of candidate.strengths) {
           content += `- ${strength}\n`;
@@ -279,7 +277,8 @@ export class ReportService {
       for (const candidate of sortedCandidates) {
         const strengths = candidate.strengths.slice(0, 2).join(", ");
         const weaknesses = candidate.weaknesses.slice(0, 2).join(", ");
-        content += `| ${candidate.name} | ${candidate.overallScore}/10 | ${strengths} | ${weaknesses} |\n`;
+        const score = candidate.overallScore > 0 ? candidate.overallScore + '/10' : 'N/A';
+        content += `| ${candidate.name} | ${score} | ${strengths} | ${weaknesses} |\n`;
       }
       
       // If there's an additional prompt, add a section for it
@@ -344,37 +343,31 @@ export class AIService {
     try {
       console.log('AI Generate Requirements Request:', data);
       
-      // If no OpenAI key is set, use mock data
+      // If no OpenAI key is set, return empty requirements
       if (!window.openAIKey) {
         throw new Error('OpenAI API key not set');
       }
       
-      // Mock OpenAI response for development
-      const mockRequirements = [
+      // Placeholder for API call - in production this would call OpenAI
+      // Return minimal requirements to let the user enter them manually
+      const baseRequirements = [
         {
           id: uuidv4(),
-          description: "Direct experience in customer success or a related role",
-          weight: 5,
+          description: "Experience requirement (please edit)",
+          weight: 3,
           category: "Experience",
           isRequired: true
         },
         {
           id: uuidv4(),
-          description: "Experience working in SaaS and/or familiarity with A/B testing, experimentation, or CRO",
-          weight: 4,
+          description: "Technical skill (please edit)",
+          weight: 3,
           category: "Technical",
-          isRequired: true
-        },
-        {
-          id: uuidv4(),
-          description: "Ability to analyze customer pain points, interpret data, and provide solutions",
-          weight: 5,
-          category: "Skills",
           isRequired: true
         }
       ];
       
-      return { requirements: mockRequirements };
+      return { requirements: baseRequirements };
     } catch (error) {
       console.error('Error generating requirements:', error);
       throw error;
@@ -415,7 +408,7 @@ export class AIService {
     try {
       console.log('AI Analyze Candidate Request:', { candidateData, requirements });
 
-      // If no OpenAI key is set, use mock data
+      // If no OpenAI key is set, return N/A values
       if (!window.openAIKey) {
         throw new Error('OpenAI API key not set');
       }
@@ -426,45 +419,28 @@ export class AIService {
         displayNumber: index + 1
       }));
 
-      // Format the requirements for the prompt
-      const requirementsText = numberedRequirements
-        .map(req => `${req.displayNumber}. ${req.description} (Weight: ${req.weight}, Required: ${req.isRequired ? 'Yes' : 'No'})`)
-        .join('\n');
-
-      // Mock OpenAI response for development
-      // Create scores with proper UUIDs from the requirements
-      const mockScores = numberedRequirements.map(req => ({
-        requirementId: req.id, // Use actual UUID from requirements
-        score: Math.floor(Math.random() * 4) + 6, // 6-9
-        notes: `The candidate has ${Math.random() > 0.7 ? 'excellent' : 'good'} experience in ${req.description}.`
-      }));
-
-      const mockResponse = {
-        scores: mockScores,
-        overallScore: 8,
-        strengths: [
-          'Strong communication skills',
-          'Experience in customer success',
-          'Technical aptitude'
-        ],
-        weaknesses: [
-          'Limited experience with specific tools',
-          'Could benefit from more formal training'
-        ],
-        notes: 'Overall, a strong candidate for the customer success role.',
-        personalityTraits: ['Analytical', 'Collaborative', 'Detail-oriented'],
-        cultureFit: 8,
-        leadershipPotential: 7,
-        education: "Bachelor's Degree",
-        yearsOfExperience: 4,
-        location: 'Remote',
-        skillKeywords: ['Customer Success', 'SaaS', 'Relationship Management'],
-        communicationStyle: 'Clear and concise',
-        preferredTools: ['Zendesk', 'Salesforce', 'Google Analytics']
+      // In a real implementation, this would be sent to the API
+      // For now, return empty data with N/A values
+      return {
+        scores: numberedRequirements.map(req => ({
+          requirementId: req.id,
+          score: 0,
+          notes: 'N/A - Awaiting AI analysis'
+        })),
+        overallScore: 0,
+        strengths: ['N/A - Awaiting AI analysis'],
+        weaknesses: ['N/A - Awaiting AI analysis'],
+        notes: 'N/A - Awaiting AI analysis',
+        personalityTraits: ['N/A'],
+        cultureFit: 0,
+        leadershipPotential: 0,
+        education: 'N/A',
+        yearsOfExperience: 0,
+        location: 'N/A',
+        skillKeywords: ['N/A'],
+        communicationStyle: 'N/A',
+        preferredTools: ['N/A']
       };
-
-      // Use mock response since this is a frontend-only demo
-      return mockResponse;
     } catch (error) {
       console.error('Error in AI analysis:', error);
       throw error;
@@ -486,21 +462,21 @@ export class AIService {
         additionalPrompt
       });
       
-      // Mock response with the report content and structured data
+      // Response with N/A content when no real AI analysis is possible
       return {
-        content: `# Candidate Ranking Report for ${job.title}\n\nThis report analyzes ${candidates.length} candidates for the ${job.title} position at ${job.company}.\n\n${additionalPrompt ? `Additional context: ${additionalPrompt}\n\n` : ''}## Top Candidates\n\n1. ${candidates[0]?.name || 'Candidate 1'}\n2. ${candidates[1]?.name || 'Candidate 2'}\n3. ${candidates[2]?.name || 'Candidate 3'}\n\n## Detailed Analysis\n\nThe candidates have been evaluated based on the job requirements...`,
+        content: `# Candidate Ranking Report for ${job.title}\n\nThis report analyzes ${candidates.length} candidates for the ${job.title} position at ${job.company}.\n\n${additionalPrompt ? `Additional context: ${additionalPrompt}\n\n` : ''}## Top Candidates\n\nNo AI analysis available. Please enable AI features to get a detailed analysis.\n\n## Detailed Analysis\n\nN/A - Awaiting AI analysis`,
         candidateRankings: candidates.map((c, i) => ({
           candidateId: c.id,
           name: c.name,
           rank: i + 1,
-          overallScore: 10 - i
+          overallScore: 0
         })),
         topCandidates: candidates.slice(0, 3).map(c => c.id),
         comparisonMatrix: candidates.map(c => ({
           candidateId: c.id,
-          strengths: c.strengths || ['Communication', 'Technical skills'],
-          weaknesses: c.weaknesses || ['Limited experience'],
-          score: c.overallScore || Math.floor(Math.random() * 3) + 7
+          strengths: c.strengths || ['N/A'],
+          weaknesses: c.weaknesses || ['N/A'],
+          score: c.overallScore || 0
         }))
       };
     } catch (error) {

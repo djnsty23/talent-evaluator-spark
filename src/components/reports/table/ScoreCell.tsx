@@ -29,13 +29,13 @@ const ScoreCell = ({ score, isHighest, weight = 1 }: ScoreCellProps) => {
           <TooltipTrigger asChild>
             <div className="flex items-center gap-2">
               <div className="w-8 text-center font-medium">
-                {score || '-'}
+                {score > 0 ? score : 'N/A'}
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
                 <div 
                   className={`h-2.5 rounded-full ${scoreColor} transition-all duration-500 ease-out`}
                   style={{ 
-                    width: `${score * 10}%`,
+                    width: `${score > 0 ? score * 10 : 0}%`,
                     boxShadow: isHighest ? '0 0 5px rgba(139, 92, 246, 0.5)' : 'none'
                   }}
                 ></div>
@@ -43,7 +43,7 @@ const ScoreCell = ({ score, isHighest, weight = 1 }: ScoreCellProps) => {
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Score: {score}/10</p>
+            <p>Score: {score > 0 ? `${score}/10` : 'N/A'}</p>
             {weight && weight !== 1 && <p>Requirement weight: {weight}</p>}
             {isHighest && <p className="text-green-500">Highest score</p>}
           </TooltipContent>

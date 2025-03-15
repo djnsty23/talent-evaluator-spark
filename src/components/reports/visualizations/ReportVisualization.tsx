@@ -13,9 +13,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
-  Line,
-  ComposedChart
+  Legend
 } from 'recharts';
 import { Star } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -23,7 +21,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Candidate, JobRequirement } from '@/types/job.types';
 import { prepareRadarChartData, prepareBarChartData, createChartConfig } from '../utils/visualizationUtils';
-import { calculateAverageScores } from '../utils/scoreUtils';
 
 interface ReportVisualizationProps {
   candidates: Candidate[];
@@ -53,6 +50,22 @@ const ReportVisualization = ({ candidates, requirements }: ReportVisualizationPr
     );
   }
   
+  // Check if we have any actual scores (not N/A) to visualize
+  const hasScores = validCandidates.some(c => c.overallScore > 0);
+  
+  if (!hasScores) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Candidate Visualization</CardTitle>
+          <CardDescription>
+            No scores available to visualize. Process candidates to view visualizations.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+  
   // Create chart data with error handling
   try {
     const radarData = prepareRadarChartData(validCandidates, validRequirements);
@@ -69,7 +82,7 @@ const ReportVisualization = ({ candidates, requirements }: ReportVisualizationPr
               {data.name}
               {data.isStarred && <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />}
             </p>
-            <p className="text-sm">Score: {data.score.toFixed(1)}/10</p>
+            <p className="text-sm">Score: {data.score > 0 ? `${data.score.toFixed(1)}/10` : 'N/A'}</p>
           </div>
         );
       }

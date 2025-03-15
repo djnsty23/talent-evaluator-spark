@@ -14,9 +14,9 @@ export const formatCandidateScores = (candidate: Candidate, job: Job) => {
     const score = candidate.scores.find(s => s.requirementId === req.id);
     return {
       requirement: req.description || 'Unknown requirement',
-      score: score ? score.score : 0,
+      score: score && score.score > 0 ? score.score : 0,
       weight: req.weight || 1,
-      comments: score && score.comment ? score.comment : 'No evaluation'
+      comments: score && score.comment ? score.comment : 'N/A'
     };
   });
 };
@@ -33,22 +33,22 @@ export const formatCandidatesForAI = (candidates: Candidate[]) => {
   console.log('Formatting candidates for AI:', candidates);
   
   return candidates.map(candidate => {
-    // Ensure all fields have valid values, with defaults when needed
+    // Ensure all fields have valid values, with N/A when needed
     return {
       id: candidate.id,
       name: candidate.name || 'Unnamed Candidate',
       overallScore: candidate.overallScore || 0,
-      strengths: candidate.strengths || [],
-      weaknesses: candidate.weaknesses || [],
-      education: candidate.education || '',
+      strengths: candidate.strengths && candidate.strengths[0] !== 'N/A' ? candidate.strengths : [],
+      weaknesses: candidate.weaknesses && candidate.weaknesses[0] !== 'N/A' ? candidate.weaknesses : [],
+      education: candidate.education && candidate.education !== 'N/A' ? candidate.education : '',
       yearsOfExperience: candidate.yearsOfExperience || 0,
-      location: candidate.location || '',
+      location: candidate.location && candidate.location !== 'N/A' ? candidate.location : '',
       scores: candidate.scores || [],
       cultureFit: candidate.cultureFit || 0,
       leadershipPotential: candidate.leadershipPotential || 0,
-      skillKeywords: candidate.skillKeywords || [],
-      personalityTraits: candidate.personalityTraits || [],
-      communicationStyle: candidate.communicationStyle || ''
+      skillKeywords: candidate.skillKeywords && candidate.skillKeywords[0] !== 'N/A' ? candidate.skillKeywords : [],
+      personalityTraits: candidate.personalityTraits && candidate.personalityTraits[0] !== 'N/A' ? candidate.personalityTraits : [],
+      communicationStyle: candidate.communicationStyle && candidate.communicationStyle !== 'N/A' ? candidate.communicationStyle : ''
     };
   });
 };
