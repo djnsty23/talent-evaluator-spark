@@ -193,18 +193,15 @@ export class AIService {
           messages: [
             {
               role: 'system',
-              content: `You are an AI specialized in HR and recruitment evaluation. Your task is to perform a comprehensive analysis of a candidate's resume against specific job requirements.
+              content: `You are an expert talent evaluator specializing in detailed candidate assessment. Your task is to provide comprehensive, evidence-based evaluations with specific justifications for each score.
 
-Your analysis should be thorough and standardized across all candidates, focusing on:
-
-1. Scoring each requirement on a scale of 1-10, with clear explanations
-2. Determining overall candidate fit with a weighted score
-3. Identifying key strengths and weaknesses with specific examples from the resume
-4. Evaluating culture fit based on past experiences and achievements
-5. Assessing leadership potential based on role progression and responsibilities
-6. Structured evaluation of technical skills, soft skills, and experience
-
-Ensure that similar skills are evaluated consistently across all candidates for fair comparison.`
+IMPORTANT EVALUATION GUIDELINES:
+1. Provide concrete justifications for each score citing specific evidence from the resume
+2. Use precise, factual language in justifications (e.g., "5+ years developing React applications" rather than "good experience")
+3. For each requirement, identify specific examples that demonstrate competency or gaps
+4. Maintain consistent evaluation standards across all skills and categories
+5. Format justifications as concise, evidence-based statements similar to: "Strong analytical skills demonstrated through implementation of data-driven marketing campaigns that increased conversion by 25%"
+6. Identify both strengths and potential development areas with specific examples`
             },
             {
               role: 'user',
@@ -213,43 +210,50 @@ Ensure that similar skills are evaluated consistently across all candidates for 
 Resume:
 ${candidateData.content || 'No resume content provided'}
 
-Job Requirements:
-${requirements.map(req => `- ${req.description} (Weight: ${req.weight}, Required: ${req.isRequired}, Category: ${req.category})`).join('\n')}
+Job Requirements (categorized):
+${requirements.map(req => `- [${req.category}] ${req.description} (Weight: ${req.weight}, Required: ${req.isRequired})`).join('\n')}
 
-Provide a detailed analysis with the following structure (return as JSON):
+For EACH requirement:
+1. Provide a score from 1-10
+2. Write a SPECIFIC justification (1-2 sentences) that:
+   - Cites concrete evidence from the resume
+   - References specific skills, tools, or experiences
+   - Quantifies experience or achievements when possible
+   - Uses terminology from the actual requirement
+
+Format your response as JSON with this structure:
 {
   "scores": [
     {
       "requirementId": "req_id",
       "score": number from 1-10,
-      "notes": "Detailed explanation of the score with specific examples from the resume"
-    },
-    ...
+      "notes": "Detailed justification with specific evidence from resume"
+    }
   ],
   "overallScore": number from 1-10,
-  "strengths": ["Specific strength 1", "Specific strength 2", ...],
-  "weaknesses": ["Specific weakness 1", "Specific weakness 2", ...],
+  "strengths": ["Specific strength with evidence"],
+  "weaknesses": ["Specific weakness with evidence"],
   "cultureFit": {
     "score": number from 1-10,
-    "notes": "Analysis of cultural fit based on past experiences"
+    "notes": "Evidence-based analysis of cultural fit"
   },
   "leadershipPotential": {
     "score": number from 1-10,
-    "notes": "Analysis of leadership potential"
+    "notes": "Evidence-based analysis of leadership potential"
   },
   "skillAssessment": {
-    "technicalSkills": ["Skill 1", "Skill 2", ...],
-    "softSkills": ["Skill 1", "Skill 2", ...],
-    "experienceEvaluation": "Evaluation of relevant experience"
+    "technicalSkills": ["Skill 1 with proficiency level", "Skill 2 with proficiency level"],
+    "softSkills": ["Skill 1 with supporting evidence", "Skill 2 with supporting evidence"],
+    "experienceEvaluation": "Detailed evaluation of experience relevance and depth"
   },
   "notes": "Overall comprehensive analysis"
 }
 
-Return ONLY the JSON object with no explanation or additional text.`
+Ensure each score has a specific, evidence-based justification that demonstrates WHY the candidate received that score based on their actual experience.`
             }
           ],
-          temperature: 0.7,
-          max_tokens: 2500
+          temperature: 0.5,
+          max_tokens: 3000
         })
       });
       
@@ -279,7 +283,11 @@ Return ONLY the JSON object with no explanation or additional text.`
       
       // Ensure the result has the expected structure and handle new fields
       const result: AICandidateAnalysisResponse = {
-        scores: analysisResult.scores || [],
+        scores: analysisResult.scores.map((score: any) => ({
+          requirementId: score.requirementId,
+          score: score.score,
+          notes: score.notes || '',
+        })) || [],
         overallScore: analysisResult.overallScore || 0,
         strengths: analysisResult.strengths || [],
         weaknesses: analysisResult.weaknesses || [],
