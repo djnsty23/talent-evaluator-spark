@@ -14,7 +14,7 @@ interface JobRequirementFormProps {
 }
 
 // Predefined categories for job requirements
-const REQUIREMENT_CATEGORIES = [
+export const REQUIREMENT_CATEGORIES = [
   'Skills',
   'Experience',
   'Education',
