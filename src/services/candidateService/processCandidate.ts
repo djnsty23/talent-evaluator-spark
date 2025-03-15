@@ -11,12 +11,79 @@ export function isValidUUID(id: string): boolean {
 }
 
 /**
+ * Ensures that job requirements are mapped properly in the database
+ */
+async function ensureRequirementsMapped(jobId: string, requirements: JobRequirement[]): Promise<Map<string, string>> {
+  console.log(`Ensuring ${requirements.length} requirements are mapped for job ${jobId}`);
+  
+  // Create a mapping between original requirement ID and database ID
+  const mappingResult = new Map<string, string>();
+  
+  // Check which requirements are already mapped
+  const { data: existingMappings } = await supabase
+    .from('job_requirements_mapping')
+    .select('*')
+    .eq('job_id', jobId);
+  
+  const existingMap = new Map<string, any>();
+  if (existingMappings && existingMappings.length > 0) {
+    existingMappings.forEach(mapping => {
+      existingMap.set(mapping.original_id, mapping);
+    });
+  }
+  
+  // Process each requirement
+  for (const req of requirements) {
+    try {
+      // Skip if not a valid UUID
+      if (!isValidUUID(req.id)) {
+        console.log(`Invalid requirement ID: ${req.id} - skipping`);
+        continue;
+      }
+      
+      // Check if this requirement is already mapped
+      if (existingMap.has(req.id)) {
+        const mapping = existingMap.get(req.id);
+        mappingResult.set(req.id, mapping.id);
+        continue;
+      }
+      
+      // Create a new mapping
+      const mappingId = uuidv4();
+      const { error } = await supabase
+        .from('job_requirements_mapping')
+        .insert({
+          id: mappingId,
+          job_id: jobId,
+          original_id: req.id,
+          description: req.description || 'No description',
+          weight: req.weight || 1
+        });
+      
+      if (error) {
+        console.error('Error saving requirement mapping:', error);
+      } else {
+        console.log(`Created mapping for requirement: ${req.id} -> ${mappingId}`);
+        mappingResult.set(req.id, mappingId);
+      }
+    } catch (err) {
+      console.error(`Error processing requirement ${req.id}:`, err);
+    }
+  }
+  
+  return mappingResult;
+}
+
+/**
  * Process a candidate by analyzing their resume and scoring against job requirements
  */
 export const processCandidate = async (candidate: Candidate, requirements: JobRequirement[]): Promise<Candidate> => {
   console.log('Processing candidate:', candidate.name);
   
   try {
+    // First ensure all requirements are properly mapped in the database
+    const requirementMappings = await ensureRequirementsMapped(candidate.jobId, requirements);
+    
     // In a production environment with OpenAI API key, we'll use the AI service
     let processedCandidate: Candidate;
     
@@ -114,9 +181,9 @@ export const processCandidate = async (candidate: Candidate, requirements: JobRe
       // First check if analysis already exists for this candidate
       const { data: existingAnalysis } = await supabase
         .from('candidate_analysis')
-        .select('candidate_id')
+        .select('*')
         .eq('candidate_id', processedCandidate.id)
-        .single();
+        .maybeSingle();
       
       if (!existingAnalysis) {
         // Save analysis data if it doesn't exist yet
@@ -163,7 +230,7 @@ export const processCandidate = async (candidate: Candidate, requirements: JobRe
         .delete()
         .eq('candidate_id', processedCandidate.id);
       
-      // Save the scores
+      // Save the scores using the mapped requirement IDs
       for (const score of processedCandidate.scores) {
         // Skip saving if requirementId isn't a valid UUID
         if (!isValidUUID(score.requirementId)) {
@@ -171,11 +238,18 @@ export const processCandidate = async (candidate: Candidate, requirements: JobRe
           continue;
         }
         
+        // Get the mapped requirement ID
+        const mappedRequirementId = requirementMappings.get(score.requirementId);
+        if (!mappedRequirementId) {
+          console.log(`No mapping found for requirement ID: ${score.requirementId} - skipping DB save`);
+          continue;
+        }
+        
         const { error } = await supabase
           .from('candidate_scores')
           .insert({
             candidate_id: processedCandidate.id,
-            requirement_id: score.requirementId,
+            requirement_id: mappedRequirementId,
             score: score.score,
             explanation: score.comment
           });

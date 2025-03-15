@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { useJob } from '@/contexts/job/JobContext';
 import { Job } from '@/types/job.types';
@@ -11,10 +12,18 @@ export function useProcessSingleCandidate(
   setShowPostProcessCTA: React.Dispatch<React.SetStateAction<boolean>>
 ) {
   const { processCandidate, jobs } = useJob();
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleProcessCandidate = async (candidateId: string) => {
-    if (!jobId) return;
+  const handleProcessCandidate = async (candidateId: string, e?: React.MouseEvent) => {
+    // Prevent default behavior to avoid any navigation
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     
+    if (!jobId || isProcessing) return;
+    
+    setIsProcessing(true);
     setProcessingCandidateIds(prev => [...prev, candidateId]);
     
     try {
@@ -34,6 +43,7 @@ export function useProcessSingleCandidate(
       toast.error('Failed to process candidate');
     } finally {
       setProcessingCandidateIds(prev => prev.filter(id => id !== candidateId));
+      setIsProcessing(false);
     }
   };
 

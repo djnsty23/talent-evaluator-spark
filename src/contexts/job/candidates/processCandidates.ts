@@ -4,6 +4,14 @@ import { processCandidate } from '@/services/candidateService';
 import { saveStorageItem } from '@/utils/storage';
 import { toast } from 'sonner';
 
+// Delay between API calls to avoid rate limiting
+const PROCESSING_DELAY_MS = 1000;
+
+/**
+ * Helper function to introduce a delay between processing requests
+ */
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 /**
  * Hook for processing individual candidates
  */
@@ -121,15 +129,22 @@ export function useProcessAllCandidates(
       let successCount = 0;
       let errorCount = 0;
       
-      // Process each candidate sequentially to avoid race conditions
+      // Process each candidate sequentially with delay to avoid rate limiting
       for (const candidate of unprocessedCandidates) {
         try {
           console.log(`Processing candidate: ${candidate.name} (${candidate.id})`);
           await processCandidateAction(jobId, candidate.id);
           successCount++;
+          
+          // Add delay to avoid rate limiting
+          if (unprocessedCandidates.length > 1) {
+            await delay(PROCESSING_DELAY_MS);
+          }
         } catch (error) {
           errorCount++;
           console.error(`Error processing candidate ${candidate.name}:`, error);
+          // Continue with next candidate even if this one failed
+          await delay(PROCESSING_DELAY_MS);
         }
       }
       
