@@ -4,6 +4,7 @@ import { Job } from '@/types/job.types';
 
 export function useProcessingEffects(
   job: Job | null,
+  setProcessingCandidateIds: React.Dispatch<React.SetStateAction<string[]>>,
   setShowPostProcessCTA: React.Dispatch<React.SetStateAction<boolean>>
 ) {
   // Effect to check if all candidates are processed

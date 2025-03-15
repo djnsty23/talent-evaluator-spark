@@ -28,7 +28,7 @@ export function useCandidateProcessing(jobId: string | undefined, job: Job | nul
 
   // Single candidate processing
   const { handleProcessCandidate } = useProcessSingleCandidate(
-    jobId,
+    jobId, 
     job,
     processingCandidateIds,
     setProcessingCandidateIds,

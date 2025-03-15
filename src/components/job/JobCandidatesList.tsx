@@ -28,7 +28,7 @@ const JobCandidatesList = ({
   const [searchTerm, setSearchTerm] = useState('');
   
   // Filter candidates
-  const { filteredCandidates, selectedFilter, setSelectedFilter } = 
+  const { filteredCandidates, filter, setFilter } = 
     useCandidateFiltering(job.candidates, searchTerm);
   
   // Candidate processing
@@ -63,14 +63,14 @@ const JobCandidatesList = ({
         
         <div className="flex gap-3 flex-wrap">
           <CandidateFilter 
-            selectedFilter={selectedFilter} 
-            setSelectedFilter={setSelectedFilter}
-            candidateCounts={{
-              all: job.candidates.length,
-              starred: job.candidates.filter(c => c.isStarred).length,
-              processed: job.candidates.filter(c => c.scores.length > 0).length,
-              unprocessed: job.candidates.filter(c => c.scores.length === 0).length
-            }}
+            filter={filter}
+            onFilterChange={setFilter}
+            searchQuery={searchTerm}
+            setSearchQuery={setSearchTerm}
+            totalCandidates={job.candidates.length}
+            starredCount={job.candidates.filter(c => c.isStarred).length}
+            processedCount={job.candidates.filter(c => c.scores.length > 0).length}
+            unprocessedCount={job.candidates.filter(c => c.scores.length === 0).length}
           />
           
           <div className="flex gap-2">
@@ -88,7 +88,10 @@ const JobCandidatesList = ({
               unprocessedCount={unprocessedCount}
               isProcessingAll={isProcessingAll}
               processingCandidateIds={processingCandidateIds}
-              onProcessAll={handleProcessAllCandidatesClick}
+              onProcessAll={() => {
+                handleProcessAllCandidatesClick();
+                return;
+              }}
             />
           </div>
         </div>
@@ -109,7 +112,6 @@ const JobCandidatesList = ({
       {showPostProcessCTA && !isProcessingAll && (
         <div className="mb-6">
           <PostProcessingCTA
-            onClose={() => setShowPostProcessCTA(false)}
             jobId={job.id}
           />
         </div>
@@ -117,7 +119,7 @@ const JobCandidatesList = ({
       
       {/* No candidates state */}
       {job.candidates.length === 0 ? (
-        <EmptyCandidatesState onUpload={handleUploadCandidates} />
+        <EmptyCandidatesState jobId={job.id} />
       ) : (
         <>
           {/* No results from filter */}
@@ -137,7 +139,10 @@ const JobCandidatesList = ({
                   candidate={candidate}
                   jobId={job.id}
                   onClick={() => handleAnalyzeCandidate(candidate.id)}
-                  onProcess={(e) => handleProcessCandidate(candidate.id, e)}
+                  onProcess={(e) => {
+                    handleProcessCandidate(candidate.id, e);
+                    return;
+                  }}
                   isProcessing={processingCandidateIds.includes(candidate.id)}
                 />
               ))}
