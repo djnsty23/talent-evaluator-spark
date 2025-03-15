@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Job } from "@/types/job.types";
@@ -24,14 +25,31 @@ const JobDetailHeader = ({
   const { deleteJob } = useJob();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Clean up state when component unmounts or job changes
+  useEffect(() => {
+    return () => {
+      if (showDeleteConfirm) {
+        setShowDeleteConfirm(false);
+      }
+    };
+  }, [job.id]); // Reset dialog when job ID changes
 
   const handleDelete = async () => {
+    if (isDeleting) return; // Prevent multiple deletion attempts
+    
     setIsDeleting(true);
+    console.log(`Starting job deletion for job: ${job.id}`);
     
     try {
       await deleteJob(job.id);
       toast.success('Job deleted successfully');
-      navigate('/dashboard');
+      
+      // Use setTimeout to ensure UI state is updated before navigation
+      setTimeout(() => {
+        console.log('Navigating to dashboard after job deletion');
+        navigate('/dashboard');
+      }, 100);
     } catch (error) {
       console.error('Error deleting job:', error);
       toast.error('Failed to delete job');
@@ -39,6 +57,12 @@ const JobDetailHeader = ({
       setIsDeleting(false);
       setShowDeleteConfirm(false); // Always reset modal state
     }
+  };
+
+  // Handle closing the confirm dialog
+  const handleCancelDelete = () => {
+    console.log('Cancelling job deletion');
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -114,20 +138,22 @@ const JobDetailHeader = ({
             size="sm" 
             onClick={() => setShowDeleteConfirm(true)}
             className="flex items-center text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+            disabled={isDeleting}
           >
             <Trash2 className="h-4 w-4 mr-1" />
-            Delete Job
+            {isDeleting ? 'Deleting...' : 'Delete Job'}
           </Button>
         </div>
       </div>
 
+      {/* Only render the dialog when showDeleteConfirm is true */}
       {showDeleteConfirm && (
         <ConfirmDialog 
           isOpen={showDeleteConfirm}
           title="Delete Job"
           description="Are you sure you want to delete this job? This will permanently remove the job and all associated candidates. This action cannot be undone."
           onConfirm={handleDelete}
-          onCancel={() => setShowDeleteConfirm(false)}
+          onCancel={handleCancelDelete}
           confirmText={isDeleting ? "Deleting..." : "Delete"}
           cancelText="Cancel"
         />

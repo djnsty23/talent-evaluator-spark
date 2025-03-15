@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,8 +26,20 @@ const JobList = ({ jobs }: JobListProps) => {
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   
+  // Clean up state when component unmounts or jobs change
+  useEffect(() => {
+    return () => {
+      if (jobToDelete) {
+        setJobToDelete(null);
+      }
+    };
+  }, [jobs]); // Reset dialog when jobs array changes
+
   const handleDeleteJob = async (jobId: string) => {
+    if (isDeleting) return; // Prevent multiple deletions
+    
     setIsDeleting(true);
+    console.log(`Starting deletion for job: ${jobId}`);
     
     try {
       await deleteJob(jobId);
@@ -39,6 +51,12 @@ const JobList = ({ jobs }: JobListProps) => {
       setIsDeleting(false);
       setJobToDelete(null); // Always reset jobToDelete to ensure dialog is closed
     }
+  };
+  
+  // Handle cancel deletion
+  const handleCancelDelete = () => {
+    console.log('Cancelling job deletion');
+    setJobToDelete(null);
   };
   
   if (jobs.length === 0) {
@@ -135,7 +153,7 @@ const JobList = ({ jobs }: JobListProps) => {
           title="Delete Job"
           description="Are you sure you want to delete this job? This will permanently remove the job and all associated candidates. This action cannot be undone."
           onConfirm={() => jobToDelete && handleDeleteJob(jobToDelete)}
-          onCancel={() => setJobToDelete(null)}
+          onCancel={handleCancelDelete}
           confirmText={isDeleting ? "Deleting..." : "Delete"}
           cancelText="Cancel"
         />

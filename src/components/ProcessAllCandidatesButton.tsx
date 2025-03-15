@@ -15,6 +15,7 @@ const ProcessAllCandidatesButton = ({
   processingCandidateIds,
   onProcessAll
 }: ProcessAllCandidatesButtonProps) => {
+  // Don't show the button if there are no unprocessed candidates
   if (unprocessedCount === 0) {
     return null;
   }
@@ -34,7 +35,7 @@ const ProcessAllCandidatesButton = ({
       ) : (
         <>
           <CheckCircle2 className="h-4 w-4 mr-2" />
-          Process All Candidates ({unprocessedCount})
+          Process All ({unprocessedCount})
         </>
       )}
     </Button>
