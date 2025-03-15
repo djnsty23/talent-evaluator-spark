@@ -1,3 +1,5 @@
+
+import { v4 as uuidv4 } from 'uuid';
 import { Candidate } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -63,10 +65,13 @@ export const saveCandidatesData = async (candidates: Candidate[], jobId: string)
  */
 export const saveCandidateScores = async (candidateId: string, scores: any[]): Promise<void> => {
   for (const score of scores) {
+    // Generate a proper UUID instead of using string concatenation
+    const scoreId = score.id || uuidv4();
+    
     const { error } = await supabase
       .from('candidate_scores')
       .upsert({ 
-        id: score.id || score.requirementId + '_' + candidateId,
+        id: scoreId,
         candidate_id: candidateId,
         requirement_id: score.requirementId,
         score: score.score,
@@ -85,10 +90,13 @@ export const saveCandidateScores = async (candidateId: string, scores: any[]): P
  */
 export const saveCandidateScoresData = async (candidateId: string, scores: any[]): Promise<void> => {
   for (const score of scores) {
+    // Generate a proper UUID instead of using string concatenation
+    const scoreId = score.id || uuidv4();
+    
     const { error } = await supabase
       .from('candidate_scores')
       .upsert({ 
-        id: score.id || `${score.requirementId}_${candidateId}`,
+        id: scoreId,
         candidate_id: candidateId,
         requirement_id: score.requirementId,
         score: score.score,

@@ -2,6 +2,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Job, Report, Candidate } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 // Helper to format candidate scores for the report
 const formatCandidateScores = (candidate: Candidate, job: Job) => {
@@ -177,8 +178,10 @@ export const generateReport = async (
     const reportContent = generateReportContent(job, candidateIds, additionalPrompt);
     
     // Create a report with real content
+    const reportId = uuidv4();
+    
     const report: Report = {
-      id: uuidv4(),
+      id: reportId,
       title: `Candidate Ranking Report for ${job.title}`,
       summary: `Analysis of ${candidateIds.length} candidates for ${job.title} at ${job.company}`,
       content: reportContent,
@@ -188,34 +191,41 @@ export const generateReport = async (
       createdAt: new Date().toISOString(),
     };
     
-    // Save to Supabase
-    const { error } = await supabase.from('reports').insert({
-      id: report.id,
-      title: report.title,
-      content: report.content,
-      job_id: report.jobId // Map from our app's jobId to the DB's job_id
-    });
-    
-    if (error) {
-      console.error('Error saving report:', error);
-      throw new Error('Failed to save report');
-    }
-    
-    // Link candidates to report
-    for (const candidateId of candidateIds) {
-      const { error: linkError } = await supabase.from('report_candidates').insert({
-        report_id: report.id,
-        candidate_id: candidateId
+    // Save to Supabase with better error handling
+    try {
+      const { error } = await supabase.from('reports').insert({
+        id: reportId,
+        title: report.title,
+        content: report.content,
+        job_id: report.jobId
       });
       
-      if (linkError) {
-        console.error('Error linking candidate to report:', linkError);
+      if (error) {
+        console.error('Error saving report:', error);
+        toast.error('Failed to save report to database');
+      } else {
+        // Only attempt to link candidates if the report was saved successfully
+        // Link candidates to report with better error handling
+        for (const candidateId of candidateIds) {
+          const { error: linkError } = await supabase.from('report_candidates').insert({
+            report_id: reportId,
+            candidate_id: candidateId
+          });
+          
+          if (linkError) {
+            console.error('Error linking candidate to report:', linkError);
+          }
+        }
       }
+    } catch (dbError) {
+      console.error('Database error when saving report:', dbError);
+      toast.error('Database error occurred while saving the report');
     }
     
     return report;
   } catch (error) {
     console.error('Error generating report:', error);
+    toast.error('Failed to generate report');
     throw new Error('Failed to generate report');
   }
 };

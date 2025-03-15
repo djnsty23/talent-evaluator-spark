@@ -1,4 +1,5 @@
 
+import { v4 as uuidv4 } from 'uuid';
 import { JobRequirement } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -7,10 +8,13 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export const saveJobRequirements = async (jobId: string, requirements: JobRequirement[]): Promise<void> => {
   for (const req of requirements) {
+    // Ensure requirement ID is a valid UUID
+    const requirementId = req.id && req.id.includes('-') ? req.id : uuidv4();
+    
     const { error } = await supabase
       .from('job_requirements')
       .upsert({ 
-        id: req.id,
+        id: requirementId,
         job_id: jobId,
         title: req.category || 'Requirement',
         description: req.description,
@@ -29,10 +33,13 @@ export const saveJobRequirements = async (jobId: string, requirements: JobRequir
  */
 export const saveRequirementsData = async (requirements: JobRequirement[], jobId: string): Promise<void> => {
   for (const req of requirements) {
+    // Ensure requirement ID is a valid UUID
+    const requirementId = req.id && req.id.includes('-') ? req.id : uuidv4();
+    
     const { error } = await supabase
       .from('job_requirements')
       .upsert({ 
-        id: req.id,
+        id: requirementId,
         job_id: jobId,
         title: req.category || 'Requirement',
         description: req.description,
