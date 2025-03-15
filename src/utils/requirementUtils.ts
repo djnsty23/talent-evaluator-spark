@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import { JobRequirement } from '@/types/job.types';
+import { getUserId } from '@/utils/authUtils';
 
 /**
  * Syncs requirements from the application to the database
@@ -13,6 +14,26 @@ export async function syncRequirementsToDatabase(jobId: string, requirements: Jo
   const requirementMapping = new Map<string, string>();
   
   try {
+    // Check authentication
+    const userId = await getUserId();
+    if (!userId) {
+      console.error('User not authenticated when syncing requirements');
+      return requirementMapping;
+    }
+    
+    // Verify job exists and belongs to current user
+    const { data: jobData, error: jobError } = await supabase
+      .from('jobs')
+      .select('id')
+      .eq('id', jobId)
+      .eq('user_id', userId)
+      .single();
+      
+    if (jobError || !jobData) {
+      console.error('Job not found or access denied when syncing requirements:', jobError);
+      return requirementMapping;
+    }
+    
     // Check for existing mappings
     const { data: existingMappings, error: fetchError } = await supabase
       .from('job_requirements_mapping')
@@ -71,8 +92,28 @@ export async function syncRequirementsToDatabase(jobId: string, requirements: Jo
  */
 export async function areRequirementsSynced(jobId: string, requirements: JobRequirement[]): Promise<boolean> {
   try {
+    // Check authentication
+    const userId = await getUserId();
+    if (!userId) {
+      console.error('User not authenticated when checking synced requirements');
+      return false;
+    }
+    
+    // Verify job exists and belongs to current user
+    const { data: jobData, error: jobError } = await supabase
+      .from('jobs')
+      .select('id')
+      .eq('id', jobId)
+      .eq('user_id', userId)
+      .single();
+      
+    if (jobError || !jobData) {
+      console.error('Job not found or access denied when checking synced requirements:', jobError);
+      return false;
+    }
+    
     // Get count of mapped requirements
-    const { data, error } = await supabase
+    const { data, error, count } = await supabase
       .from('job_requirements_mapping')
       .select('id', { count: 'exact' })
       .eq('job_id', jobId);
@@ -82,9 +123,50 @@ export async function areRequirementsSynced(jobId: string, requirements: JobRequ
       return false;
     }
     
-    return data.length === requirements.length;
+    return (count || 0) === requirements.length;
   } catch (error) {
     console.error('Error checking synced requirements:', error);
     return false;
+  }
+}
+
+/**
+ * Cleans up requirement mappings when a job is deleted
+ */
+export async function cleanupRequirementMappings(jobId: string): Promise<void> {
+  try {
+    // Check authentication
+    const userId = await getUserId();
+    if (!userId) {
+      console.error('User not authenticated when cleaning up requirement mappings');
+      return;
+    }
+    
+    // Check if the job belongs to the current user before deleting mappings
+    const { data: jobData, error: jobError } = await supabase
+      .from('jobs')
+      .select('id')
+      .eq('id', jobId)
+      .eq('user_id', userId)
+      .single();
+      
+    if (jobError) {
+      console.error('Job not found or access denied when cleaning up requirement mappings:', jobError);
+      return;
+    }
+    
+    // Delete all mappings for this job
+    const { error } = await supabase
+      .from('job_requirements_mapping')
+      .delete()
+      .eq('job_id', jobId);
+    
+    if (error) {
+      console.error('Error cleaning up requirement mappings:', error);
+    } else {
+      console.log(`Successfully cleaned up requirement mappings for job ${jobId}`);
+    }
+  } catch (error) {
+    console.error('Error cleaning up requirement mappings:', error);
   }
 }

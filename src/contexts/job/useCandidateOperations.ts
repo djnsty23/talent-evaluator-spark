@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useUploadCandidates } from './candidates/uploadCandidates';
 import { useProcessCandidate, useProcessAllCandidates } from './candidates/processCandidates';
 import { useStarCandidate, useDeleteCandidate } from './candidates/candidateActions';
+import { useNavigate } from 'react-router-dom';
 
 // Delay between API calls to avoid rate limiting
 const PROCESSING_DELAY_MS = 1500;
@@ -23,6 +24,8 @@ export function useCandidateOperations(
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>,
   setError: React.Dispatch<React.SetStateAction<string | null>>
 ) {
+  const navigate = useNavigate();
+  
   // Import candidate upload functionality
   const { uploadCandidateFiles } = useUploadCandidates(
     jobs, 
@@ -122,14 +125,31 @@ export function useCandidateOperations(
     setError
   );
   
-  // Import candidate deletion functionality
-  const { deleteCandidate } = useDeleteCandidate(
+  // Import candidate deletion functionality and enhance to prevent UI issues
+  const { deleteCandidate: baseDeleteCandidate } = useDeleteCandidate(
     jobs, 
     currentJob, 
     setJobs, 
     setCurrentJob, 
     setError
   );
+  
+  // Enhanced delete candidate function that handles navigation after deletion
+  const deleteCandidate = useCallback(async (jobId: string, candidateId: string): Promise<void> => {
+    try {
+      await baseDeleteCandidate(jobId, candidateId);
+      
+      // Check if we're viewing this candidate and redirect if needed
+      const currentPath = window.location.pathname;
+      if (currentPath.includes(`/jobs/${jobId}/candidates/${candidateId}`)) {
+        toast.info('Redirecting to job details after candidate deletion');
+        navigate(`/jobs/${jobId}`);
+      }
+    } catch (error) {
+      console.error('Error in enhanced deleteCandidate:', error);
+      throw error;
+    }
+  }, [baseDeleteCandidate, navigate]);
 
   // Export all functions with consistent API
   return {

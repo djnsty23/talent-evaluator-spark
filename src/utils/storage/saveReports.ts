@@ -2,6 +2,7 @@
 import { Report } from '@/types/job.types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getUserId } from '@/utils/authUtils';
 
 /**
  * Save reports to Supabase
@@ -9,6 +10,14 @@ import { toast } from 'sonner';
 export const saveReports = async (reports: Report[]): Promise<void> => {
   let savedCount = 0;
   let errorCount = 0;
+  
+  // Check authentication status first
+  const userId = await getUserId();
+  if (!userId) {
+    console.error('User must be authenticated to save reports');
+    toast.error('Authentication required to save reports');
+    return;
+  }
   
   for (const report of reports) {
     try {
@@ -65,32 +74,37 @@ const saveCandidateReportLinks = async (reportId: string, candidateIds: string[]
   
   // First clear existing links to avoid duplicates
   try {
-    await supabase
+    const { error } = await supabase
       .from('report_candidates')
       .delete()
       .eq('report_id', reportId);
+      
+    if (error) {
+      console.error('Error clearing existing candidate-report links:', error);
+      // Continue anyway to try adding new links
+    }
   } catch (error) {
-    console.error('Error clearing existing candidate-report links:', error);
+    console.error('Exception clearing existing candidate-report links:', error);
   }
   
-  // Add new links
-  for (const candidateId of candidateIds) {
-    try {
-      const { error } = await supabase
-        .from('report_candidates')
-        .upsert({ 
-          report_id: reportId,
-          candidate_id: candidateId
-        });
-      
-      if (error) {
-        console.error('Error saving candidate-report link to Supabase:', error);
-      } else {
-        linkedCount++;
-      }
-    } catch (error) {
-      console.error('Exception linking candidate to report:', error);
+  // Add new links - use batch insert for better performance
+  try {
+    const links = candidateIds.map(candidateId => ({
+      report_id: reportId,
+      candidate_id: candidateId
+    }));
+    
+    const { error, count } = await supabase
+      .from('report_candidates')
+      .upsert(links);
+    
+    if (error) {
+      console.error('Error saving candidate-report links to Supabase:', error);
+    } else {
+      linkedCount = count || candidateIds.length;
     }
+  } catch (error) {
+    console.error('Exception linking candidates to report:', error);
   }
   
   console.log(`Linked ${linkedCount}/${candidateIds.length} candidates to report ${reportId}`);
