@@ -1,8 +1,8 @@
+
 import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Job, Candidate, Report } from './types';
 import { JobService, ReportService } from '@/services/api';
-import { saveJobs, saveReports } from '@/utils/storage';
 
 export function useJobOperations() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -215,9 +215,6 @@ export function useJobOperations() {
 
       // Add the report to the state
       setReports(prev => [...prev, report]);
-
-      // Save to storage
-      await saveReports([...reports, report]);
 
       setIsLoading(false);
       return report;

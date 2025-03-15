@@ -69,7 +69,7 @@ export const generateReport = async (
         
         console.log('Formatted data for AI:', { formattedJob, formattedCandidates });
         
-        // Call the AI service
+        // Call the AI service with the existing method
         const aiResult = await AIService.generateReport(
           formattedJob,
           formattedCandidates,

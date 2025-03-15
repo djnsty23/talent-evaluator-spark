@@ -3,3 +3,5 @@
 export * from './getStorageData';
 export * from './saveStorageData';
 export * from './mockSaveData';
+export * from './saveJobs';
+export * from './saveReports';
