@@ -2,7 +2,9 @@
 import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Job, Candidate, Report } from './types';
-import { JobService, ReportService } from '@/services/api';
+import { JobService } from '@/services/jobService';
+import { ReportService } from '@/services/api';
+import { uploadCandidateFiles, starCandidate, deleteCandidate } from '@/services/candidateService';
 
 export function useJobOperations() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -82,13 +84,13 @@ export function useJobOperations() {
   };
 
   // Upload candidate files for a job
-  const uploadCandidateFiles = async (jobId: string, files: File[]): Promise<void> => {
+  const uploadCandidateFilesAction = async (jobId: string, files: File[]): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
     try {
       // Upload files and create candidates
-      const newCandidates = await JobService.uploadCandidateFiles(jobId, files);
+      const newCandidates = await uploadCandidateFiles(jobId, files);
 
       setJobs(prev =>
         prev.map(job =>
@@ -111,13 +113,13 @@ export function useJobOperations() {
   };
 
   // Star a candidate
-  const starCandidate = async (jobId: string, candidateId: string, isStarred: boolean): Promise<void> => {
+  const starCandidateAction = async (jobId: string, candidateId: string, isStarred: boolean): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
     try {
       // Update candidate's isStarred status
-      await JobService.starCandidate(jobId, candidateId, isStarred);
+      await starCandidate(jobId, candidateId, isStarred);
 
       setJobs(prev =>
         prev.map(job =>
@@ -142,13 +144,13 @@ export function useJobOperations() {
   };
 
   // Delete a candidate
-  const deleteCandidate = async (jobId: string, candidateId: string): Promise<void> => {
+  const deleteCandidateAction = async (jobId: string, candidateId: string): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
     try {
       // Delete candidate
-      await JobService.deleteCandidate(jobId, candidateId);
+      await deleteCandidate(jobId, candidateId);
 
       setJobs(prev =>
         prev.map(job =>
@@ -241,9 +243,9 @@ export function useJobOperations() {
     createJob,
     updateJob,
     deleteJob,
-    uploadCandidateFiles,
-    starCandidate,
-    deleteCandidate,
+    uploadCandidateFiles: uploadCandidateFilesAction,
+    starCandidate: starCandidateAction,
+    deleteCandidate: deleteCandidateAction,
     generateReport,
   };
 }

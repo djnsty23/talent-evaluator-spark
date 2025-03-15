@@ -28,6 +28,9 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
     createJob,
     updateJob,
     deleteJob,
+    uploadCandidateFiles,
+    starCandidate,
+    deleteCandidate,
     generateReport
   } = useJobOperations();
 
@@ -36,11 +39,8 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
 
   // Get candidate operations
   const {
-    uploadCandidateFiles,
     processCandidate,
     handleProcessAllCandidates,
-    starCandidate,
-    deleteCandidate
   } = useCandidateOperations(
     jobs,
     setJobs,

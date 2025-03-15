@@ -2,7 +2,7 @@
 // Re-export all services for backward compatibility
 import { JobService } from './jobService';
 import { AIService, extractTextFromFile } from './aiService';
-import { uploadCandidateFiles, starCandidate, deleteCandidate } from './candidateService/uploadCandidates';
+import * as CandidateService from './candidateService';
 import { generateReport } from './reportService/generateReport';
 
 // Re-export the services for backward compatibility
@@ -14,6 +14,6 @@ export class ReportService {
 }
 
 // Re-export individual functions from candidate service
-export const uploadCandidateFiles = uploadCandidateFiles;
-export const starCandidate = starCandidate;
-export const deleteCandidate = deleteCandidate;
+export const uploadCandidateFiles = CandidateService.uploadCandidateFiles;
+export const starCandidate = CandidateService.starCandidate;
+export const deleteCandidate = CandidateService.deleteCandidate;
